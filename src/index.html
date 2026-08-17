@@ -161,13 +161,18 @@ section.band{padding-block:clamp(3rem,7vw,5.5rem);border-bottom:1px solid var(--
 footer{padding-block:2.2rem;color:var(--fg-25)}
 footer .wrap{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
 
-/* ── motion ── */
-.rise{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
-.rise.in{opacity:1;transform:none}
+/* ── motion ──
+   Content is visible by default. The hidden state is only applied once JS has
+   confirmed it can reveal it again (html.reveal), so a scripting failure, a
+   missing IntersectionObserver or a stalled observer can never leave the page
+   blank. A watchdog in the script clears the state unconditionally. */
+.rise{transition:opacity .7s var(--ease),transform .7s var(--ease)}
+html.reveal .rise{opacity:0;transform:translateY(18px)}
+html.reveal .rise.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *{transition-duration:.01ms!important;animation-duration:.01ms!important}
-  .rise{opacity:1;transform:none}
+  html.reveal .rise{opacity:1;transform:none}
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 </style>
@@ -316,40 +321,65 @@ price good until <b>1 Nov 2025</b>
 
 <script>
 "use strict";
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function () {
+  var root = document.documentElement;
+  var rise = [].slice.call(document.querySelectorAll('.rise'));
+  var nums = [].slice.call(document.querySelectorAll('[data-count]'));
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var supported = typeof IntersectionObserver === 'function';
+  var fmt = function (n) { return n.toLocaleString('en-SG'); };
 
-/* scroll reveal */
-const rise = document.querySelectorAll('.rise');
-if (reduce) rise.forEach(e => e.classList.add('in'));
-else {
-  const io = new IntersectionObserver((es, o) => {
-    es.forEach((e, i) => {
+  function settle(el) {
+    el.textContent = fmt(+el.dataset.count) + (el.dataset.suffix || '');
+  }
+  /* Reveal everything and stop animating. Safe to call more than once. */
+  function revealAll() {
+    root.classList.remove('reveal');
+    rise.forEach(function (e) { e.classList.add('in'); });
+    nums.forEach(settle);
+  }
+
+  if (reduce || !supported) { revealAll(); return; }
+
+  /* Only now is it safe to hide: we know we can put it back. */
+  root.classList.add('reveal');
+
+  /* Watchdog. If anything below stalls, the page still ends up readable. */
+  var watchdog = setTimeout(revealAll, 2500);
+
+  var riseIO = new IntersectionObserver(function (entries, obs) {
+    entries.forEach(function (e, i) {
       if (!e.isIntersecting) return;
-      setTimeout(() => e.target.classList.add('in'), (i % 4) * 70);
-      o.unobserve(e.target);
+      setTimeout(function () { e.target.classList.add('in'); }, (i % 4) * 70);
+      obs.unobserve(e.target);
     });
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-  rise.forEach(e => io.observe(e));
-}
+  rise.forEach(function (e) { riseIO.observe(e); });
 
-/* count-up stats, triggered once on first view */
-const nums = document.querySelectorAll('[data-count]');
-const fmt = n => n.toLocaleString('en-SG');
-function countUp(el) {
-  const target = +el.dataset.count;
-  const suffix = el.dataset.suffix || '';
-  if (reduce) { el.textContent = fmt(target) + suffix; return; }
-  const dur = 1100, t0 = performance.now();
-  const tick = now => {
-    const p = Math.min(1, (now - t0) / dur);
-    const eased = 1 - Math.pow(1 - p, 4);           // ease-out-quart
-    el.textContent = fmt(Math.round(target * eased)) + suffix;
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-const so = new IntersectionObserver((es, o) => {
-  es.forEach(e => { if (e.isIntersecting) { countUp(e.target); o.unobserve(e.target); } });
-}, { threshold: 0.4 });
-nums.forEach(n => so.observe(n));
+  function countUp(el) {
+    var target = +el.dataset.count, suffix = el.dataset.suffix || '';
+    var dur = 1100, t0 = performance.now();
+    (function tick(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var eased = 1 - Math.pow(1 - p, 4);            // ease-out-quart
+      el.textContent = fmt(Math.round(target * eased)) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+  var numIO = new IntersectionObserver(function (entries, obs) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      countUp(e.target); obs.unobserve(e.target);
+    });
+  }, { threshold: 0.4 });
+  nums.forEach(function (n) { numIO.observe(n); });
+
+  /* A hidden tab never fires IntersectionObserver. Settle on return. */
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(revealAll, 2500);
+    }
+  });
+})();
 </script>
