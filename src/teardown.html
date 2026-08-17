@@ -49,6 +49,12 @@ table{font-variant-numeric:tabular-nums}
 /* ── masthead ── */
 .mast{border-bottom:3px solid var(--ink);padding-top:clamp(2rem,5vw,3.6rem);padding-bottom:1.4rem}
 .mast .kick{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4);margin-bottom:1.5rem}
+/* Client logo lockup, which carries the "Fitness Within Reach" tagline.
+   Served from HomeGym's own CDN rather than copied into this repo. */
+.brandmark{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding-bottom:1.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--rule)}
+.brandmark img{display:block;height:44px;width:auto}
+.brandmark .for{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);border-left:1px solid var(--rule-2);padding-left:1rem}
+@media(max-width:560px){.brandmark img{height:34px}.brandmark .for{border-left:0;padding-left:0}}
 .mast h1{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.022em;line-height:0.86;font-size:clamp(2.6rem,7.4vw,5.6rem)}
 .mast h1 em{font-style:normal;color:var(--accent)}
 .mast .sub{margin-top:1.5rem;font-size:clamp(1.02rem,1.5vw,1.18rem);color:var(--ink-2);max-width:66ch;line-height:1.58}
@@ -192,6 +198,11 @@ footer{border-top:3px solid var(--ink);margin-top:3rem;padding-top:1.2rem;displa
 <div class="page">
 
 <header class="mast">
+  <div class="brandmark">
+    <img src="https://d101vd00cis701.cloudfront.net/athlete2/default/HG_logo_1.jpg"
+         width="552" height="119" alt="HomeGym.sg — Fitness Within Reach">
+    <span class="for">Site &amp; business review</span>
+  </div>
   <div class="kick mono">
     <span>Pro bono review · Written for the owner</span>
     <span>homegym.sg · Checked 16 Aug 2026</span>

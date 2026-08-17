@@ -8,7 +8,8 @@
     "build": "node scripts/build.mjs",
     "test": "node scripts/test-engine.mjs",
     "verify": "node scripts/verify.mjs",
-    "check": "npm run test && npm run build && npm run verify"
+    "check": "npm run test && npm run build && npm run verify",
+    "check:images": "node scripts/check-images.mjs"
   },
   "engines": {
     "node": ">=20"

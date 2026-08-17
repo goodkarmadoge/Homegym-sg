@@ -13,7 +13,9 @@ const cut = (a, b) => {
   return src.slice(i, j);
 };
 
-const catalogue = cut('const P = (name, price, live, foot, why, tagline) =>', '/* ─────────── questions ─────────── */');
+// Anchored on the section banners rather than on any one declaration, so
+// refactors inside a section do not silently break extraction.
+const catalogue = cut('/* ─────────── product imagery ───────────', '/* ─────────── questions ─────────── */');
 const engine    = cut('function build(){', '/* ─────────── result view ─────────── */');
 
 const A = {};

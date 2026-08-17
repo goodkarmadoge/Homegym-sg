@@ -69,9 +69,16 @@ header{
   position:sticky;top:0;z-index:60;background:oklch(0.966 0.008 85 / 0.93);
   backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
 }
-header .wrap{display:flex;align-items:center;gap:clamp(1rem,3vw,2.75rem);height:70px}
-.logo{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.62rem;letter-spacing:-0.03em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
-.logo span{font-size:0.72em;color:var(--ink-faint);font-weight:700}
+header .wrap{display:flex;align-items:center;gap:clamp(1rem,3vw,2.75rem);height:74px}
+/* Real HomeGym.sg logo lockup, which already carries the "Fitness Within Reach"
+   tagline. Served from their own CDN rather than copied into this repo. */
+.logo{display:inline-flex;align-items:center;text-decoration:none;flex-shrink:0}
+.logo img{display:block;height:42px;width:auto}
+/* The logo artwork is black and orange on white, so on the dark footer it sits
+   on a light plate rather than being inverted, which would wreck the orange. */
+.logo-plate{background:var(--cream);border-radius:6px;padding:.55rem .7rem}
+.logo-plate img{height:34px}
+@media(max-width:520px){.logo img{height:34px}.logo-plate img{height:30px}}
 nav.main{display:flex;gap:1.65rem;font-size:.775rem;font-weight:650;letter-spacing:.085em;text-transform:uppercase}
 nav.main a{text-decoration:none;color:var(--ink-2);padding:.3rem 0;border-bottom:2px solid transparent;transition:color .2s var(--ease),border-color .2s var(--ease)}
 nav.main a:hover{color:var(--ink);border-color:var(--accent)}
@@ -209,8 +216,17 @@ h1 em{font-style:normal;color:var(--accent)}
 
 .kit{margin-top:1.8rem}
 .kit h4,.flags h4{margin:0 0 1rem;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--on-dark-2);font-weight:600}
-.line-item{display:grid;grid-template-columns:auto 1fr auto;gap:1.1rem;align-items:baseline;padding:1.05rem 0;border-bottom:1px solid var(--dark-line)}
-.line-item .ix{font-family:var(--f-mono);font-size:.68rem;color:var(--accent);letter-spacing:.08em}
+.line-item{display:grid;grid-template-columns:auto 1fr auto;gap:1.1rem;align-items:start;padding:1.05rem 0;border-bottom:1px solid var(--dark-line)}
+.line-item .thumb{
+  width:64px;height:64px;flex-shrink:0;border:1px solid var(--dark-line);border-radius:6px;
+  background:oklch(0.97 0.004 85);display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.line-item .thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+.line-item .thumb.blank{
+  background:oklch(0.20 0.009 60);color:var(--accent);
+  font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;
+}
+@media(max-width:560px){.line-item .thumb{width:48px;height:48px}}
 .line-item b{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.3rem;letter-spacing:-0.005em;display:block}
 .line-item p{margin:.28rem 0 0;font-size:.855rem;color:var(--on-dark-2);max-width:58ch;line-height:1.5}
 .line-item .amt{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.3rem;white-space:nowrap;text-align:right}
@@ -260,6 +276,31 @@ h1 em{font-style:normal;color:var(--accent)}
 .pack .go2:hover .arw{transform:translateX(5px)}
 @media(max-width:900px){.pack-grid{grid-template-columns:1fr}}
 
+/* ─── shop the range ─── */
+.range{border-bottom:1px solid var(--line);background:var(--cream-2)}
+.range .wrap{padding-block:clamp(2.6rem,5vw,4.4rem)}
+.grid-p{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.pc{
+  background:var(--cream);display:flex;flex-direction:column;text-decoration:none;color:inherit;
+  transition:background .25s var(--ease),transform .35s var(--ease);position:relative;
+}
+.pc:hover{background:var(--cream-3);transform:translateY(-3px);z-index:1}
+.pc .shot{
+  aspect-ratio:1;background:oklch(0.99 0.003 85);display:flex;align-items:center;justify-content:center;
+  overflow:hidden;border-bottom:1px solid var(--line);
+}
+.pc .shot img{width:100%;height:100%;object-fit:contain;padding:.9rem;transition:transform .5s var(--ease)}
+.pc:hover .shot img{transform:scale(1.05)}
+.pc .meta{padding:.95rem 1rem 1.1rem;display:flex;flex-direction:column;flex:1}
+.pc .cat{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.4rem}
+.pc h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.08rem;line-height:1.08;letter-spacing:-0.005em;margin-bottom:.55rem}
+.pc .px{margin-top:auto;display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.pc .now{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.3rem;font-variant-numeric:tabular-nums}
+.pc .was{font-size:.78rem;color:var(--ink-faint);text-decoration:line-through;font-variant-numeric:tabular-nums}
+.pc .save{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.08em;color:var(--accent-dp);border:1px solid var(--accent);padding:.1rem .3rem;text-transform:uppercase}
+@media(max-width:1000px){.grid-p{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.grid-p{grid-template-columns:1fr}}
+
 /* ─── trust ─── */
 .trust .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(1.2rem,2.5vw,2.5rem);padding-block:clamp(2.2rem,4vw,3.4rem)}
 .trust div{display:grid;grid-template-columns:auto 1fr;gap:.95rem;align-items:start}
@@ -296,7 +337,10 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
 </div></div>
 
 <header><div class="wrap">
-  <a class="logo" href="#">Homegym<span>.sg</span></a>
+  <a class="logo" href="#" aria-label="HomeGym.sg — Fitness Within Reach">
+    <img src="https://d101vd00cis701.cloudfront.net/athlete2/default/HG_logo_1.jpg"
+         width="552" height="119" alt="HomeGym.sg — Fitness Within Reach">
+  </a>
   <nav class="main">
     <a href="#">Strength</a><a href="#">Cardio</a><a href="#">Weights</a>
     <a href="#quiz">Build Your Gym</a><a href="#packs">Packages</a><a href="#">Showroom</a>
@@ -481,6 +525,20 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   </div>
 </div></section>
 
+<section class="range" id="range"><div class="wrap">
+  <div class="sec-head">
+    <div>
+      <div class="eyebrow mono">Live catalogue · real products, real prices</div>
+      <h2 class="disp">Shop the range</h2>
+    </div>
+    <a class="pill" href="https://homegym.sg/" target="_blank" rel="noopener">All products &#8594;</a>
+  </div>
+  <div class="grid-p" id="rangeGrid"></div>
+  <p class="mono" style="margin-top:1.1rem;color:var(--ink-faint);letter-spacing:.08em">
+    Product photography and pricing from homegym.sg, checked 17 Aug 2026. Images served from HomeGym's own CDN.
+  </p>
+</div></section>
+
 <section class="trust"><div class="wrap">
   <div>
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg>
@@ -502,7 +560,10 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
 
 <footer><div class="wrap">
   <div>
-    <a class="logo" href="#">Homegym<span>.sg</span></a>
+    <a class="logo logo-plate" href="#" aria-label="HomeGym.sg — Fitness Within Reach">
+      <img src="https://d101vd00cis701.cloudfront.net/athlete2/default/HG_logo_1.jpg"
+           width="552" height="119" alt="HomeGym.sg — Fitness Within Reach" loading="lazy">
+    </a>
     <p>809 French Road #02-45, Singapore 200809. Showroom Mon–Fri, Sat mornings. WhatsApp 8042 3952.</p>
   </div>
   <div class="proto">
@@ -526,24 +587,77 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   g.innerHTML = s;
 })();
 
+/* ─────────── product imagery ───────────
+   Real HomeGym.sg photography, hotlinked from their own CDN rather than
+   copied into this repo. IMG() takes the path fragment after the cache key. */
+const CDN  = 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/';
+const KEY  = '19b8779ea82eba7c3074c2b874ba8dba/';
+const KEY2 = 'd11b41faeeed0bb2e654198967f4842e/';
+const IMG  = f => CDN + KEY + f;
+const SHOP_URL = p => 'https://homegym.sg/' + p;
+
+/* Shown in the "Shop the range" grid. Every price here was read off the live
+   category pages on 17 Aug 2026, so nothing in this section is invented. */
+const SHOP = [
+  {n:'Vigor Titan X20 All-in-1 Trainer', c:'All-in-1', p:4899, was:5899,
+   img:IMG('x/2/x20-main-min.jpg'),
+   u:'strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html'},
+  {n:'Vigor BF900 Pro Connected All-in-1', c:'All-in-1', p:3599,
+   img:IMG('b/f/bf900-10.jpeg'),
+   u:'strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html'},
+  {n:'Bodyx BK3058, 90 kg stack', c:'Multi gym', p:3299, was:3950,
+   img:IMG('3/2/3257_magnify_020.jpg'),
+   u:'strength/multi-functional.html/cable-machine/bodyx-bk3058-with-90kg-weight-stack.html'},
+  {n:'Bodyx Folding Cube Smith Combo', c:'Smith machine', p:4099, was:4599,
+   img:IMG('c/u/cube_2_385.jpg'),
+   u:'strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html'},
+  {n:'Vigor 41.5 kg Smartlock Dumbbells', c:'Dumbbells', p:700, was:838,
+   img:IMG('s/i/silver-db2.jpg'),
+   u:'strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-41-5kg-smartlock-adjustable-dumbbell-4-to-41-5kg.html'},
+  {n:'Vigor 23.5 kg Smartlock Dumbbells', c:'Dumbbells', p:580, was:699,
+   img:IMG('4/-/4-235_dumbbell_2_.jpg'),
+   u:'strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html'},
+  {n:'Vigor Multi Adjustable Bench', c:'Benches', p:292,
+   img:IMG('b/s/bs-mab44.jpg'),
+   u:'strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html'},
+  {n:'DHT Ultraslim Folding Bench', c:'Benches', p:292,
+   img:IMG('z/x/zx-bench-11.jpg'),
+   u:'strength/weight-benches/folding-bench.html/zxch-ultraslim-folding-bench.html'},
+  {n:'Vigor Multi Functional Bench', c:'Benches', p:449, was:470,
+   img:IMG('4/0/4046-1.jpg'),
+   u:'strength/weight-benches/flat-adjustable-bench.html/vigor-multi-functional-bench-w-leg-arm-attachments.html'},
+  {n:'Vigor Folding Adjustable Squat Stand', c:'Racks',
+   img:IMG('f/a/fass-1.jpg'),
+   u:'strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html'},
+  {n:'Vigor Proguard Rubber Tile Mat, 2 cm', c:'Flooring',
+   img:IMG('m/a/mat-12.jpg'),
+   u:'all-products.html/vigor-proguard-rubber-tile-mat.html'},
+  {n:'NordicTrack Commercial 1750 Treadmill', c:'Cardio',
+   img:IMG('n/t/ntl17125_studio_astrid_mrohs_aaron_jimenez57041.jpg'),
+   u:'cardio/treadmill-singapore/performance-series.html/nordictrack-commercial-1750-treadmill-25.html'},
+];
+
 /* ─────────── catalogue ─────────── */
-const P = (name, price, live, foot, why, tagline) =>
-  ({name, price, live, foot, why, tagline});
+const P = (name, price, live, foot, why, img) =>
+  ({name, price, live, foot, why, img});
 
 const C = {
   foldRack:  P('Vigor Folding Power Rack', 1499, true, [1.55,1.66,2.28],
-    'Full-size rack that folds to 72 cm against the wall. Rated 1000 lb on the hooks, lifetime frame warranty.'),
+    'Full-size rack that folds to 72 cm against the wall. Rated 1000 lb on the hooks, lifetime frame warranty.',
+    CDN + KEY2 + 'v/s/vs-vr-3.jpg'),
   compact:   P('Vigor Compact Power Rack V2', 819, true, [1.20,1.25,2.10],
     'The smallest real rack we stock. Squat, press and pull safely without a spotter.'),
   im2000:    P('Ironmaster IM2000 Self-Spotting System', 1999, true, [1.60,1.70,2.15],
     'Self-spotting, so you can train to failure alone. Lower than a standard rack, which matters under a 2.6 m ceiling.'),
-  titanX20:  P('Vigor Titan X20 All-in-1 Trainer', 4299, true, [2.07,1.61,2.24],
-    'Smith machine, half rack and functional trainer in one footprint. Over 100 exercise variations.'),
+  titanX20:  P('Vigor Titan X20 All-in-1 Trainer', 4899, true, [2.07,1.61,2.24],
+    'Smith machine, half rack and functional trainer in one footprint. Over 100 exercise variations.',
+    IMG('x/2/x20-main-min.jpg')),
   wallFold:  P('Wall-Mounted Folding Squat Rack', 649, false, [1.20,0.35,2.15],
     'Bolts to a structural wall and folds to 35 cm. The only rack that genuinely disappears.'),
-  bench:     P('Adjustable FID Bench', 289, false, [1.30,0.45,0.50],
-    'Flat, incline and decline. The single highest-value piece after the rack.'),
-  foldBench: P('Folding Flat Bench', 179, false, [1.15,0.35,0.42],
+  bench:     P('Vigor Multi Adjustable Bench', 292, true, [1.30,0.45,0.50],
+    'Flat, incline and decline. The single highest-value piece after the rack.',
+    IMG('b/s/bs-mab44.jpg')),
+  foldBench: P('Vigor Folding Adjustable Bench', 179, true, [1.15,0.35,0.42],
     'Folds vertically to store behind a door.'),
   bar:       P('Olympic Barbell 20 kg', 249, false, [2.20,0.05,0.05],
     'Needs 2.2 m of clear length. Measure the wall before you commit to a barbell.'),
@@ -551,16 +665,19 @@ const C = {
     'Rubber-coated so a missed rep does not go through the floor slab.'),
   bumpers150:P('Bumper Plate Set, 150 kg', 999, false, [0.70,0.70,0.65],
     'Enough load for a 180 kg deadlift once you count the bar.'),
-  db24:      P('Adjustable Dumbbells, 2 × 24 kg', 549, false, [0.90,0.45,0.40],
-    'Replaces fifteen pairs of fixed dumbbells in the space of a shoebox.'),
-  db32:      P('Adjustable Dumbbells, 2 × 32 kg', 749, false, [0.95,0.48,0.42],
-    'The heavier pair. Worth it if you already press over 20 kg per hand.'),
+  db24:      P('Vigor 23.5 kg Smartlock Dumbbells', 580, true, [0.90,0.45,0.40],
+    'Replaces fifteen pairs of fixed dumbbells in the space of a shoebox.',
+    IMG('4/-/4-235_dumbbell_2_.jpg')),
+  db32:      P('Vigor 41.5 kg Smartlock Dumbbells', 700, true, [0.95,0.48,0.42],
+    'The heavier pair. Worth it if you already press over 20 kg per hand.',
+    IMG('s/i/silver-db2.jpg')),
   kettle:    P('Kettlebell Pair, 12 & 16 kg', 189, false, [0.40,0.25,0.35],
     'Swings and carries. The cheapest conditioning you can buy.'),
   bands:     P('Resistance Band Set + Door Anchor', 79, false, [0.20,0.15,0.10],
     'Warm-ups, assisted pull-ups and travel training.'),
-  mat:       P('Interlocking Gym Mat, 4 m²', 149, false, [2.00,2.00,0.02],
-    'Protects the floor and cuts the noise your neighbours hear.'),
+  mat:       P('Vigor Proguard Rubber Tile Mat', 149, false, [2.00,2.00,0.02],
+    'Protects the floor and cuts the noise your neighbours hear.',
+    IMG('m/a/mat-12.jpg')),
   floor9:    P('Rubber Gym Flooring, 9 m²', 549, false, [3.00,3.00,0.02],
     '15 mm rubber. Non-negotiable if you deadlift above a neighbour.'),
   tread:     P('Folding Treadmill', 1299, false, [1.80,0.85,1.40],
@@ -889,8 +1006,10 @@ function renderResult(){
 
   const rows = b.items.map((i,n)=>
     '<div class="line-item">'+
-      '<span class="ix">'+String(n+1).padStart(2,'0')+'</span>'+
-      '<div><b>'+esc(i.name)+ (i.live?'<span class="tag live">Live price</span>':'<span class="tag">Placeholder</span>') +'</b>'+
+      (i.img
+        ? '<span class="thumb"><img src="'+i.img+'" alt="'+esc(i.name)+'" loading="lazy" decoding="async"></span>'
+        : '<span class="thumb blank">'+String(n+1).padStart(2,'0')+'</span>')+
+      '<div><b>'+esc(i.name)+ (i.live?'<span class="tag live">Live price</span>':'<span class="tag">Est. price</span>') +'</b>'+
       '<p>'+esc(i.why)+'</p></div>'+
       '<span class="amt">'+money(i.price)+'</span>'+
     '</div>').join('');
@@ -959,6 +1078,26 @@ function renderResult(){
 
   document.getElementById('again').addEventListener('click', ()=>{ step = Q.length-1; renderStep(); scrollToQuiz(); });
 }
+
+/* render the live-catalogue product grid */
+(function(){
+  const grid = document.getElementById('rangeGrid');
+  if(!grid) return;
+  grid.innerHTML = SHOP.map(s=>{
+    const save = (s.was && s.p) ? Math.round((1 - s.p/s.was)*100) : 0;
+    const price = s.p
+      ? '<span class="now">'+money(s.p)+'</span>'+
+        (s.was ? '<span class="was">'+money(s.was)+'</span><span class="save">-'+save+'%</span>' : '')
+      : '<span class="now" style="font-size:1rem;color:var(--ink-faint)">View price</span>';
+    return '<a class="pc" href="'+SHOP_URL(s.u)+'" target="_blank" rel="noopener">'+
+      '<span class="shot"><img src="'+s.img+'" alt="'+esc(s.n)+'" loading="lazy" decoding="async"></span>'+
+      '<span class="meta">'+
+        '<span class="cat">'+esc(s.c)+'</span>'+
+        '<h3>'+esc(s.n)+'</h3>'+
+        '<span class="px">'+price+'</span>'+
+      '</span></a>';
+  }).join('');
+})();
 
 /* space-strip shortcuts jump into the quiz with space pre-filled */
 document.querySelectorAll('.space').forEach(btn=>btn.addEventListener('click',()=>{
