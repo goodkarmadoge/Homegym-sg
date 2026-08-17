@@ -29,6 +29,39 @@ HomeGym.sg is an independent business. This review is not affiliated with, commi
 
 This site is served with `robots.txt` disallowing all crawlers and `noindex, nofollow` on every page. It is shareable by link but not intended to be discoverable through search.
 
-## Building
+## Layout
 
-The pages are static HTML with no dependencies, no build step required to serve. They were generated from source documents by `build-site.mjs`, which wraps each in a full HTML document, injects the noindex tags, and rewrites cross-document links to relative paths.
+```
+src/        page fragments (title + style + body) — the source of truth
+scripts/    build, engine tests, output verification
+dist/       generated site (gitignored, produced by the build)
+```
+
+## Commands
+
+```bash
+npm run build    # src/ -> dist/
+npm test         # exercise the quiz engine across all 3,072 answer combinations
+npm run verify   # validate dist/ structure, noindex tags and internal links
+npm run check    # all three, in order — this is what CI and Vercel run
+```
+
+No dependencies; Node 20+ only.
+
+## CI/CD
+
+`.github/workflows/ci.yml` runs `npm run check` on every push and pull request. It fails the build if:
+
+- any quiz answer combination produces an empty, malformed, duplicated or over-budget result
+- a page is missing its doctype, `<head>`, `<title>` or noindex tags
+- an absolute artifact URL leaks into the output
+- any internal link points at a file that does not exist
+
+On a green push to `main`, two deployments run from the same `dist/`:
+
+| Host | URL |
+|---|---|
+| Vercel (production) | https://homegym-sg.vercel.app |
+| GitHub Pages | https://goodkarmadoge.github.io/Homegym-sg/ |
+
+Vercel runs the identical `npm run check` as its build command, so a broken commit fails to deploy rather than deploying broken.

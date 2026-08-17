@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { PAGES } from './build.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = join(ROOT, 'dist');
 const problems = [];
 const fail = m => problems.push(m);
 
 for (const p of PAGES) {
-  const path = join(ROOT, p.file);
-  if (!existsSync(path)) { fail(`${p.file}: missing from build output`); continue; }
+  const path = join(OUT, p.file);
+  if (!existsSync(path)) { fail(`${p.file}: missing from dist/`); continue; }
   const h = readFileSync(path, 'utf8');
 
   if (!h.startsWith('<!doctype html>'))            fail(`${p.file}: missing doctype`);
@@ -28,12 +29,12 @@ for (const p of PAGES) {
 
   // Every internal link must resolve to a real file.
   for (const l of new Set([...h.matchAll(/href="([a-z0-9._-]+\.html)"/gi)].map(m => m[1]))) {
-    if (!existsSync(join(ROOT, l))) fail(`${p.file}: broken internal link -> ${l}`);
+    if (!existsSync(join(OUT, l))) fail(`${p.file}: broken internal link -> ${l}`);
   }
 }
 
-if (!existsSync(join(ROOT, 'robots.txt'))) fail('robots.txt: missing');
-else if (!/Disallow: \//.test(readFileSync(join(ROOT, 'robots.txt'), 'utf8')))
+if (!existsSync(join(OUT, 'robots.txt'))) fail('robots.txt: missing');
+else if (!/Disallow: \//.test(readFileSync(join(OUT, 'robots.txt'), 'utf8')))
   fail('robots.txt: does not disallow crawling');
 
 if (problems.length) {

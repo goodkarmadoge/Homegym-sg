@@ -26,17 +26,15 @@ jobs:
       - name: Build the site
         run: npm run build
 
-      - name: Fail if committed output drifted from src/
-        run: |
-          if ! git diff --quiet; then
-            echo "::error::Built output does not match src/. Run 'npm run build' and commit the result."
-            git diff --stat
-            exit 1
-          fi
-          echo "Built output matches src/."
-
       - name: Verify the built site
         run: npm run verify
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
 
   pages:
     name: Deploy to GitHub Pages
@@ -52,9 +50,14 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build
+        run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist/
       - id: deploy
         uses: actions/deploy-pages@v4

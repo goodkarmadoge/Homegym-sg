@@ -1,12 +1,13 @@
 // Builds the deployable site from the fragments in src/.
 // Each source file is a <title> + <style> + body fragment; this wraps them into
 // complete documents, injects the noindex tags, and writes them to the repo root.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
+export const OUT = join(ROOT, 'dist');
 
 export const PAGES = [
   { file: 'index.html', emoji: '🏠',
@@ -49,6 +50,9 @@ ${body}
 }
 
 function main() {
+  rmSync(OUT, { recursive: true, force: true });
+  mkdirSync(OUT, { recursive: true });
+
   for (const p of PAGES) {
     const raw = readFileSync(join(SRC, p.file), 'utf8');
     const title = (raw.match(/<title>([\s\S]*?)<\/title>/) || [, 'HomeGym.sg'])[1].trim();
@@ -58,13 +62,13 @@ function main() {
       .replace(/<style>[\s\S]*?<\/style>/, '')
       .trim();
 
-    writeFileSync(join(ROOT, p.file), buildPage({ title, style, body, desc: p.desc, emoji: p.emoji }));
-    console.log(`built ${p.file.padEnd(16)} ${(Buffer.byteLength(body) / 1024).toFixed(0)} KB  "${title}"`);
+    writeFileSync(join(OUT, p.file), buildPage({ title, style, body, desc: p.desc, emoji: p.emoji }));
+    console.log(`built dist/${p.file.padEnd(16)} ${(Buffer.byteLength(body) / 1024).toFixed(0)} KB  "${title}"`);
   }
 
-  writeFileSync(join(ROOT, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
-  writeFileSync(join(ROOT, '.nojekyll'), '');
-  console.log('\nbuilt robots.txt and .nojekyll');
+  writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+  writeFileSync(join(OUT, '.nojekyll'), '');
+  console.log('\nbuilt dist/robots.txt and dist/.nojekyll');
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
