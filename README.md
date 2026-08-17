@@ -44,9 +44,20 @@ npm run build    # src/ -> dist/
 npm test         # exercise the quiz engine across all 3,072 answer combinations
 npm run verify   # validate dist/ structure, noindex tags and internal links
 npm run check    # all three, in order — this is what CI and Vercel run
+
+npm run check:images   # confirm every hotlinked HomeGym image still resolves
 ```
 
 No dependencies; Node 20+ only.
+
+### Images and logo
+
+The HomeGym logo and all product photography are **hotlinked from HomeGym's own
+CDN**, not copied into this repo. Nothing of theirs is redistributed here, and
+the images stay current if they update them. The trade-off is that they can rot
+if a URL changes, which is what `npm run check:images` is for. It is kept out of
+`npm run check` on purpose: a HomeGym CDN outage should not be able to fail our
+deploy.
 
 ## CI/CD
 
