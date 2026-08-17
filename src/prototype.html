@@ -125,6 +125,18 @@ h1 em{font-style:normal;color:var(--accent)}
   background-size:26px 26px;
 }
 .blueprint svg{position:relative;display:block;width:100%;height:auto}
+/* Real product photography from homegym.sg, sitting on the measured grid so the
+   "will it fit" idea survives while the product itself is unmistakably theirs. */
+.shot-main{position:relative;display:block}
+.shot-main img{position:relative;display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;mix-blend-mode:multiply}
+.shot-tag{
+  position:absolute;left:0;top:0;z-index:2;background:var(--ink);color:var(--cream);
+  font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;padding:.35rem .6rem;
+}
+.shot-dim{
+  position:absolute;right:0;bottom:0;z-index:2;background:var(--accent);color:oklch(0.16 0.02 46);
+  font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;padding:.35rem .6rem;
+}
 .spec{position:relative;margin-top:1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-hard);border:1px solid var(--line-hard)}
 .spec div{background:var(--cream-2);padding:.85rem .7rem}
 .spec dt{margin:0 0 .3rem;font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
@@ -152,6 +164,32 @@ h1 em{font-style:normal;color:var(--accent)}
 .space .arw{position:absolute;right:1rem;bottom:1rem;color:var(--accent);transition:transform .3s var(--ease)}
 .space:hover .arw{transform:translateX(4px)}
 @media(max-width:860px){.strip .wrap{grid-template-columns:1fr}.spaces{grid-template-columns:repeat(2,1fr)}}
+
+/* ─── real installs ─── */
+.installs{border-bottom:1px solid var(--line);background:var(--cream)}
+.installs .wrap{padding-block:clamp(2.4rem,4.6vw,4rem)}
+.gal{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:1.9rem}
+.gal figure{
+  position:relative;margin:0;overflow:hidden;background:var(--cream-3);
+  border:1px solid var(--line);
+}
+.gal figure:nth-child(1){grid-column:span 3;aspect-ratio:16/11}
+.gal figure:nth-child(2){grid-column:span 3;aspect-ratio:16/11}
+.gal figure:nth-child(3),
+.gal figure:nth-child(4),
+.gal figure:nth-child(5){grid-column:span 2;aspect-ratio:4/3}
+.gal img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s var(--ease)}
+.gal figure:hover img{transform:scale(1.04)}
+.gal figcaption{
+  position:absolute;left:0;right:0;bottom:0;padding:1.5rem .85rem .7rem;
+  background:linear-gradient(transparent,oklch(0.185 0.009 60/.82));
+  color:var(--on-dark);font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;
+}
+@media(max-width:820px){
+  .gal{grid-template-columns:repeat(2,1fr)}
+  .gal figure:nth-child(n){grid-column:span 1;aspect-ratio:4/3}
+  .gal figure:nth-child(1){grid-column:span 2;aspect-ratio:16/10}
+}
 
 /* ══════════ QUIZ ══════════ */
 .quiz{background:var(--ink);color:var(--on-dark);padding-block:clamp(3rem,7vw,6rem);position:relative;overflow:hidden}
@@ -261,7 +299,14 @@ h1 em{font-style:normal;color:var(--accent)}
 .pack:hover{background:var(--cream-2)}
 .pack.feat{background:var(--ink);color:var(--on-dark)}
 .pack.feat:hover{background:oklch(0.22 0.009 60)}
-.pack .badge{position:absolute;top:0;right:0;background:var(--accent);color:oklch(0.16 0.02 46);font-family:var(--f-mono);font-size:.56rem;letter-spacing:.13em;padding:.35rem .6rem}
+.pack .badge{position:absolute;top:0;right:0;background:var(--accent);color:oklch(0.16 0.02 46);font-family:var(--f-mono);font-size:.56rem;letter-spacing:.13em;padding:.35rem .6rem;z-index:2}
+.pack .pshot{
+  display:block;aspect-ratio:5/3;margin:-1.7rem -1.5rem 1.2rem;background:oklch(0.99 0.003 85);
+  border-bottom:1px solid var(--line);overflow:hidden;
+}
+.pack.feat .pshot{border-color:var(--dark-line)}
+.pack .pshot img{width:100%;height:100%;object-fit:contain;padding:1rem;transition:transform .5s var(--ease)}
+.pack:hover .pshot img{transform:scale(1.05)}
 .pack h3{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.85rem;line-height:0.94;letter-spacing:-0.01em}
 .pack .from{margin:.6rem 0 1rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.5rem;color:var(--accent)}
 .pack > p{margin:0 0 1.2rem;font-size:.875rem;color:var(--ink-soft);line-height:1.5}
@@ -368,57 +413,18 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   </div>
 
   <div class="blueprint">
-    <svg viewBox="0 0 480 400" role="img" aria-label="Technical elevation drawing of a folding power rack with bench, annotated with dimensions">
-      <g stroke="currentColor" fill="none" stroke-width="2.4" style="color:oklch(0.185 0.009 60)">
-        <!-- uprights -->
-        <path d="M118 62 V330 M188 62 V330 M292 62 V330 M362 62 V330"/>
-        <!-- top crossbeams -->
-        <path d="M118 62 H362 M118 88 H362"/>
-        <!-- pull-up bar -->
-        <path d="M150 75 H330" stroke-width="5" style="color:oklch(0.635 0.172 46)"/>
-        <!-- base -->
-        <path d="M104 330 H376" stroke-width="4"/>
-        <path d="M118 330 H188 M292 330 H362"/>
-      </g>
-      <!-- hole pattern, punched by script so the drawing reads as a real rack -->
-      <g id="holes" fill="oklch(0.70 0.012 70)"></g>
-      <!-- j-hooks + safeties -->
-      <g stroke="oklch(0.635 0.172 46)" stroke-width="4.5" fill="none" stroke-linecap="square">
-        <path d="M188 196 h-16 v-13"/><path d="M292 196 h16 v-13"/>
-        <path d="M188 246 H292"/>
-      </g>
-      <!-- barbell -->
-      <g stroke="oklch(0.185 0.009 60)" stroke-width="6"><path d="M132 183 H348"/></g>
-      <g fill="oklch(0.185 0.009 60)">
-        <rect x="140" y="163" width="9" height="40"/><rect x="153" y="169" width="7" height="28"/>
-        <rect x="331" y="163" width="9" height="40"/><rect x="320" y="169" width="7" height="28"/>
-      </g>
-      <!-- bench -->
-      <g stroke="oklch(0.185 0.009 60)" stroke-width="2.4" fill="oklch(0.895 0.016 80)">
-        <rect x="196" y="286" width="96" height="13"/>
-      </g>
-      <g stroke="oklch(0.185 0.009 60)" stroke-width="2.4" fill="none">
-        <path d="M208 299 v31 M280 299 v31 M204 330 h12 M274 330 h12"/>
-      </g>
-      <!-- dimension lines -->
-      <g stroke="oklch(0.635 0.172 46)" stroke-width="1.5" fill="none">
-        <path d="M400 62 V330"/><path d="M394 62 h12 M394 330 h12"/>
-        <path d="M118 356 H362"/><path d="M118 350 v12 M362 350 v12"/>
-      </g>
-      <g font-family="ui-monospace,Menlo,monospace" font-size="13" fill="oklch(0.545 0.155 43)" letter-spacing="1">
-        <text x="414" y="200">228 cm</text>
-        <text x="205" y="378">155 cm</text>
-      </g>
-      <g font-family="ui-monospace,Menlo,monospace" font-size="11" fill="oklch(0.62 0.012 70)" letter-spacing="1.4">
-        <text x="24" y="38">FIG. 01 / FOLDING POWER RACK, OPEN</text>
-      </g>
-    </svg>
+    <span class="shot-tag">Fig. 01 &middot; Featured</span>
+    <span class="shot-dim">207 &times; 161 &times; 224 cm</span>
+    <span class="shot-main">
+      <img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/19b8779ea82eba7c3074c2b874ba8dba/x/2/x20-main-min.jpg"
+           alt="Vigor Titan X20 All-in-1 Trainer" width="600" height="600" fetchpriority="high" decoding="async">
+    </span>
 
     <dl class="spec">
-      <div><dt>Footprint</dt><dd>1.55 × 1.66 m</dd></div>
-      <div><dt>Folded to</dt><dd>0.72 m</dd></div>
-      <div><dt>Rated load</dt><dd>1000 lb</dd></div>
-      <div><dt>Setup</dt><dd>~90 min</dd></div>
+      <div><dt>Footprint</dt><dd>2.07 × 1.61 m</dd></div>
+      <div><dt>Height</dt><dd>2.24 m</dd></div>
+      <div><dt>Exercises</dt><dd>100+</dd></div>
+      <div><dt>From</dt><dd>S$4,899</dd></div>
     </dl>
   </div>
 </div></section>
@@ -460,6 +466,46 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   </div>
 </div></section>
 
+<section class="installs"><div class="wrap">
+  <div class="sec-head">
+    <div>
+      <div class="eyebrow mono">Fourteen years of installs</div>
+      <h2 class="disp">Rooms we've already built</h2>
+    </div>
+    <a class="pill" href="https://homegym.sg/" target="_blank" rel="noopener">See more &#8594;</a>
+  </div>
+  <div class="gal">
+    <figure>
+      <img src="https://d101vd00cis701.cloudfront.net/wysiwyg/banner16_476_400.jpg"
+           alt="All-in-1 Smith machine system installed in a residential room" loading="lazy" decoding="async">
+      <figcaption>All-in-1 Smith system, residential room</figcaption>
+    </figure>
+    <figure>
+      <img src="https://d101vd00cis701.cloudfront.net/wysiwyg/banner2_476_400.jpg"
+           alt="Multi-gym and treadmill in a home gym with wooden flooring" loading="lazy" decoding="async">
+      <figcaption>Multi-gym and treadmill, home studio</figcaption>
+    </figure>
+    <figure>
+      <img src="https://d101vd00cis701.cloudfront.net/wysiwyg/banner1_476_400.jpg"
+           alt="Treadmill and exercise bike in a rooftop residential gym overlooking Singapore" loading="lazy" decoding="async">
+      <figcaption>Rooftop residential gym</figcaption>
+    </figure>
+    <figure>
+      <img src="https://d101vd00cis701.cloudfront.net/wysiwyg/banner4_476_400.jpg"
+           alt="Vigor dumbbell rack and adjustable benches on a gym floor" loading="lazy" decoding="async">
+      <figcaption>Vigor dumbbells &amp; benches</figcaption>
+    </figure>
+    <figure>
+      <img src="https://d101vd00cis701.cloudfront.net/wysiwyg/banner3_476_400.jpg"
+           alt="Commercial gym fit-out with rigs, turf and free weights" loading="lazy" decoding="async">
+      <figcaption>Commercial fit-out</figcaption>
+    </figure>
+  </div>
+  <p class="mono" style="margin-top:1.1rem;color:var(--ink-faint);letter-spacing:.08em">
+    Installation photography from homegym.sg
+  </p>
+</div></section>
+
 <!-- ══════════ QUIZ ══════════ -->
 <section class="quiz" id="quiz"><div class="wrap">
   <div class="quiz-head">
@@ -487,6 +533,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   </div>
   <div class="pack-grid">
     <div class="pack">
+      <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/19b8779ea82eba7c3074c2b874ba8dba/4/-/4-235_dumbbell_2_.jpg" alt="Vigor Smartlock adjustable dumbbells" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Starter</h3>
       <div class="from">From S$499</div>
       <p>Getting stronger without giving up an entire room. Everything stows under a bed or in a cupboard.</p>
@@ -499,6 +546,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
     </div>
     <div class="pack feat">
       <span class="badge">Most popular</span>
+      <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/v/s/vs-vr-3.jpg" alt="Vigor Folding Power Rack" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Strength Setup</h3>
       <div class="from">From S$1,499</div>
       <p>The serious answer for an HDB or condo room. Folds back to 72 cm when you are done training.</p>
@@ -511,6 +559,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
       <a class="go2" href="#quiz">Size it to my room <span class="arw">&#8594;</span></a>
     </div>
     <div class="pack">
+      <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/19b8779ea82eba7c3074c2b874ba8dba/x/2/x20-main-min.jpg" alt="Vigor Titan X20 All-in-1 Trainer" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Complete Home Gym</h3>
       <div class="from">From S$2,999</div>
       <p>A full training floor: press, pull, squat, condition. Built for a dedicated room or garage.</p>
@@ -574,18 +623,6 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
 
 <script>
 "use strict";
-
-/* punch the rack hole pattern so the drawing reads as a real rack */
-(function(){
-  const g = document.getElementById('holes');
-  if(!g) return;
-  let s = '';
-  for(let y=104; y<=318; y+=15){
-    s += '<circle cx="118" cy="'+y+'" r="2.6"/><circle cx="188" cy="'+y+'" r="2.6"/>';
-    s += '<circle cx="292" cy="'+y+'" r="2.6"/><circle cx="362" cy="'+y+'" r="2.6"/>';
-  }
-  g.innerHTML = s;
-})();
 
 /* ─────────── product imagery ───────────
    Real HomeGym.sg photography, hotlinked from their own CDN rather than
