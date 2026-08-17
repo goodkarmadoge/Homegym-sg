@@ -1,0 +1,17 @@
+{
+  "name": "homegym-sg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pro bono site and business teardown of homegym.sg, with a positioning brief and a guided-selling prototype",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test-engine.mjs",
+    "verify": "node scripts/verify.mjs",
+    "check": "npm run test && npm run build && npm run verify"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "UNLICENSED"
+}

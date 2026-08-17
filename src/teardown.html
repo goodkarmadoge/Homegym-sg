@@ -1,0 +1,804 @@
+<title>HomeGym.sg Teardown</title>
+
+<style>
+:root{
+  --paper:    oklch(0.972 0.006 85);
+  --paper-2:  oklch(0.945 0.010 82);
+  --paper-3:  oklch(0.905 0.014 80);
+  --ink:      oklch(0.195 0.008 60);
+  --ink-2:    oklch(0.34 0.009 62);
+  --ink-3:    oklch(0.50 0.011 66);
+  --ink-4:    oklch(0.635 0.011 70);
+  --rule:     oklch(0.862 0.011 80);
+  --rule-2:   oklch(0.775 0.013 78);
+  --accent:   oklch(0.615 0.175 45);
+  --accent-d: oklch(0.505 0.152 43);
+  --accent-w: oklch(0.945 0.038 62);
+  --crit:     oklch(0.545 0.185 27);
+  --crit-w:   oklch(0.945 0.038 30);
+  --ok:       oklch(0.475 0.105 155);
+  --ok-w:     oklch(0.945 0.035 158);
+
+  --f-disp: "Arial Narrow","Helvetica Neue Condensed","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-body: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,monospace;
+  --ease: cubic-bezier(0.22,1,0.36,1);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition-duration:.01ms!important}}
+
+.page{max-width:1180px;margin:0 auto;padding:0 clamp(1.1rem,4vw,3rem) 5rem}
+
+/* ── doc tabs ── */
+.docnav{display:flex;gap:1px;background:var(--rule);border:1px solid var(--rule);border-top:0;margin-bottom:clamp(1.6rem,3vw,2.4rem);overflow-x:auto}
+.docnav a{flex:1;min-width:150px;background:var(--paper-2);padding:.85rem 1rem;text-decoration:none;color:var(--ink-3);transition:background .2s var(--ease),color .2s var(--ease)}
+.docnav a:hover{background:var(--paper);color:var(--ink)}
+.docnav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+.docnav .n{display:block;font-family:var(--f-mono);font-size:.55rem;letter-spacing:.14em;opacity:.7;margin-bottom:.28rem}
+.docnav .t{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.05rem;line-height:1;white-space:nowrap}
+.disp{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.015em;line-height:0.92;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--accent-d);text-decoration-thickness:1px;text-underline-offset:2px}
+table{font-variant-numeric:tabular-nums}
+
+/* ── masthead ── */
+.mast{border-bottom:3px solid var(--ink);padding-top:clamp(2rem,5vw,3.6rem);padding-bottom:1.4rem}
+.mast .kick{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4);margin-bottom:1.5rem}
+.mast h1{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.022em;line-height:0.86;font-size:clamp(2.6rem,7.4vw,5.6rem)}
+.mast h1 em{font-style:normal;color:var(--accent)}
+.mast .sub{margin-top:1.5rem;font-size:clamp(1.02rem,1.5vw,1.18rem);color:var(--ink-2);max-width:66ch;line-height:1.58}
+.mast .sub + .sub{margin-top:1rem}
+
+/* ── plain-english summary strip ── */
+.verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:3rem}
+.verdict div{background:var(--paper);padding:1.15rem 1.15rem}
+.verdict dt{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.45rem}
+.verdict dd{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.5rem;line-height:1}
+.verdict dd small{display:block;font-family:var(--f-body);font-size:.815rem;font-weight:400;color:var(--ink-3);text-transform:none;letter-spacing:0;margin-top:.45rem;line-height:1.45}
+@media(max-width:820px){.verdict{grid-template-columns:1fr}}
+
+section{margin-bottom:clamp(2.8rem,5vw,4.4rem);scroll-margin-top:1.5rem}
+.sec-num{display:flex;align-items:baseline;gap:1rem;border-bottom:2px solid var(--ink);padding-bottom:.7rem;margin-bottom:1.7rem}
+.sec-num span{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.14em;color:var(--accent)}
+.sec-num h2{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(1.6rem,3.4vw,2.4rem);letter-spacing:-0.015em;line-height:1}
+.lead{font-size:1.03rem;color:var(--ink-2);max-width:68ch;margin-bottom:1.6rem;line-height:1.6}
+
+/* ── the big three ── */
+.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--ink);border:2px solid var(--ink)}
+.b3{background:var(--ink);color:var(--paper);padding:1.4rem 1.3rem;display:flex;flex-direction:column}
+.b3 .n{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:3.4rem;line-height:.8;color:var(--accent);margin-bottom:.8rem}
+.b3 h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.45rem;line-height:1.02;margin-bottom:.7rem}
+.b3 p{font-size:.895rem;color:oklch(0.775 0.012 78);line-height:1.55;margin-bottom:.9rem}
+.b3 .who{margin-top:auto;padding-top:.85rem;border-top:1px solid oklch(0.35 0.010 60);font-family:var(--f-mono);font-size:.6rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent)}
+@media(max-width:900px){.big3{grid-template-columns:1fr}}
+
+/* ── findings ── */
+.find{border:1px solid var(--rule);border-top:2px solid var(--ink);margin-bottom:1rem;background:var(--paper)}
+.find > summary{list-style:none;cursor:pointer;padding:1.05rem 1.2rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:baseline;transition:background .2s var(--ease)}
+.find > summary::-webkit-details-marker{display:none}
+.find > summary:hover{background:var(--paper-2)}
+.find[open] > summary{background:var(--paper-2);border-bottom:1px solid var(--rule)}
+.find h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.3rem;letter-spacing:-0.005em;line-height:1.06}
+.find .id{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.1em;color:var(--ink-4);padding-top:.18rem}
+.find .toggle{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.1em;color:var(--ink-4);white-space:nowrap}
+.find[open] .toggle::after{content:"CLOSE"}
+.find:not([open]) .toggle::after{content:"OPEN"}
+.find .inner{padding:1.3rem 1.2rem 1.4rem}
+.find .inner > * + *{margin-top:1.05rem}
+.find .inner p{color:var(--ink-2);max-width:70ch}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem;grid-column:2}
+.chip{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .48rem;border:1px solid var(--rule-2);color:var(--ink-3);background:var(--paper);white-space:nowrap}
+.chip.c-crit{color:var(--crit);border-color:var(--crit);background:var(--crit-w)}
+.chip.c-high{color:var(--accent-d);border-color:var(--accent);background:var(--accent-w)}
+.chip.c-ok{color:var(--ok);border-color:var(--ok);background:var(--ok-w)}
+
+/* analogy pull */
+.gym{border-left:0;border:1px solid var(--rule-2);background:var(--paper-2);padding:.95rem 1.1rem;font-size:.95rem;color:var(--ink-2);line-height:1.55}
+.gym b{display:block;font-family:var(--f-mono);font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.45rem;font-weight:500}
+.gym i{font-style:italic;color:var(--ink)}
+
+/* what I checked */
+.ev{border:1px solid var(--rule);background:var(--paper-2);padding:.95rem 1.05rem}
+.ev .lbl{display:block;font-family:var(--f-mono);font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.6rem}
+.ev p{margin:0 0 .55rem;font-size:.9rem;color:var(--ink-2)}
+.ev p:last-child{margin-bottom:0}
+.ev .rd{font-family:var(--f-mono);font-size:.755rem;line-height:1.75;color:var(--ink-2);white-space:pre-wrap;word-break:break-word;overflow-x:auto;display:block}
+.ev .rd b{color:var(--accent-d);font-weight:600}
+
+.fix{border:1px solid var(--ink);padding:.95rem 1.1rem;background:var(--paper)}
+.fix .lbl{font-family:var(--f-mono);font-size:.57rem;letter-spacing:.14em;color:var(--accent-d);display:block;margin-bottom:.45rem}
+.fix p{margin:0;color:var(--ink-2)}
+.fix .cost{margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--rule);font-family:var(--f-mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.fix .cost b{color:var(--ink);font-weight:600}
+
+/* ── tables ── */
+.tw{overflow-x:auto;border:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;font-size:.885rem;min-width:560px}
+th,td{text-align:left;padding:.75rem .85rem;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{background:var(--ink);color:var(--paper);font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;font-weight:500;border-bottom:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:var(--paper-2)}
+td b{font-weight:650}
+
+/* ── order of work ── */
+.matrix{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.lane{background:var(--paper);padding:1.25rem 1.2rem}
+.lane.now{background:var(--accent-w);border-top:3px solid var(--accent)}
+.lane > header{border-bottom:2px solid var(--ink);padding-bottom:.6rem;margin-bottom:.95rem}
+.lane h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.35rem;line-height:1}
+.lane .when{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.12em;color:var(--accent-d);display:block;margin-top:.4rem}
+.lane ol{margin:0;padding-left:1.2rem;font-size:.885rem;color:var(--ink-2)}
+.lane li{margin-bottom:.75rem;line-height:1.5}
+.lane li b{color:var(--ink);font-weight:650}
+@media(max-width:900px){.matrix{grid-template-columns:1fr}}
+
+/* ── automation cards ── */
+.proj{border:1px solid var(--rule);margin-bottom:1.1rem;background:var(--paper)}
+.proj header{display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:baseline;padding:1rem 1.2rem;background:var(--ink);color:var(--paper)}
+.proj header .rank{font-family:var(--f-mono);font-size:.66rem;color:var(--accent);letter-spacing:.1em}
+.proj header h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.4rem;line-height:1}
+.proj header .eff{font-family:var(--f-mono);font-size:.575rem;letter-spacing:.11em;color:oklch(0.74 0.012 78);white-space:nowrap;text-align:right}
+.proj .grid{display:grid;grid-template-columns:1.5fr 1fr}
+.proj .col{padding:1.15rem 1.2rem}
+.proj .col + .col{border-left:1px solid var(--rule);background:var(--paper-2)}
+.proj h4{font-family:var(--f-mono);font-size:.575rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.55rem;font-weight:500}
+.proj p{font-size:.9rem;color:var(--ink-2);margin-bottom:.95rem}
+.proj p:last-child{margin-bottom:0}
+.proj ul{margin:0;padding-left:1.05rem;font-size:.86rem;color:var(--ink-2)}
+.proj li{margin-bottom:.42rem;line-height:1.5}
+@media(max-width:820px){.proj .grid{grid-template-columns:1fr}.proj .col + .col{border-left:0;border-top:1px solid var(--rule)}}
+
+/* ── prototype ── */
+.proto{border:2px solid var(--ink);background:var(--ink);color:var(--paper);padding:clamp(1.4rem,3vw,2.2rem)}
+.proto .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:clamp(1.4rem,3vw,2.6rem);align-items:start}
+.proto h2{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(1.8rem,4vw,2.8rem);line-height:0.94;letter-spacing:-0.015em}
+.proto .eyebrow{color:var(--accent);margin-bottom:.9rem;display:block}
+.proto p{color:oklch(0.765 0.012 78);font-size:.95rem;margin-top:1rem;max-width:56ch}
+.proto ul{margin:1.1rem 0 0;padding-left:1.1rem;color:oklch(0.765 0.012 78);font-size:.9rem}
+.proto li{margin-bottom:.55rem;line-height:1.5}
+.proto li b{color:var(--paper);font-weight:600}
+.proto .cta{display:inline-flex;align-items:center;gap:.7rem;margin-top:1.5rem;background:var(--accent);color:oklch(0.16 0.02 46);padding:.9rem 1.5rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.05rem;letter-spacing:.03em;text-decoration:none;transition:transform .3s var(--ease),background .25s var(--ease)}
+.proto .cta:hover{background:oklch(0.685 0.17 50);transform:translateY(-2px)}
+@media(max-width:820px){.proto .grid{grid-template-columns:1fr}}
+
+/* ── options ── */
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.opt{background:var(--paper);padding:1.3rem 1.2rem;display:flex;flex-direction:column}
+.opt.rec{background:var(--accent-w);border-top:3px solid var(--accent)}
+.opt .tagline{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;color:var(--ink-4);display:block;margin-bottom:.5rem}
+.opt.rec .tagline{color:var(--accent-d)}
+.opt h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.5rem;line-height:1;margin-bottom:.7rem}
+.opt > p{font-size:.885rem;color:var(--ink-2);margin-bottom:1rem}
+.opt dl{margin:0 0 1rem;font-size:.85rem}
+.opt dt{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.12em;color:var(--ink-4);margin-top:.75rem}
+.opt dd{margin:.2rem 0 0;color:var(--ink-2);line-height:1.45}
+.opt .verdict-line{margin-top:auto;padding-top:.9rem;border-top:1px solid var(--rule-2);font-size:.855rem;font-weight:600}
+@media(max-width:900px){.opts{grid-template-columns:1fr}}
+
+.caveat{border:1px solid var(--rule-2);background:var(--paper-2);padding:1.2rem 1.3rem;font-size:.895rem;color:var(--ink-2);line-height:1.6}
+.caveat b.h{display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-d);margin-bottom:.55rem}
+.caveat ul{margin:.7rem 0 0;padding-left:1.1rem}
+.caveat li{margin-bottom:.4rem}
+footer{border-top:3px solid var(--ink);margin-top:3rem;padding-top:1.2rem;display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4)}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <div class="kick mono">
+    <span>Pro bono review · Written for the owner</span>
+    <span>homegym.sg · Checked 16 Aug 2026</span>
+  </div>
+  <h1>Your shop is<br>strong. Your<br><em>shopfront isn't.</em></h1>
+  <p class="sub">You have the hard parts already: real stock, a showroom people can walk into, a crew that installs, and fourteen years of customer reviews. Almost nobody in this trade has all four. What you don't have is a website that closes the sale for you while you're doing something else.</p>
+  <p class="sub">This report is written for you, not for a developer. No jargon, and where a thing needs explaining I've explained it the way you'd explain a lift to a beginner. Every problem below says what it is, what it's costing you, who fixes it, and roughly how long that takes.</p>
+</header>
+
+<nav class="docnav">
+  <a href="#" aria-current="page"><span class="n">Document 01</span><span class="t">The Teardown</span></a>
+  <a href="messaging.html"><span class="n">Document 02</span><span class="t">Ideas &amp; Messaging</span></a>
+  <a href="prototype.html"><span class="n">Document 03</span><span class="t">The Prototype</span></a>
+</nav>
+
+<dl class="verdict">
+  <div><dt>The short version</dt><dd>Your site can't sell<small>It lists products. It doesn't help anyone choose one. Every real decision gets pushed to you on WhatsApp.</small></dd></div>
+  <div><dt>Biggest single problem</dt><dd>Nobody can find things<small>Your own search returns the wrong product for the most obvious question a customer could ask.</small></dd></div>
+  <div><dt>Cheapest big win</dt><dd>About a day's work<small>Four of the twelve problems are small fixes a freelancer can clear in one sitting.</small></dd></div>
+</dl>
+
+<!-- ══ 01 ══ -->
+<section id="working">
+  <div class="sec-num"><span>01</span><h2 class="disp">What you've already got right</h2></div>
+  <p class="lead">Worth saying first, because everything after this is a list of problems and that gives a false impression. These four things are genuinely hard to build, and you've built them.</p>
+  <div class="tw"><table>
+    <thead><tr><th style="width:26%">What you have</th><th>Why it matters more than you probably think</th></tr></thead>
+    <tbody>
+      <tr><td><b>Fourteen years of real reviews</b></td><td>Your folding rack has 22 reviews going back to 2013. Several are long, detailed, and honest about the downsides. That kind of writing can't be faked and competitors can't buy it. It's the most persuasive thing you own, and it's sitting at the bottom of one product page.</td></tr>
+      <tr><td><b>A showroom and an install crew</b></td><td>Asking someone to spend S$1,500 on a rack they've never touched is a big ask. Being able to say "come and see it, and we'll build it for you" is why people buy from you instead of a marketplace listing. Pure-online sellers can't copy this.</td></tr>
+      <tr><td><b>A genuine niche</b></td><td>Your catalogue is built for small Singapore homes: folding racks, compact racks, space-saving all-in-ones. That's a sharper position than the general fitness shops. Your website never actually says it.</td></tr>
+      <tr><td><b>Proper product information</b></td><td>Your product pages carry real numbers: folded and open sizes, weight ratings, carton weights, warranty terms. Most of the recommendations in this report are just about putting that information to work.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══ 02 ══ -->
+<section id="bigthree">
+  <div class="sec-num"><span>02</span><h2 class="disp">If you only do three things</h2></div>
+  <p class="lead">You're one person. So here is the honest short list, in order. Everything else in this report can wait behind these.</p>
+  <div class="big3">
+    <div class="b3">
+      <div class="n disp">1</div>
+      <h3>Make your search work</h3>
+      <p>Right now a customer typing the most obvious question they have gets one wrong answer back. And your category pages have no filters at all, so there's no other way to narrow anything down. This is the single biggest hole.</p>
+      <span class="who">Freelancer · 1 to 2 days for the filters</span>
+    </div>
+    <div class="b3">
+      <div class="n disp">2</div>
+      <h3>Let the site ask the questions you ask</h3>
+      <p>Every sale you make involves the same four questions: how much floor space, how high is the ceiling, what kind of flat, and what's the budget. You ask them by hand, one customer at a time. The site should ask them first.</p>
+      <span class="who">Project · 3 to 4 weeks · prototype ready</span>
+    </div>
+    <div class="b3">
+      <div class="n disp">3</div>
+      <h3>Start asking for reviews again</h3>
+      <p>The newest review on your best rack is from 2021. You've kept selling. You just stopped asking. This is the cheapest credibility available to you and it's an automated email.</p>
+      <span class="who">Freelancer · about a week</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 03 ══ -->
+<section id="findings">
+  <div class="sec-num"><span>03</span><h2 class="disp">Everything I found</h2></div>
+  <p class="lead">Twelve problems, worst first. Each one opens up. I checked all of these on your live site on 16 August, so you or anyone you hire can verify them independently.</p>
+
+  <details class="find" open>
+    <summary>
+      <span class="id">01</span>
+      <div><h3>Your search gives the wrong answer to the most obvious question</h3>
+        <div class="chips"><span class="chip c-crit">Costing you sales now</span><span class="chip">Freelancer, 1 to 2 days</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>I typed the single most natural thing a Singaporean customer would search on your site. Here's what came back.</p>
+      <div class="ev"><span class="lbl">What I typed, and what your site returned</span><span class="rd">I searched   : "squat rack for small HDB room"
+Results      : <b>1 product</b>
+It showed me : "Vigor Titan G9 All-in-1 Trainer"
+                <b>which is not a squat rack</b>
+Filters      : category only. No price, no size, no brand.</span></div>
+      <p>Your search is matching words, not meaning. It doesn't know that "small HDB room" and "ideal for confined areas such as apartments" are the same idea, even though that second phrase is written in your own product description.</p>
+      <p>The bigger issue sits behind it. Go to your Power Rack page and there is no way to filter anything. You can sort by price and change how many products show per page. That's it. No filter by budget, no filter by size, no way to hide the things that are out of stock.</p>
+      <div class="gym"><b>Put it another way</b>It's a gym with no signage and nobody on the floor. Everything's there, the equipment is good, but a first-timer walks in, can't work out what's what, and leaves.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Two steps. First, switch on the filters. Your shop software can already do this and the information it needs is already sitting in your product records: price, brand, size, in stock or not. That's a configuration job, not a rebuild. Second, later on, replace the search itself with one that understands meaning rather than matching words.</p>
+        <p class="cost">Step one: <b>freelancer, 1 to 2 days.</b> Step two: see job 2 in section 05.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">02</span>
+      <div><h3>The site never asks the questions you always ask</h3>
+        <div class="chips"><span class="chip c-crit">Costing you sales now</span><span class="chip">Project, 3 to 4 weeks</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Selling a power rack isn't like selling a t-shirt. There are hard physical limits: how high the ceiling is, how much floor there is, whether it fits in the lift, and whether there's a neighbour underneath who'll hear every rep. You know this. Your site behaves as though none of it exists.</p>
+      <p>So every single one of those conversations lands on you, over WhatsApp, one at a time. That's a ceiling on how much you can sell, and it's set by how many messages you can personally answer in a day.</p>
+      <p>The frustrating part is that the information needed to answer most of it automatically is already on your site. Your folding rack page states it's 155 by 166 by 228 cm open and folds to 72 cm. Nothing on the site uses those numbers to help anybody.</p>
+      <div class="gym"><b>Put it another way</b>You've got a gym full of good equipment and no instructor. Everyone who walks in has to find you and ask before they can do anything.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Build a short quiz that asks the six things you'd ask, then shows a specified setup with a price, a to-scale drawing of the footprint, and the warnings that apply to that person's flat. I've built you a working one. It's in section 06.</p>
+        <p class="cost">Effort: <b>project, 3 to 4 weeks.</b> The design and logic already exist.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">03</span>
+      <div><h3>Google has stopped trusting your prices</h3>
+        <div class="chips"><span class="chip c-crit">Costing you sales now</span><span class="chip c-ok">Quick fix, a few hours</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Behind the scenes, every product page sends Google a hidden summary: the name, the price, whether it's in stock, and a date saying "this price is good until". Google uses it to show your price and stock status directly in search results.</p>
+      <p>Your "good until" date expired on <b>1 November 2025</b>. Nine months ago. Every product page is telling Google that its own price information is out of date.</p>
+      <div class="ev"><span class="lbl">What your site tells Google, on the folding rack page</span><span class="rd">Price          : S$1,499
+In stock       : yes
+Price good until: <b>1 November 2025</b>   ← expired 9 months ago</span></div>
+      <p>Two more things are broken in the same place. The "you are here" trail that shows Google how the product sits inside your shop only has one step in it, so Google can't see the path from your homepage down to the product. And the review information has an empty blank at the start of it, which makes the whole block unreliable to read.</p>
+      <div class="gym"><b>Put it another way</b>It's the expired safety inspection sticker on a piece of equipment. Nothing's actually wrong with the rack. But the inspector sees a lapsed date and stops vouching for it.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Have whoever maintains your site set that date to update itself automatically instead of being stamped once and forgotten, remove the empty blank, and make the trail show the full path. This is the cheapest fix in the whole report and it protects search rankings you've already earned.</p>
+        <p class="cost">Effort: <b>freelancer, a few hours.</b> Do this one first.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">04</span>
+      <div><h3>When someone shares your site, it looks broken</h3>
+        <div class="chips"><span class="chip c-crit">Costing you sales now</span><span class="chip c-ok">Quick fix, a few hours</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>When you paste a link into WhatsApp, it normally turns into a little card with a picture, a title and a description. That happens because the page carries a few hidden lines telling WhatsApp what to show.</p>
+      <p>Your product pages have those lines. <b>Your homepage doesn't.</b> So when anyone shares homegym.sg, it goes through as a naked blue link with nothing attached.</p>
+      <p>Your entire business runs on WhatsApp. And this purchase almost always gets discussed between two people before it happens, one of whom forwards the link to the other. That's the exact moment your site looks least convincing.</p>
+      <div class="ev"><span class="lbl">What I checked</span><span class="rd">Homepage preview card    : <b>none</b>
+Product page preview card: works fine
+Showroom listed as a real business location: <b>no</b></span></div>
+      <p>Related: your site never formally tells Google that you have a physical showroom with an address and opening hours. For a business whose whole advantage is "come and touch it before you buy", that's a real miss in local search.</p>
+      <div class="gym"><b>Put it another way</b>Handing someone a business card with no name, no logo and no address on it. Everything's still true, it just doesn't look like a real business.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Add the preview lines to the homepage and the other main pages, and register the showroom properly so it shows up as a physical location.</p>
+        <p class="cost">Effort: <b>freelancer, a few hours.</b> Bundle it with fix 03.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">05</span>
+      <div><h3>Your homepage takes five seconds to finish loading</h3>
+        <div class="chips"><span class="chip c-high">Worth fixing soon</span><span class="chip">Freelancer, several days</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Your homepage downloads about 900 KB of behind-the-scenes program code, spread over 210 separate files, before it's done. For comparison, all the styling that makes the page look the way it does is 6 KB. The code outweighs the design by roughly 150 to 1.</p>
+      <div class="ev"><span class="lbl">Homepage, measured once from Singapore</span><span class="rd">Separate files fetched : 250
+Program code           : <b>901 KB across 210 files</b>
+Styling                : 6 KB
+Finished loading after : <b>4.9 seconds</b>
+Images                 : 78, and <b>all 78 load immediately</b>
+                         even the ones far down the page</span></div>
+      <p>Two separate things are going on. The code is being delivered as hundreds of small files instead of being packed into a few, which your shop software can do automatically and currently isn't. And every image on the page loads at once, including ones the visitor may never scroll to.</p>
+      <p>This matters most on a phone, on mobile data, which is where most people browse this category.</p>
+      <div class="gym"><b>Put it another way</b>Carrying every plate in the gym over to the bench before you decide what you're actually lifting.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Turn on the built-in setting that packs the code into fewer files, and set images below the fold to load only when someone scrolls to them. Both are standard settings rather than custom work.</p>
+        <p class="cost">Effort: <b>freelancer, several days</b> including testing that nothing breaks.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">06</span>
+      <div><h3>You may be reading a report that stopped updating in 2023</h3>
+        <div class="chips"><span class="chip c-high">Worth fixing soon</span><span class="chip c-ok">Quick fix, one hour</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Your site is running two different Google Analytics setups at once. The newer one works. The older one was switched off by Google in July 2023 and has collected nothing since.</p>
+      <div class="ev"><span class="lbl">Tracking found on every page</span><span class="rd">Google Analytics 4 : working
+Old Google Analytics: <b>dead since July 2023</b>
+Google Ads tracking : working
+Facebook tracking   : working</span></div>
+      <p>The wasted loading is trivial. The real risk is that if anyone in the business still logs into the old account to check how the site is doing, they're looking at a report that has been frozen for three years.</p>
+      <p>There's a second concern behind it. When an old tracker is left in place like this, it usually means the switch to the new one was done as a quick swap rather than a proper setup. So it's worth confirming the new one is actually recording sales and add-to-carts properly, because if it isn't, you have no way to prove whether any of the changes in this report worked.</p>
+      <div class="gym"><b>Put it another way</b>Training hard while weighing yourself on a broken scale. The number never moves, so you can't tell whether anything is working.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Remove the dead tracker, then have someone place a test order and confirm it shows up correctly in the working one.</p>
+        <p class="cost">Effort: <b>freelancer, about an hour.</b> Do this before anything else, so you can measure the rest.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">07</span>
+      <div><h3>Your newest review on your best product is from 2021</h3>
+        <div class="chips"><span class="chip c-high">Worth fixing soon</span><span class="chip">Freelancer, about a week</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Your folding power rack has 22 reviews. The most recent one was written in November 2021. Meanwhile your homepage advertises "4.9 from 1551 reviews", and your reviews page shows a "latest 20" with no dates on them at all.</p>
+      <div class="ev"><span class="lbl">Review dates on the folding power rack</span><span class="rd">Newest review : <b>15 November 2021</b>
+Oldest review : 22 November 2013
+Total         : 22
+Homepage claim: "4.9 / 1551 Review(s)" <b>with no dates shown</b></span></div>
+      <p>A careful buyer checks the dates. When they find the newest review on your flagship product is nearly five years old, the honest question they ask is whether you're still active.</p>
+      <p>What makes this worth fixing rather than just noting is how good the existing reviews are. One of them runs several hundred words with an honest pros-and-cons list covering rust on the safety bars, the J-hooks wearing the barbell knurling, and a five-hour self-assembly. That's more convincing than any sales copy on your site, because it's clearly real.</p>
+      <div class="gym"><b>Put it another way</b>Your best lift is from 2021 and you've stopped writing anything in the log book. You're still training. It just doesn't look like it.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Set up an automatic email that goes out two to three weeks after delivery, once they've actually trained on it. Then put the best reviews where people are still deciding, on the category pages, not just buried at the bottom of one product page.</p>
+        <p class="cost">Effort: <b>freelancer, about a week.</b></p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">08</span>
+      <div><h3>Everything funnels into one WhatsApp number</h3>
+        <div class="chips"><span class="chip c-high">Worth fixing soon</span><span class="chip">Mixed</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Showroom visits, product questions, space planning, corporate enquiries and after-sales support all arrive at 8042 3952. There's no way to book a showroom slot online. Your showroom page tells people to message first because not everything is on display, which means your highest-intent visitor, someone ready to come and see a rack in person, is stuck waiting for you to reply.</p>
+      <div class="ev"><span class="lbl">How someone currently gets in touch</span><span class="rd">WhatsApp only : 8042 3952
+Showroom hours: Mon-Fri 10:30-12:00 and 13:00-16:30
+                Sat 10:30-15:30 · Wed by appointment
+                Sun and public holidays closed
+Online booking: <b>none</b>
+Two addresses : showroom French Road · collection Yishun</span></div>
+      <p>Two consequences. Anything arriving outside those hours, including the lunch gap, sits unanswered. And on every single lead you have to extract the same four facts by hand: what kind of flat, how high the ceiling, how much floor, and can the lift take it.</p>
+      <div class="gym"><b>Put it another way</b>One person covering the front desk, the floor and the equipment room at the same time. It works until two people walk in together.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Two things, in order. Add proper showroom booking with real time slots so that stops being a conversation. Then, later, put an automated first responder on the WhatsApp line that answers the repeat questions and collects those four facts before handing over to you. See job 3 in section 05.</p>
+        <p class="cost">Booking: <b>freelancer, about a week.</b> WhatsApp assistant: <b>project, 4 to 6 weeks.</b></p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">09</span>
+      <div><h3>Your three services can't actually be bought</h3>
+        <div class="chips"><span class="chip c-high">Money on the table</span><span class="chip">Freelancer, 1 to 2 weeks</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Your homepage promotes three services: home gym consultation, corporate and commercial fit-outs, and preventative maintenance. All three are high-margin, and two of them bring repeat money rather than one-off sales.</p>
+      <p>None of them has its own page. None has a price, a case study, a photo of finished work, or a form to enquire. They're three paragraphs of text that end and go nowhere.</p>
+      <p>Corporate fit-outs are almost certainly the most valuable thing you sell: condos, offices and studios buying a whole room rather than one rack. On your website it's currently promoted less energetically than a S$149 gym mat.</p>
+      <div class="gym"><b>Put it another way</b>Offering personal training but never putting up a sign-up sheet. People assume it isn't really on offer.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Give each of the three its own page: what's included, a price or a starting price, two photographed jobs you've actually done, and a form. For corporate, ask for the room size and headcount up front so you can quote without a meeting.</p>
+        <p class="cost">Effort: <b>freelancer, 1 to 2 weeks.</b> Most of the work is you supplying photos and prices.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">10</span>
+      <div><h3>You're under-selling your own assembly service</h3>
+        <div class="chips"><span class="chip">Easy money</span><span class="chip c-ok">Quick fix, an hour</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Professional assembly shows up as a S$200 option in a plain dropdown, sitting between "None" and "Self assembly". Presented that way it reads as an upsell people should try to avoid.</p>
+      <p>The best argument for buying it is already on the same page, written by your own customers, and you're not using it:</p>
+      <div class="ev"><span class="lbl">From the reviews on that exact product page</span><span class="rd">"Opted for self assembly because I didn't want to pay 200 ...
+ <b>took me 5h</b> ... Instructions also need some deciphering"
+
+"Installation was done by the team <b>less then 2hrs</b> and they
+ also will show you how to keep rack and oil the points"
+
+"i use homegym assembly service ... if i were to do it my self
+ i would have taken <b>at least one whole day</b>"</span></div>
+      <div class="fix"><span class="lbl">What to do</span><p>Change the wording so the choice is honest: "Self assembly, usually 3 to 5 hours" against "Our crew, about 90 minutes, and we show you how to fold it". Put those customer quotes right next to the option. This is a wording change on something you already sell, and it should lift the average order value with no extra work for you.</p>
+        <p class="cost">Effort: <b>about an hour.</b> You could do this yourself.</p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">11</span>
+      <div><h3>Sold-out bestsellers let people walk away</h3>
+        <div class="chips"><span class="chip">Money on the table</span><span class="chip c-ok">Quick fix, a day</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Your Vigor Compact Power Rack V2 is marked as both a bestseller and on sale, S$819 down from S$1,050. It's out of stock. The page says so and then offers nothing else. No "tell me when it's back", no waiting list, no suggestion of the closest thing you do have.</p>
+      <p>That's a customer who has already done the hard work of finding exactly the right product, and they leave without you even knowing they were there.</p>
+      <div class="gym"><b>Put it another way</b>Someone walks in for a specific bench, you're out, and instead of taking their number you let them walk out the door.</div>
+      <div class="fix"><span class="lbl">What to do</span><p>Add a "notify me when it's back" box, and show the nearest alternative by size and price automatically. The sizes needed to work that out are already recorded against every product.</p>
+        <p class="cost">Effort: <b>freelancer, about a day.</b></p></div>
+    </div>
+  </details>
+
+  <details class="find">
+    <summary>
+      <span class="id">12</span>
+      <div><h3>Small things: pinch-zoom, missing image labels, messy addresses</h3>
+        <div class="chips"><span class="chip">Housekeeping</span><span class="chip c-ok">Quick fix, a day</span></div>
+      </div>
+      <span class="toggle mono"></span>
+    </summary>
+    <div class="inner">
+      <p>Three tidy-ups worth batching together.</p>
+      <p><b>Pinch-zoom is switched off.</b> Your site actively prevents visitors from zooming in on their phone. For a shop where people are reading dimension tables and spec numbers on a small screen, that's the wrong setting. It also fails accessibility standards, which matters for older customers and anyone with weaker eyesight.</p>
+      <p><b>16 of your 78 homepage images have no text label.</b> Screen readers can't describe them, and Google can't index them. For a business selling something visual, that's free traffic being left behind.</p>
+      <p><b>Your product web addresses are messy.</b> They look like this:</p>
+      <div class="ev"><span class="lbl">A typical product address</span><span class="rd">homegym.sg/strength/squat-racks/<b>power-rack.html</b>/vigor-folding-power-rack.html
+                                <b>↑ this bit shouldn't be in the middle</b></span></div>
+      <p>It isn't breaking anything, and I checked that the short version redirects correctly, so this isn't urgent. But it's four levels deep and it looks wrong to anyone who reads the address bar.</p>
+      <div class="fix"><span class="lbl">What to do</span><p>Turn zoom back on and add the image labels now. Leave the addresses alone until you're doing other work on the site, then change them all at once with proper redirects, so nothing that currently ranks gets lost.</p>
+        <p class="cost">Effort: <b>freelancer, about a day</b> for the first two.</p></div>
+    </div>
+  </details>
+</section>
+
+<!-- ══ 04 ══ -->
+<section id="priorities">
+  <div class="sec-num"><span>04</span><h2 class="disp">The order to do it in</h2></div>
+  <p class="lead">Measurement first, so you can actually tell whether the rest worked. Then the cheap fixes. Then the things that need real time.</p>
+  <div class="matrix">
+    <div class="lane now">
+      <header><h3 class="disp">This fortnight</h3><span class="when">One freelancer · 2 to 3 days total</span></header>
+      <ol>
+        <li><b>Remove the dead tracker</b> and confirm sales are being recorded properly. Nothing below can be proven until this is true.</li>
+        <li><b>Fix the expired price date</b> and the broken trail. Protects rankings you already have.</li>
+        <li><b>Add the link preview</b> to the homepage and register the showroom as a real location.</li>
+        <li><b>Switch on the filters</b> on category pages.</li>
+        <li><b>Rewrite the assembly option</b> using your customers' own words.</li>
+        <li><b>Turn pinch-zoom back on</b> and label the images.</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <header><h3 class="disp">Next three months</h3><span class="when">Bigger pieces · 4 to 10 weeks</span></header>
+      <ol>
+        <li><b>Launch the fit quiz</b> as the main way in. Prototype is built.</li>
+        <li><b>Replace the search</b> with one that understands meaning.</li>
+        <li><b>Showroom booking</b> with real slots.</li>
+        <li><b>Automatic review requests</b> after delivery.</li>
+        <li><b>Three service pages</b> with prices and photos.</li>
+        <li><b>Back-in-stock alerts</b> and suggested alternatives.</li>
+        <li><b>Speed up the site</b> by packing the code and delaying images.</li>
+      </ol>
+    </div>
+    <div class="lane">
+      <header><h3 class="disp">Decide this year</h3><span class="when">Strategic · think, don't rush</span></header>
+      <ol>
+        <li><b>Settle the website question</b> in section 07 before spending more on the current one, or you'll pay for the same work twice.</li>
+        <li><b>WhatsApp assistant</b>, once the quiz has proved which questions matter.</li>
+        <li><b>Corporate fit-outs as their own business line</b>, with a proper enquiry-to-quote process.</li>
+        <li><b>Sell maintenance to past customers</b> based on when they bought.</li>
+        <li><b>Write about space planning.</b> You're the most qualified person in Singapore to write it, and you publish nothing.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 05 ══ -->
+<section id="ai">
+  <div class="sec-num"><span>05</span><h2 class="disp">Work you're doing by hand that a machine can do</h2></div>
+  <p class="lead">Not technology for its own sake. Each of these replaces something you personally do over and over, or catches money that currently walks out the door unnoticed. None of them needs a new website first.</p>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 1</span><h3>The fit quiz</h3><span class="eff">3 to 4 weeks · Start here</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Six questions covering goal, type of home, floor space, ceiling height, experience and budget. Out comes a specified setup with a scale drawing of the footprint, an itemised price, and the warnings that apply to that person's flat. The customer gets a real answer at 11pm without messaging anybody.</p>
+        <h4>Why it's first</h4>
+        <p>It fixes the two biggest problems at once, it needs no change to your shop software, and it turns your weakest point, that nobody can work out what fits, into the thing you're known for. When they do message you, they arrive with a specification instead of "how big is your smallest rack".</p>
+      </div>
+      <div class="col">
+        <h4>How it works</h4>
+        <ul>
+          <li>Reads your live prices and stock</li>
+          <li>Saves every completed quiz as a lead</li>
+          <li>Opens WhatsApp with the setup already filled in</li>
+          <li>Works while you're asleep or on a delivery</li>
+        </ul>
+        <h4>How you'd judge it</h4>
+        <ul>
+          <li>How many people finish it, and where they drop out</li>
+          <li>Sales from quiz users against everyone else</li>
+          <li>Messages needed per sale, before and after</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 2</span><h3>Search that understands meaning</h3><span class="eff">2 to 3 weeks</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Instead of matching typed words against product names, it understands what someone means. "Something for a small bedroom", "quiet enough for HDB" and "a rack that folds away" all find the right products.</p>
+        <p>The language is already in your own copy. Your folding rack description says "ideal for confined areas such as apartments, garages and small rooms". A word-matching search can't connect that to somebody typing "small HDB room". This can.</p>
+      </div>
+      <div class="col">
+        <h4>How it works</h4>
+        <ul>
+          <li>Reads all your descriptions, specs and reviews</li>
+          <li>Keeps the existing search underneath as a backstop</li>
+          <li>Pushes in-stock items up the results</li>
+          <li>Logs searches that found nothing</li>
+        </ul>
+        <h4>The hidden benefit</h4>
+        <ul>
+          <li>Failed searches tell you what customers want that you don't stock, which is free market research you currently throw away</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 3</span><h3>WhatsApp first responder</h3><span class="eff">4 to 6 weeks</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Handles the messages you answer twenty times a week: is it in stock, what size is it, when can you deliver, how much is assembly, when's the showroom open. It also collects the four facts you always need, flat type, ceiling height, floor space and lift access, before you pick up the conversation.</p>
+        <p>Outside your opening hours it holds the conversation instead of leaving someone waiting until the morning.</p>
+        <h4>The important limit</h4>
+        <p>It should only ever quote facts from your product records, and hand straight over to you the moment anyone asks for advice, a discount, or anything about an existing order. A confidently wrong dimension costs you a wasted delivery, so it's better for it to say less.</p>
+      </div>
+      <div class="col">
+        <h4>How you'd judge it</h4>
+        <ul>
+          <li>How many conversations it finishes without you</li>
+          <li>How fast people get a first reply at night and on Sundays</li>
+          <li>Whether it hands over when it should, checked weekly by you reading a sample</li>
+        </ul>
+        <h4>Do this after</h4>
+        <ul>
+          <li>Job 1, so you already know which questions actually matter</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 4</span><h3>Filling in the thin product pages</h3><span class="eff">2 weeks</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Your product pages are uneven. Some have full specs, carton weights and warranty terms. Others are thin. This writes a consistent spec block, a plain-English "will this fit your room" paragraph, and a short FAQ for every product, using the numbers already recorded against each one.</p>
+        <h4>The important limit</h4>
+        <p>It must build only from your own recorded measurements, never from what the software thinks it knows about a product, and you or someone you trust approves everything before it goes live. A made-up dimension is far worse than a missing one.</p>
+      </div>
+      <div class="col">
+        <h4>Knock-on benefits</h4>
+        <ul>
+          <li>Makes job 2 work better, since there's more to search</li>
+          <li>Answers questions before they reach WhatsApp</li>
+          <li>More pages that can pick up Google traffic</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 5</span><h3>Getting reviews flowing again</h3><span class="eff">1 week · Cheapest win</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Sends a review request two to three weeks after delivery, which is long enough that they've actually trained on it and soon enough that they still care. Then sorts incoming reviews by what they're about, space, assembly, durability, noise, so the right one can be shown to the right shopper.</p>
+        <p>Anything negative goes to you first, before it publishes, so you get the chance to fix it.</p>
+      </div>
+      <div class="col">
+        <h4>Why it's worth doing now</h4>
+        <ul>
+          <li>Newest review on your best rack is from 2021</li>
+          <li>You never stopped selling, you stopped asking</li>
+          <li>It's an automated email, not a project</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 6</span><h3>Corporate enquiries and draft quotes</h3><span class="eff">4 weeks</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>A proper enquiry form for condo, office and studio fit-outs that captures the room, the headcount, the budget and the timeline, then drafts an equipment list and an indicative quote for you to check and send. You stay in control of what goes out; you just don't start from a blank page.</p>
+        <p>This is the biggest-ticket work you do and right now the website provides no way to ask for it at all.</p>
+      </div>
+      <div class="col">
+        <h4>How you'd judge it</h4>
+        <ul>
+          <li>Enquiries per month, currently zero through the site</li>
+          <li>How long from enquiry to quote sent</li>
+          <li>How many quotes turn into jobs</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="proj">
+    <header><span class="rank mono">JOB 7</span><h3>Selling servicing to people who already bought</h3><span class="eff">3 weeks</span></header>
+    <div class="grid">
+      <div class="col">
+        <h4>What it does for you</h4>
+        <p>Works out who's due a service based on what they bought and when, and prompts them. Also flags people worth offering a relocation to around moving season. You already sell both services. You just don't offer them to anyone unprompted.</p>
+        <p>The demand is visible in your own reviews. Several customers mention rust appearing on safety bars within weeks in a humid room with no aircon. That's a servicing conversation nobody is starting.</p>
+      </div>
+      <div class="col">
+        <h4>How you'd judge it</h4>
+        <ul>
+          <li>Service revenue per past customer</li>
+          <li>How many buy from you again at 1 and 2 years</li>
+          <li>Unsubscribe rate, watched carefully so it stays welcome rather than annoying</li>
+        </ul>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ══ 06 ══ -->
+<section id="prototype">
+  <div class="proto">
+    <div class="grid">
+      <div>
+        <span class="eyebrow mono">06 · Built, working, yours to try</span>
+        <h2>The quiz,<br>already running.</h2>
+        <p>A concept homepage with the fit quiz from job 1 fully built. Six questions produce a real setup with a to-scale drawing of the footprint, an itemised price, and the warnings that apply to that exact combination of flat, ceiling and budget. Click through it as if you were a customer.</p>
+        <a class="cta" href="prototype.html">Try the prototype <span>&#8594;</span></a>
+      </div>
+      <div>
+        <ul>
+          <li><b>Nine different recommendations</b> depending on the answers. I tested all 3,072 possible combinations of answers to make sure none of them produce nonsense.</li>
+          <li><b>It respects the budget.</b> At S$1,000 it refuses to recommend a S$1,499 rack. It suggests the wall-mounted folding one instead and says why.</li>
+          <li><b>It warns people.</b> HDB plus a barbell triggers the flooring warning. A 2.28 m rack under a 2.6 m ceiling triggers the clearance warning, with the actual sum shown.</li>
+          <li><b>It hands over to you.</b> The result opens WhatsApp with the setup already written out, so your conversation starts at the specification instead of at "how big is your room".</li>
+          <li><b>Prices are marked honestly.</b> Items I checked against your live site are tagged; the rest are clearly labelled as placeholders rather than passed off as real.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 07 ══ -->
+<section id="platform">
+  <div class="sec-num"><span>07</span><h2 class="disp">Do you need a new website?</h2></div>
+  <p class="lead">Short answer: not yet, but decide before you spend much more. Your site runs on Magento, which is powerful, heavy, and more than most one-person businesses need. Three honest options.</p>
+  <div class="opts">
+    <div class="opt">
+      <span class="tagline">Option A</span>
+      <h3 class="disp">Keep it, fix it</h3>
+      <p>Stay where you are. Do the repairs in this report, switch on the filters, add the quiz on top.</p>
+      <dl>
+        <dt>Cost</dt><dd>Lowest by far. Weeks, not months.</dd>
+        <dt>Risk</dt><dd>Low. Nothing moves, nothing breaks.</dd>
+        <dt>The catch</dt><dd>Magento will always be slower than it should be, and your current design limits how good the shopping experience can get.</dd>
+      </dl>
+      <p class="verdict-line">Right if you want more revenue this quarter and can't take on a project.</p>
+    </div>
+    <div class="opt rec">
+      <span class="tagline">Option B · What I'd recommend</span>
+      <h3 class="disp">New front, same engine</h3>
+      <p>Keep Magento running your stock, orders and prices behind the scenes. Rebuild only the part customers see, starting with the pages that actually sell.</p>
+      <dl>
+        <dt>Cost</dt><dd>Middle. Roughly three months for the main pages.</dd>
+        <dt>Risk</dt><dd>Contained. Move one page type at a time. Your order system never changes, so day-to-day work carries on as normal.</dd>
+        <dt>The upside</dt><dd>The quiz, the better search and the speed all become natural rather than bolted on.</dd>
+      </dl>
+      <p class="verdict-line">Best fit here. You keep fourteen years of products, orders and reviews, and lose the thing that's actually costing you sales.</p>
+    </div>
+    <div class="opt">
+      <span class="tagline">Option C</span>
+      <h3 class="disp">Move to Shopify</h3>
+      <p>Start again on simpler, hosted software with lots of ready-made add-ons.</p>
+      <dl>
+        <dt>Cost</dt><dd>Highest, and most of it hidden in moving the data across.</dd>
+        <dt>Risk</dt><dd>Highest. Your web addresses and your 1,500 reviews all have to move, and both can go wrong in ways that cost you Google traffic.</dd>
+        <dt>The catch</dt><dd>Easier to run day to day, but there's no off-the-shelf add-on that does space-fit selling. You'd still have to build the thing that makes you different.</dd>
+      </dl>
+      <p class="verdict-line">Only if keeping Magento running has become a genuine burden on you personally.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 08 ══ -->
+<section id="caveats">
+  <div class="sec-num"><span>08</span><h2 class="disp">What I couldn't see</h2></div>
+  <div class="caveat">
+    <b class="h">Please read this before acting on any of it</b>
+    I looked at your business entirely from the outside, as a customer would. That means the commercial judgements are educated guesses, not facts. Specifically:
+    <ul>
+      <li><b>I have no access to your numbers.</b> I don't know your traffic, how many visitors buy, or where they come from. Everything is ranked by what I'd expect to matter most, not by what's measurably costing you the most.</li>
+      <li><b>I don't know your margins.</b> Saying corporate fit-outs are your most valuable line is a sensible read of the business, not something I've checked against your accounts. You'd know better.</li>
+      <li><b>Some prices in the prototype are made up.</b> The ones I checked against your live site are tagged as such. Everything else is a placeholder and must be connected to your real prices before a customer ever sees it.</li>
+      <li><b>The speed figures are one measurement.</b> The 4.9 seconds was measured once, from one connection. Treat it as a direction, not a precise number.</li>
+      <li><b>You may already be doing some of this.</b> I have no view of your plans.</li>
+    </ul>
+    The most useful next step is giving me or your freelancer access to your analytics, because about half of the guesses above can then be replaced with real numbers.
+  </div>
+</section>
+
+<footer>
+  <span class="mono">HomeGym.sg review · Pro bono</span>
+  <span class="mono">Checked 16 Aug 2026 · homegym.sg</span>
+</footer>
+
+</div>

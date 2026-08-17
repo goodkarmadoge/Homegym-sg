@@ -1,0 +1,133 @@
+<title>HomeGym.sg Engagement</title>
+
+<style>
+:root{
+  --paper:oklch(0.972 0.006 85); --paper-2:oklch(0.945 0.010 82);
+  --ink:oklch(0.195 0.008 60); --ink-2:oklch(0.34 0.009 62);
+  --ink-3:oklch(0.50 0.011 66); --ink-4:oklch(0.635 0.011 70);
+  --rule:oklch(0.862 0.011 80); --rule-2:oklch(0.775 0.013 78);
+  --accent:oklch(0.615 0.175 45); --accent-d:oklch(0.505 0.152 43);
+  --accent-w:oklch(0.945 0.038 62);
+  --f-disp:"Arial Narrow","Helvetica Neue Condensed","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,monospace;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--accent-d)}
+.mono{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase}
+.page{max-width:1180px;margin:0 auto;padding:0 clamp(1.1rem,4vw,3rem) 4rem}
+
+.mast{border-bottom:3px solid var(--ink);padding-top:clamp(2.4rem,6vw,4.4rem);padding-bottom:1.6rem}
+.mast .kick{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4);margin-bottom:1.6rem}
+.mast h1{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.022em;line-height:0.84;font-size:clamp(2.9rem,9vw,7rem)}
+.mast h1 em{font-style:normal;color:var(--accent)}
+.mast .sub{margin-top:1.6rem;font-size:clamp(1.03rem,1.6vw,1.22rem);color:var(--ink-2);max-width:64ch;line-height:1.56}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-top:0}
+.stats div{background:var(--paper);padding:1.05rem 1.1rem}
+.stats dt{font-family:var(--f-mono);font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.4rem}
+.stats dd{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.5rem;line-height:1}
+.stats dd small{display:block;font-family:var(--f-body);font-size:.775rem;font-weight:400;color:var(--ink-3);text-transform:none;letter-spacing:0;margin-top:.4rem;line-height:1.4}
+@media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stats{grid-template-columns:1fr}}
+
+.docs{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:clamp(2.2rem,4vw,3.4rem)}
+.doc{background:var(--paper);padding:1.5rem 1.4rem;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:background .25s var(--ease)}
+.doc:hover{background:var(--accent-w)}
+.doc .n{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.14em;color:var(--accent-d);margin-bottom:.7rem}
+.doc h2{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.85rem;line-height:0.96;letter-spacing:-0.01em;margin-bottom:.75rem}
+.doc > p{font-size:.885rem;color:var(--ink-2);line-height:1.52;margin-bottom:1.1rem}
+.doc ul{margin:0 0 1.4rem;padding:0;list-style:none;font-size:.82rem;color:var(--ink-3)}
+.doc li{padding:.34rem 0;border-bottom:1px solid var(--rule);line-height:1.4}
+.doc li:last-child{border-bottom:0}
+.doc .go{margin-top:auto;display:inline-flex;align-items:center;gap:.6rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.05rem;letter-spacing:.04em;color:var(--accent-d)}
+.doc .go .arw{transition:transform .3s var(--ease)}
+.doc:hover .go .arw{transform:translateX(5px)}
+@media(max-width:900px){.docs{grid-template-columns:1fr}}
+
+.note{margin-top:clamp(2.2rem,4vw,3.2rem);border:1px solid var(--rule-2);background:var(--paper-2);padding:1.25rem 1.35rem;font-size:.885rem;color:var(--ink-2);line-height:1.6;max-width:78ch}
+.note b.h{display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-d);margin-bottom:.55rem}
+.note p{margin-bottom:.7rem}
+.note p:last-child{margin-bottom:0}
+
+footer{border-top:3px solid var(--ink);margin-top:3rem;padding-top:1.2rem;display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <div class="kick mono">
+    <span>Pro bono engagement</span>
+    <span>homegym.sg · Reviewed 16 Aug 2026</span>
+  </div>
+  <h1>Your shop is<br>strong. Your<br><em>shopfront isn't.</em></h1>
+  <p class="sub">A site and business teardown of HomeGym.sg, a Singapore home fitness equipment retailer, plus a positioning brief and a working prototype of what a guided-selling homepage could do. Three documents. Read them in any order.</p>
+</header>
+
+<dl class="stats">
+  <div><dt>Problems found</dt><dd>12<small>Four costing sales right now, evidenced against the live site</small></dd></div>
+  <div><dt>Cheapest fixes</dt><dd>2 to 3 days<small>Six of the twelve are one freelancer, one sitting</small></dd></div>
+  <div><dt>Biggest gap</dt><dd>Guided selling<small>No filters, and search fails on the most obvious question</small></dd></div>
+  <div><dt>Prototype</dt><dd>3,072 paths<small>Every answer combination tested, zero budget violations</small></dd></div>
+</dl>
+
+<nav class="docs">
+  <a class="doc" href="teardown.html">
+    <span class="n">Document 01</span>
+    <h2>The Teardown</h2>
+    <p>What's wrong with the site and the operation behind it, written for the owner rather than a developer. No jargon.</p>
+    <ul>
+      <li>12 problems, worst first, each verifiable</li>
+      <li>If you only do three things</li>
+      <li>Seven jobs a machine could take over</li>
+      <li>Do you need a new website?</li>
+    </ul>
+    <span class="go">Read <span class="arw">&#8594;</span></span>
+  </a>
+
+  <a class="doc" href="messaging.html">
+    <span class="n">Document 02</span>
+    <h2>Ideas &amp; Messaging</h2>
+    <p>Positioning built on the founder's own brainstorm notes: what to say, what to stop saying, and how to answer the two objections that kill most sales.</p>
+    <ul>
+      <li>The gym-cost wedge, priced and checked</li>
+      <li>Four value pillars with proof status</li>
+      <li>Eight lines graded keep, rework or cut</li>
+      <li>House brand vs manufacturer brand</li>
+    </ul>
+    <span class="go">Read <span class="arw">&#8594;</span></span>
+  </a>
+
+  <a class="doc" href="prototype.html">
+    <span class="n">Document 03</span>
+    <h2>The Prototype</h2>
+    <p>A concept homepage with a six-question quiz that sizes a gym to your room. Fully working. Click through it as a customer would.</p>
+    <ul>
+      <li>Nine distinct build recommendations</li>
+      <li>Refuses to overspend your stated budget</li>
+      <li>Warns on ceiling height and flooring</li>
+      <li>Hands off to WhatsApp pre-filled</li>
+    </ul>
+    <span class="go">Try it <span class="arw">&#8594;</span></span>
+  </a>
+</nav>
+
+<div class="note">
+  <b class="h">About this review</b>
+  <p>This is an unsolicited external review carried out pro bono. Everything in it was observed from outside the business, as a customer would see it. There was no access to analytics, revenue or stock data, so the findings are ranked by expected impact rather than measured loss. Each document ends with a section setting out exactly what was guessed and what was verified.</p>
+  <p>Document 03 is a design concept. It is <b>not</b> a live HomeGym.sg page, it cannot take orders, and some prices in it are placeholders clearly marked as such. HomeGym.sg is an independent business and this review is not affiliated with or endorsed by it.</p>
+</div>
+
+<footer>
+  <span class="mono">HomeGym.sg engagement · Pro bono</span>
+  <span class="mono">Reviewed 16 Aug 2026</span>
+</footer>
+
+</div>

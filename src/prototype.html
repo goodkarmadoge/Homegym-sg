@@ -1,0 +1,972 @@
+<title>Build Your Gym</title>
+
+<style>
+:root{
+  --cream:      oklch(0.966 0.008 85);
+  --cream-2:    oklch(0.935 0.013 82);
+  --cream-3:    oklch(0.895 0.016 80);
+  --ink:        oklch(0.185 0.009 60);
+  --ink-2:      oklch(0.30 0.010 60);
+  --ink-soft:   oklch(0.475 0.012 65);
+  --ink-faint:  oklch(0.62 0.012 70);
+  --accent:     oklch(0.635 0.172 46);
+  --accent-dp:  oklch(0.545 0.155 43);
+  --accent-lo:  oklch(0.93 0.045 60);
+  --line:       oklch(0.855 0.012 80);
+  --line-hard:  oklch(0.74 0.014 78);
+  --on-dark:    oklch(0.955 0.010 85);
+  --on-dark-2:  oklch(0.72 0.012 78);
+  --dark-line:  oklch(0.34 0.010 60);
+
+  --f-disp: "Arial Narrow","Helvetica Neue Condensed","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-body: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,monospace;
+
+  --ease: cubic-bezier(0.22,1,0.36,1);
+  --gut: clamp(1.15rem,4vw,3.5rem);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--cream); color:var(--ink);
+  font-family:var(--f-body); font-size:16px; line-height:1.55;
+  overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+img,svg{max-width:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:inherit}
+
+.disp{
+  font-family:var(--f-disp); font-weight:800; font-stretch:condensed;
+  text-transform:uppercase; line-height:0.87; letter-spacing:-0.018em;
+  text-wrap:balance;
+}
+h1,h2,h3,h4{text-wrap:balance}
+.amt,.big,.spec dd,.stats dd{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase}
+.wrap{max-width:1420px;margin:0 auto;padding-inline:var(--gut)}
+
+/* ─── prototype ribbon ─── */
+.protobar{background:var(--accent);color:oklch(0.17 0.03 46);border-bottom:2px solid var(--ink)}
+.protobar .wrap{display:flex;align-items:center;gap:.9rem;padding-block:.6rem;flex-wrap:wrap}
+.protobar .tagx{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;border:1.5px solid oklch(0.17 0.03 46);padding:.18rem .5rem;font-weight:700;white-space:nowrap}
+.protobar p{margin:0;font-size:.815rem;line-height:1.4}
+.protobar b{font-weight:750}
+.protobar a{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;font-weight:700;white-space:nowrap}
+.protobar a:first-of-type{margin-left:auto}
+@media(max-width:640px){.protobar a:first-of-type{margin-left:0}}
+
+/* ─── announcement ─── */
+.ann{background:var(--ink);color:var(--on-dark-2);padding:.62rem 0}
+.ann .wrap{display:flex;gap:1.8rem;align-items:center;flex-wrap:wrap}
+.ann b{color:var(--on-dark);font-weight:600}
+.ann .far{margin-left:auto;color:var(--accent)}
+@media(max-width:760px){.ann .far{display:none}}
+
+/* ─── header ─── */
+header{
+  position:sticky;top:0;z-index:60;background:oklch(0.966 0.008 85 / 0.93);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+}
+header .wrap{display:flex;align-items:center;gap:clamp(1rem,3vw,2.75rem);height:70px}
+.logo{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.62rem;letter-spacing:-0.03em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
+.logo span{font-size:0.72em;color:var(--ink-faint);font-weight:700}
+nav.main{display:flex;gap:1.65rem;font-size:.775rem;font-weight:650;letter-spacing:.085em;text-transform:uppercase}
+nav.main a{text-decoration:none;color:var(--ink-2);padding:.3rem 0;border-bottom:2px solid transparent;transition:color .2s var(--ease),border-color .2s var(--ease)}
+nav.main a:hover{color:var(--ink);border-color:var(--accent)}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:1.1rem}
+.pill{
+  display:inline-flex;align-items:center;gap:.5rem;border:1.5px solid var(--ink);
+  border-radius:999px;padding:.5rem 1.05rem;font-size:.72rem;font-weight:750;
+  letter-spacing:.1em;text-transform:uppercase;text-decoration:none;white-space:nowrap;
+  transition:background .22s var(--ease),color .22s var(--ease);
+}
+.pill:hover{background:var(--ink);color:var(--cream)}
+@media(max-width:1080px){nav.main{display:none}}
+@media(max-width:560px){.hd-right .pill{display:none}}
+
+/* ─── hero ─── */
+.hero{border-bottom:1px solid var(--line);overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.02fr 1fr;gap:clamp(1.5rem,4vw,4rem);align-items:center;padding-block:clamp(2.5rem,6vw,5rem)}
+.eyebrow{display:flex;align-items:center;gap:.65rem;color:var(--accent-dp);margin-bottom:1.4rem}
+.eyebrow::before{content:"";width:34px;height:2px;background:var(--accent)}
+h1{margin:0;font-size:clamp(3rem,8.2vw,6.4rem)}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{max-width:34ch;margin:1.5rem 0 0;font-size:clamp(1rem,1.45vw,1.16rem);color:var(--ink-soft);line-height:1.5}
+.cta-row{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2.1rem}
+.btn{
+  display:inline-flex;align-items:center;gap:.85rem;padding:1.05rem 1.7rem;
+  font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;
+  letter-spacing:.035em;font-size:1.02rem;text-decoration:none;border:2px solid var(--ink);
+  transition:transform .3s var(--ease),background .25s var(--ease),color .25s var(--ease),box-shadow .3s var(--ease);
+}
+.btn-solid{background:var(--ink);color:var(--cream)}
+.btn-solid:hover{background:var(--accent);border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 24px -12px oklch(0.185 0.009 60/.55)}
+.btn-ghost:hover{background:var(--ink);color:var(--cream);transform:translateY(-2px)}
+.btn .arw{transition:transform .35s var(--ease)}
+.btn:hover .arw{transform:translateX(5px)}
+.assure{display:flex;gap:2rem;flex-wrap:wrap;margin-top:2.6rem;padding-top:1.7rem;border-top:1px solid var(--line)}
+.assure div{max-width:15ch}
+.assure strong{display:block;font-size:.73rem;letter-spacing:.1em;text-transform:uppercase;font-weight:750}
+.assure span{font-size:.82rem;color:var(--ink-faint)}
+
+.blueprint{position:relative;background:var(--cream-2);border:1px solid var(--line-hard);padding:clamp(1rem,2.4vw,2rem)}
+.blueprint::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+.blueprint svg{position:relative;display:block;width:100%;height:auto}
+.spec{position:relative;margin-top:1rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-hard);border:1px solid var(--line-hard)}
+.spec div{background:var(--cream-2);padding:.85rem .7rem}
+.spec dt{margin:0 0 .3rem;font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
+.spec dd{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.28rem;text-transform:uppercase}
+@media(max-width:900px){
+  .hero .wrap{grid-template-columns:1fr}
+  .blueprint{order:-1}
+}
+@media(max-width:520px){.spec{grid-template-columns:repeat(2,1fr)}}
+
+/* ─── space strip ─── */
+.strip{border-bottom:1px solid var(--line);background:var(--cream)}
+.strip .wrap{display:grid;grid-template-columns:minmax(180px,1fr) 3.1fr;gap:clamp(1.5rem,3vw,3rem);padding-block:clamp(2rem,3.6vw,3rem)}
+.strip h2{margin:0 0 .7rem;font-size:1.55rem}
+.strip p{margin:0;font-size:.9rem;color:var(--ink-faint);max-width:24ch}
+.spaces{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.space{
+  background:var(--cream);padding:1.35rem 1.15rem 1.15rem;text-align:left;
+  transition:background .25s var(--ease);position:relative;
+}
+.space:hover{background:var(--accent-lo)}
+.space svg{display:block;margin-bottom:.9rem}
+.space b{display:block;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.3rem;text-transform:uppercase}
+.space span{font-size:.79rem;color:var(--ink-faint)}
+.space .arw{position:absolute;right:1rem;bottom:1rem;color:var(--accent);transition:transform .3s var(--ease)}
+.space:hover .arw{transform:translateX(4px)}
+@media(max-width:860px){.strip .wrap{grid-template-columns:1fr}.spaces{grid-template-columns:repeat(2,1fr)}}
+
+/* ══════════ QUIZ ══════════ */
+.quiz{background:var(--ink);color:var(--on-dark);padding-block:clamp(3rem,7vw,6rem);position:relative;overflow:hidden}
+.quiz::after{
+  content:"";position:absolute;right:-8%;top:-15%;width:52%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,oklch(0.635 0.172 46/.16),transparent 68%);pointer-events:none;
+}
+.quiz-head{display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:end;margin-bottom:clamp(1.8rem,3.5vw,3rem);position:relative}
+.quiz-head .eyebrow{color:var(--accent);margin-bottom:1.1rem}
+.quiz-head h2{margin:0;font-size:clamp(2.4rem,5.6vw,4.4rem)}
+.quiz-head p{margin:1.1rem 0 0;max-width:46ch;color:var(--on-dark-2);font-size:1.02rem}
+.progress{text-align:right;min-width:170px}
+.progress .mono{color:var(--on-dark-2)}
+.pbar{margin-top:.6rem;height:3px;background:var(--dark-line);position:relative;width:170px;margin-left:auto}
+.pbar i{position:absolute;inset:0 auto 0 0;background:var(--accent);transition:width .5s var(--ease)}
+@media(max-width:760px){.quiz-head{grid-template-columns:1fr}.progress{text-align:left}.pbar{margin-left:0}}
+
+.stage{border:1px solid var(--dark-line);background:oklch(0.225 0.009 60);position:relative}
+.step{display:none;padding:clamp(1.4rem,3.4vw,2.9rem)}
+.step.on{display:block;animation:rise .5s var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.qnum{color:var(--accent);margin-bottom:.8rem}
+.step h3{margin:0 0 .5rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(1.7rem,3.4vw,2.5rem);line-height:0.95;letter-spacing:-0.015em}
+.qhelp{margin:0 0 1.7rem;color:var(--on-dark-2);font-size:.93rem;max-width:52ch}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:.75rem}
+.opt{
+  text-align:left;border:1.5px solid var(--dark-line);background:oklch(0.20 0.009 60);
+  padding:1.15rem 1.2rem;color:var(--on-dark);position:relative;
+  transition:border-color .22s var(--ease),background .22s var(--ease),transform .28s var(--ease);
+}
+.opt:hover{border-color:var(--on-dark-2);transform:translateY(-2px)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:oklch(0.26 0.035 46)}
+.opt[aria-pressed="true"]::after{
+  content:"";position:absolute;top:.85rem;right:.9rem;width:9px;height:9px;background:var(--accent);border-radius:50%;
+}
+.opt b{display:block;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.24rem;letter-spacing:-0.005em;margin-bottom:.28rem;padding-right:1.2rem}
+.opt span{font-size:.82rem;color:var(--on-dark-2);line-height:1.42;display:block}
+.opt svg{margin-bottom:.75rem;display:block;color:var(--accent)}
+
+.qnav{display:flex;align-items:center;gap:1rem;margin-top:1.9rem;padding-top:1.4rem;border-top:1px solid var(--dark-line)}
+.lnk{background:none;color:var(--on-dark-2);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;transition:color .2s var(--ease)}
+.lnk:hover{color:var(--on-dark)}
+.lnk[disabled]{opacity:.28;cursor:not-allowed}
+.qnav .go{margin-left:auto;background:var(--accent);color:oklch(0.16 0.02 46);border:2px solid var(--accent);padding:.85rem 1.6rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:.04em;font-size:1rem;display:inline-flex;align-items:center;gap:.7rem;transition:transform .3s var(--ease),background .25s var(--ease)}
+.qnav .go:hover{background:oklch(0.70 0.17 50);transform:translateY(-2px)}
+.qnav .go[disabled]{background:var(--dark-line);border-color:var(--dark-line);color:oklch(0.52 0.008 60);cursor:not-allowed;transform:none}
+
+/* ─── results ─── */
+.res{padding:clamp(1.4rem,3.4vw,2.9rem)}
+.res-top{display:grid;grid-template-columns:1.35fr 1fr;gap:clamp(1.5rem,3vw,2.8rem);align-items:start;padding-bottom:1.8rem;border-bottom:1px solid var(--dark-line)}
+.res-top h3{margin:.55rem 0 0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(2rem,4.6vw,3.4rem);line-height:0.9;letter-spacing:-0.02em}
+.res-why{margin:1.1rem 0 0;color:var(--on-dark-2);font-size:1rem;max-width:48ch;line-height:1.55}
+.plan{border:1px solid var(--dark-line);background:oklch(0.20 0.009 60);padding:1.1rem}
+.plan .mono{color:var(--on-dark-2);margin-bottom:.85rem;display:block}
+.plan svg{width:100%;height:auto;display:block}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--dark-line);border:1px solid var(--dark-line);margin-top:1.1rem}
+.stats div{background:oklch(0.20 0.009 60);padding:.7rem .8rem}
+.stats dt{font-family:var(--f-mono);font-size:.56rem;letter-spacing:.13em;text-transform:uppercase;color:var(--on-dark-2);margin-bottom:.22rem}
+.stats dd{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.15rem}
+@media(max-width:820px){.res-top{grid-template-columns:1fr}}
+
+.kit{margin-top:1.8rem}
+.kit h4,.flags h4{margin:0 0 1rem;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--on-dark-2);font-weight:600}
+.line-item{display:grid;grid-template-columns:auto 1fr auto;gap:1.1rem;align-items:baseline;padding:1.05rem 0;border-bottom:1px solid var(--dark-line)}
+.line-item .ix{font-family:var(--f-mono);font-size:.68rem;color:var(--accent);letter-spacing:.08em}
+.line-item b{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.3rem;letter-spacing:-0.005em;display:block}
+.line-item p{margin:.28rem 0 0;font-size:.855rem;color:var(--on-dark-2);max-width:58ch;line-height:1.5}
+.line-item .amt{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.3rem;white-space:nowrap;text-align:right}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:.55rem;letter-spacing:.1em;padding:.16rem .42rem;border:1px solid var(--dark-line);color:var(--on-dark-2);margin-left:.5rem;vertical-align:.12em}
+.tag.live{color:var(--accent);border-color:oklch(0.45 0.10 46)}
+.totals{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:1.35rem 0 0;flex-wrap:wrap}
+.totals .lbl{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--on-dark-2)}
+.totals .big{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:clamp(2.2rem,5vw,3.4rem);line-height:1;letter-spacing:-0.02em}
+.totals small{display:block;font-family:var(--f-body);font-size:.78rem;font-weight:400;color:var(--on-dark-2);letter-spacing:0;text-transform:none;margin-top:.35rem}
+
+.flags{margin-top:1.9rem}
+.flag{display:grid;grid-template-columns:auto 1fr;gap:.9rem;padding:.95rem 1.05rem;border:1px solid oklch(0.42 0.09 46);background:oklch(0.24 0.028 46);margin-bottom:.6rem}
+.flag svg{color:var(--accent);margin-top:.15rem;flex-shrink:0}
+.flag b{display:block;font-size:.86rem;font-weight:700;margin-bottom:.18rem}
+.flag span{font-size:.845rem;color:var(--on-dark-2);line-height:1.5}
+
+.res-cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem;padding-top:1.6rem;border-top:1px solid var(--dark-line);align-items:center}
+.res-cta .go{background:var(--accent);color:oklch(0.16 0.02 46);border:2px solid var(--accent);padding:.95rem 1.6rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:.04em;font-size:1.02rem;display:inline-flex;gap:.7rem;align-items:center;text-decoration:none;transition:transform .3s var(--ease),background .25s var(--ease)}
+.res-cta .go:hover{background:oklch(0.70 0.17 50);transform:translateY(-2px)}
+.res-cta .alt{border:2px solid var(--dark-line);color:var(--on-dark);padding:.95rem 1.6rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:.04em;font-size:1.02rem;text-decoration:none;transition:border-color .25s var(--ease),transform .3s var(--ease)}
+.res-cta .alt:hover{border-color:var(--on-dark-2);transform:translateY(-2px)}
+.note{margin-top:1.5rem;font-size:.775rem;color:var(--on-dark-2);line-height:1.6;max-width:78ch;border-left:0;padding:0}
+.note code{font-family:var(--f-mono);font-size:.9em;color:var(--accent)}
+
+/* ─── packages ─── */
+.packs{border-bottom:1px solid var(--line)}
+.packs .wrap{padding-block:clamp(2.6rem,5vw,4.4rem)}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap;margin-bottom:2rem}
+.sec-head h2{margin:.6rem 0 0;font-size:clamp(2rem,4.4vw,3.2rem)}
+.pack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.pack{background:var(--cream);padding:1.7rem 1.5rem;display:flex;flex-direction:column;position:relative;transition:background .25s var(--ease)}
+.pack:hover{background:var(--cream-2)}
+.pack.feat{background:var(--ink);color:var(--on-dark)}
+.pack.feat:hover{background:oklch(0.22 0.009 60)}
+.pack .badge{position:absolute;top:0;right:0;background:var(--accent);color:oklch(0.16 0.02 46);font-family:var(--f-mono);font-size:.56rem;letter-spacing:.13em;padding:.35rem .6rem}
+.pack h3{margin:0;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.85rem;line-height:0.94;letter-spacing:-0.01em}
+.pack .from{margin:.6rem 0 1rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.5rem;color:var(--accent)}
+.pack > p{margin:0 0 1.2rem;font-size:.875rem;color:var(--ink-soft);line-height:1.5}
+.pack.feat > p{color:var(--on-dark-2)}
+.pack ul{margin:0 0 1.6rem;padding:0;list-style:none;font-size:.85rem}
+.pack li{padding:.42rem 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:1rem}
+.pack.feat li{border-color:var(--dark-line)}
+.pack li em{font-style:normal;color:var(--ink-faint);font-family:var(--f-mono);font-size:.62rem;letter-spacing:.06em;align-self:center}
+.pack.feat li em{color:var(--on-dark-2)}
+.pack .go2{margin-top:auto;display:inline-flex;align-items:center;gap:.6rem;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1rem;letter-spacing:.04em;color:var(--accent);text-decoration:none}
+.pack .go2 .arw{transition:transform .3s var(--ease)}
+.pack .go2:hover .arw{transform:translateX(5px)}
+@media(max-width:900px){.pack-grid{grid-template-columns:1fr}}
+
+/* ─── trust ─── */
+.trust .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(1.2rem,2.5vw,2.5rem);padding-block:clamp(2.2rem,4vw,3.4rem)}
+.trust div{display:grid;grid-template-columns:auto 1fr;gap:.95rem;align-items:start}
+.trust svg{color:var(--accent);margin-top:.1rem}
+.trust b{display:block;font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.02rem;line-height:1.1;margin-bottom:.28rem}
+.trust span{font-size:.81rem;color:var(--ink-faint);line-height:1.45}
+@media(max-width:900px){.trust .wrap{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.trust .wrap{grid-template-columns:1fr}}
+
+/* ─── footer ─── */
+footer{background:var(--ink);color:var(--on-dark-2);padding-block:clamp(2.2rem,4vw,3.2rem)}
+footer .wrap{display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap;align-items:flex-start}
+footer .logo{color:var(--on-dark);text-decoration:none}
+footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
+.proto{border:1px solid var(--dark-line);padding:1rem 1.15rem;max-width:44ch;font-size:.79rem;line-height:1.6}
+.proto b{color:var(--accent);display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;margin-bottom:.4rem}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="protobar"><div class="wrap">
+  <span class="tagx">Concept</span>
+  <p>Design prototype for a pro bono audit. <b>This is not a live HomeGym.sg page</b> and cannot take orders. Some prices are placeholders.</p>
+  <a href="teardown.html">&#8592; Back to the report</a>
+  <a href="#quiz">Jump to the quiz &#8594;</a>
+</div></div>
+
+<div class="ann"><div class="wrap mono">
+  <span><b>Fast Singapore delivery</b></span>
+  <span><b>Expert setup available</b></span>
+  <span><b>Equipment that lasts</b></span>
+  <span class="far">Free delivery over S$150</span>
+</div></div>
+
+<header><div class="wrap">
+  <a class="logo" href="#">Homegym<span>.sg</span></a>
+  <nav class="main">
+    <a href="#">Strength</a><a href="#">Cardio</a><a href="#">Weights</a>
+    <a href="#quiz">Build Your Gym</a><a href="#packs">Packages</a><a href="#">Showroom</a>
+  </nav>
+  <div class="hd-right">
+    <a class="pill" href="#quiz">Start the quiz</a>
+    <a class="pill" href="#" style="border-color:var(--accent);color:var(--accent-dp)">Bag · 0</a>
+  </div>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <div>
+    <div class="eyebrow mono">Built for Singapore homes</div>
+    <h1 class="disp">Build a gym<br>you'll <em>actually</em><br>use.</h1>
+    <p class="lede">Most home gyms fail because the equipment never fitted the room. Answer six questions and we'll size a setup to your floor, your ceiling and your goal.</p>
+    <div class="cta-row">
+      <a class="btn btn-solid" href="#quiz">Build your gym <span class="arw">&#8594;</span></a>
+      <a class="btn btn-ghost" href="#packs">See packages <span class="arw">&#8594;</span></a>
+    </div>
+    <div class="assure">
+      <div><strong>Fast delivery</strong><span>3 working days average</span></div>
+      <div><strong>Expert setup</strong><span>Assembly from S$200</span></div>
+      <div><strong>Warranty</strong><span>Lifetime frames</span></div>
+    </div>
+  </div>
+
+  <div class="blueprint">
+    <svg viewBox="0 0 480 400" role="img" aria-label="Technical elevation drawing of a folding power rack with bench, annotated with dimensions">
+      <g stroke="currentColor" fill="none" stroke-width="2.4" style="color:oklch(0.185 0.009 60)">
+        <!-- uprights -->
+        <path d="M118 62 V330 M188 62 V330 M292 62 V330 M362 62 V330"/>
+        <!-- top crossbeams -->
+        <path d="M118 62 H362 M118 88 H362"/>
+        <!-- pull-up bar -->
+        <path d="M150 75 H330" stroke-width="5" style="color:oklch(0.635 0.172 46)"/>
+        <!-- base -->
+        <path d="M104 330 H376" stroke-width="4"/>
+        <path d="M118 330 H188 M292 330 H362"/>
+      </g>
+      <!-- hole pattern, punched by script so the drawing reads as a real rack -->
+      <g id="holes" fill="oklch(0.70 0.012 70)"></g>
+      <!-- j-hooks + safeties -->
+      <g stroke="oklch(0.635 0.172 46)" stroke-width="4.5" fill="none" stroke-linecap="square">
+        <path d="M188 196 h-16 v-13"/><path d="M292 196 h16 v-13"/>
+        <path d="M188 246 H292"/>
+      </g>
+      <!-- barbell -->
+      <g stroke="oklch(0.185 0.009 60)" stroke-width="6"><path d="M132 183 H348"/></g>
+      <g fill="oklch(0.185 0.009 60)">
+        <rect x="140" y="163" width="9" height="40"/><rect x="153" y="169" width="7" height="28"/>
+        <rect x="331" y="163" width="9" height="40"/><rect x="320" y="169" width="7" height="28"/>
+      </g>
+      <!-- bench -->
+      <g stroke="oklch(0.185 0.009 60)" stroke-width="2.4" fill="oklch(0.895 0.016 80)">
+        <rect x="196" y="286" width="96" height="13"/>
+      </g>
+      <g stroke="oklch(0.185 0.009 60)" stroke-width="2.4" fill="none">
+        <path d="M208 299 v31 M280 299 v31 M204 330 h12 M274 330 h12"/>
+      </g>
+      <!-- dimension lines -->
+      <g stroke="oklch(0.635 0.172 46)" stroke-width="1.5" fill="none">
+        <path d="M400 62 V330"/><path d="M394 62 h12 M394 330 h12"/>
+        <path d="M118 356 H362"/><path d="M118 350 v12 M362 350 v12"/>
+      </g>
+      <g font-family="ui-monospace,Menlo,monospace" font-size="13" fill="oklch(0.545 0.155 43)" letter-spacing="1">
+        <text x="414" y="200">228 cm</text>
+        <text x="205" y="378">155 cm</text>
+      </g>
+      <g font-family="ui-monospace,Menlo,monospace" font-size="11" fill="oklch(0.62 0.012 70)" letter-spacing="1.4">
+        <text x="24" y="38">FIG. 01 / FOLDING POWER RACK, OPEN</text>
+      </g>
+    </svg>
+
+    <dl class="spec">
+      <div><dt>Footprint</dt><dd>1.55 × 1.66 m</dd></div>
+      <div><dt>Folded to</dt><dd>0.72 m</dd></div>
+      <div><dt>Rated load</dt><dd>1000 lb</dd></div>
+      <div><dt>Setup</dt><dd>~90 min</dd></div>
+    </dl>
+  </div>
+</div></section>
+
+<section class="strip"><div class="wrap">
+  <div>
+    <h2 class="disp">Shop by space</h2>
+    <p>Start from the room you actually have, not the gym you wish you had.</p>
+  </div>
+  <div class="spaces">
+    <button class="space" data-jump="s1">
+      <svg width="62" height="46" viewBox="0 0 62 46" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <rect x="1" y="1" width="60" height="44" stroke-dasharray="4 4" opacity=".45"/>
+        <rect x="20" y="13" width="22" height="20" fill="oklch(0.93 0.045 60)" stroke="oklch(0.635 0.172 46)" stroke-width="2"/>
+      </svg>
+      <b>Under 2m²</b><span>Small corner</span><span class="arw">&#8594;</span>
+    </button>
+    <button class="space" data-jump="s2">
+      <svg width="62" height="46" viewBox="0 0 62 46" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <rect x="1" y="1" width="60" height="44" stroke-dasharray="4 4" opacity=".45"/>
+        <rect x="12" y="9" width="38" height="28" fill="oklch(0.93 0.045 60)" stroke="oklch(0.635 0.172 46)" stroke-width="2"/>
+      </svg>
+      <b>2 – 5m²</b><span>Bedroom / study</span><span class="arw">&#8594;</span>
+    </button>
+    <button class="space" data-jump="s3">
+      <svg width="62" height="46" viewBox="0 0 62 46" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <rect x="1" y="1" width="60" height="44" stroke-dasharray="4 4" opacity=".45"/>
+        <path d="M6 6 H44 V22 H56 V40 H6 Z" fill="oklch(0.93 0.045 60)" stroke="oklch(0.635 0.172 46)" stroke-width="2"/>
+      </svg>
+      <b>5 – 10m²</b><span>Dedicated gym</span><span class="arw">&#8594;</span>
+    </button>
+    <button class="space" data-jump="s4">
+      <svg width="62" height="46" viewBox="0 0 62 46" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <rect x="1" y="1" width="60" height="44" stroke-dasharray="4 4" opacity=".45"/>
+        <rect x="5" y="5" width="52" height="36" fill="oklch(0.93 0.045 60)" stroke="oklch(0.635 0.172 46)" stroke-width="2"/>
+      </svg>
+      <b>10m²+</b><span>Garage / large room</span><span class="arw">&#8594;</span>
+    </button>
+  </div>
+</div></section>
+
+<!-- ══════════ QUIZ ══════════ -->
+<section class="quiz" id="quiz"><div class="wrap">
+  <div class="quiz-head">
+    <div>
+      <div class="eyebrow mono">Six questions · about 60 seconds</div>
+      <h2 class="disp">Build your gym</h2>
+      <p>We size the anchor piece to your ceiling and floor first, then build the rest around it. No email required to see your result.</p>
+    </div>
+    <div class="progress">
+      <span class="mono" id="pTxt">Question 1 of 6</span>
+      <div class="pbar"><i id="pBar" style="width:16.6%"></i></div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage" aria-live="polite"></div>
+</div></section>
+
+<section class="packs" id="packs"><div class="wrap">
+  <div class="sec-head">
+    <div>
+      <div class="eyebrow mono">Or start from a shortlist</div>
+      <h2 class="disp">Curated packages</h2>
+    </div>
+    <a class="pill" href="#">Compare all &#8594;</a>
+  </div>
+  <div class="pack-grid">
+    <div class="pack">
+      <h3 class="disp">The Starter</h3>
+      <div class="from">From S$499</div>
+      <p>Getting stronger without giving up an entire room. Everything stows under a bed or in a cupboard.</p>
+      <ul>
+        <li>Adjustable dumbbells <em>2 × 24 kg</em></li>
+        <li>Adjustable bench <em>FID</em></li>
+        <li>Gym mat <em>1 × 1 m</em></li>
+      </ul>
+      <a class="go2" href="#quiz">Size it to my room <span class="arw">&#8594;</span></a>
+    </div>
+    <div class="pack feat">
+      <span class="badge">Most popular</span>
+      <h3 class="disp">The Strength Setup</h3>
+      <div class="from">From S$1,499</div>
+      <p>The serious answer for an HDB or condo room. Folds back to 72 cm when you are done training.</p>
+      <ul>
+        <li>Folding power rack <em>1000 lb</em></li>
+        <li>Olympic barbell <em>20 kg</em></li>
+        <li>Adjustable bench <em>FID</em></li>
+        <li>Bumper plates <em>100 kg</em></li>
+      </ul>
+      <a class="go2" href="#quiz">Size it to my room <span class="arw">&#8594;</span></a>
+    </div>
+    <div class="pack">
+      <h3 class="disp">The Complete Home Gym</h3>
+      <div class="from">From S$2,999</div>
+      <p>A full training floor: press, pull, squat, condition. Built for a dedicated room or garage.</p>
+      <ul>
+        <li>Power rack + cables <em>Full</em></li>
+        <li>Barbell &amp; plates <em>150 kg</em></li>
+        <li>Adjustable dumbbells <em>2 × 32 kg</em></li>
+        <li>Rubber flooring <em>9 m²</em></li>
+      </ul>
+      <a class="go2" href="#quiz">Size it to my room <span class="arw">&#8594;</span></a>
+    </div>
+  </div>
+</div></section>
+
+<section class="trust"><div class="wrap">
+  <div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/></svg>
+    <div><b>Designed for<br>Singapore homes</b><span>We plan around HDB ceilings, lift dimensions and neighbours below.</span></div>
+  </div>
+  <div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <div><b>Expert advice<br>before you buy</b><span>Talk to someone who has installed the exact rack in the exact block.</span></div>
+  </div>
+  <div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <div><b>Quality<br>you can trust</b><span>Frames rated and independently tested. Lifetime structural warranty.</span></div>
+  </div>
+  <div>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+    <div><b>Support<br>after you buy</b><span>Servicing, relocation and spare parts for the life of the equipment.</span></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div>
+    <a class="logo" href="#">Homegym<span>.sg</span></a>
+    <p>809 French Road #02-45, Singapore 200809. Showroom Mon–Fri, Sat mornings. WhatsApp 8042 3952.</p>
+  </div>
+  <div class="proto">
+    <b>Prototype notice</b>
+    This is a concept build for a pro bono audit, not a live HomeGym.sg page. Prices tagged <span style="color:oklch(0.635 0.172 46)">LIVE</span> were verified on homegym.sg on 16 Aug 2026; all others are placeholders that would bind to real Magento catalogue data.
+  </div>
+</div></footer>
+
+<script>
+"use strict";
+
+/* punch the rack hole pattern so the drawing reads as a real rack */
+(function(){
+  const g = document.getElementById('holes');
+  if(!g) return;
+  let s = '';
+  for(let y=104; y<=318; y+=15){
+    s += '<circle cx="118" cy="'+y+'" r="2.6"/><circle cx="188" cy="'+y+'" r="2.6"/>';
+    s += '<circle cx="292" cy="'+y+'" r="2.6"/><circle cx="362" cy="'+y+'" r="2.6"/>';
+  }
+  g.innerHTML = s;
+})();
+
+/* ─────────── catalogue ─────────── */
+const P = (name, price, live, foot, why, tagline) =>
+  ({name, price, live, foot, why, tagline});
+
+const C = {
+  foldRack:  P('Vigor Folding Power Rack', 1499, true, [1.55,1.66,2.28],
+    'Full-size rack that folds to 72 cm against the wall. Rated 1000 lb on the hooks, lifetime frame warranty.'),
+  compact:   P('Vigor Compact Power Rack V2', 819, true, [1.20,1.25,2.10],
+    'The smallest real rack we stock. Squat, press and pull safely without a spotter.'),
+  im2000:    P('Ironmaster IM2000 Self-Spotting System', 1999, true, [1.60,1.70,2.15],
+    'Self-spotting, so you can train to failure alone. Lower than a standard rack, which matters under a 2.6 m ceiling.'),
+  titanX20:  P('Vigor Titan X20 All-in-1 Trainer', 4299, true, [2.07,1.61,2.24],
+    'Smith machine, half rack and functional trainer in one footprint. Over 100 exercise variations.'),
+  wallFold:  P('Wall-Mounted Folding Squat Rack', 649, false, [1.20,0.35,2.15],
+    'Bolts to a structural wall and folds to 35 cm. The only rack that genuinely disappears.'),
+  bench:     P('Adjustable FID Bench', 289, false, [1.30,0.45,0.50],
+    'Flat, incline and decline. The single highest-value piece after the rack.'),
+  foldBench: P('Folding Flat Bench', 179, false, [1.15,0.35,0.42],
+    'Folds vertically to store behind a door.'),
+  bar:       P('Olympic Barbell 20 kg', 249, false, [2.20,0.05,0.05],
+    'Needs 2.2 m of clear length. Measure the wall before you commit to a barbell.'),
+  bumpers100:P('Bumper Plate Set, 100 kg', 699, false, [0.60,0.60,0.55],
+    'Rubber-coated so a missed rep does not go through the floor slab.'),
+  bumpers150:P('Bumper Plate Set, 150 kg', 999, false, [0.70,0.70,0.65],
+    'Enough load for a 180 kg deadlift once you count the bar.'),
+  db24:      P('Adjustable Dumbbells, 2 × 24 kg', 549, false, [0.90,0.45,0.40],
+    'Replaces fifteen pairs of fixed dumbbells in the space of a shoebox.'),
+  db32:      P('Adjustable Dumbbells, 2 × 32 kg', 749, false, [0.95,0.48,0.42],
+    'The heavier pair. Worth it if you already press over 20 kg per hand.'),
+  kettle:    P('Kettlebell Pair, 12 & 16 kg', 189, false, [0.40,0.25,0.35],
+    'Swings and carries. The cheapest conditioning you can buy.'),
+  bands:     P('Resistance Band Set + Door Anchor', 79, false, [0.20,0.15,0.10],
+    'Warm-ups, assisted pull-ups and travel training.'),
+  mat:       P('Interlocking Gym Mat, 4 m²', 149, false, [2.00,2.00,0.02],
+    'Protects the floor and cuts the noise your neighbours hear.'),
+  floor9:    P('Rubber Gym Flooring, 9 m²', 549, false, [3.00,3.00,0.02],
+    '15 mm rubber. Non-negotiable if you deadlift above a neighbour.'),
+  tread:     P('Folding Treadmill', 1299, false, [1.80,0.85,1.40],
+    'Folds upright to 0.85 m deep. Check your lift dimensions before ordering.'),
+  bike:      P('Air Bike', 899, false, [1.25,0.65,1.35],
+    'Hardest conditioning per square metre, and nothing to wear out.'),
+  rower:     P('Water Rower', 1499, false, [2.10,0.60,0.55],
+    'Stores upright at 0.6 m. Full-body conditioning that is quiet enough for a flat.'),
+  bike2:     P('Magnetic Exercise Bike', 549, false, [1.10,0.55,1.30],
+    'Near-silent. The safe choice for early mornings in an HDB flat.'),
+  trainer:   P('Functional Trainer, Dual Cable', 2499, false, [1.95,1.10,2.15],
+    'Cable work at any angle. Best single machine for sport-specific training.'),
+  assembly:  P('Professional Assembly', 200, true, [0,0,0],
+    'Our crew builds it, checks every bolt and shows you how to fold it. Self-assembly on a rack runs 3 to 5 hours.')
+};
+
+/* ─────────── questions ─────────── */
+const ICON = {
+  strength:'<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+  fat:'<path d="M13 2 4.5 13.5H11L10 22l9-11.5h-6.5z"/>',
+  health:'<path d="M20.8 5.6a5.5 5.5 0 0 0-8.8 1.4A5.5 5.5 0 0 0 3.2 5.6c-2 2-2 5.4 0 7.5L12 21l8.8-7.9c2-2.1 2-5.5 0-7.5z"/>',
+  sport:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
+  hdb:'<path d="M4 21V6l8-3 8 3v15"/><path d="M9 21v-5h6v5M8 10h2M14 10h2M8 13.5h2M14 13.5h2"/>',
+  condo:'<path d="M3 21V8l6-3v16M9 21V11l6-3v13M15 21V13l6-2v10"/>',
+  landed:'<path d="M3 11 12 4l9 7v10H3z"/><path d="M10 21v-6h4v6"/>',
+  office:'<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2"/>',
+  low:'<path d="M4 5h16M4 19h16"/><path d="M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3"/>',
+  high:'<path d="M4 3h16M4 21h16"/><path d="M12 6v12M9 9l3-3 3 3M9 15l3 3 3-3"/>',
+  ask:'<circle cx="12" cy="12" r="9"/><path d="M9.2 9.2a2.8 2.8 0 1 1 3.6 2.7c-.5.2-.8.7-.8 1.3v.5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+  new:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  back:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  reg:'<path d="M3 17l5-5 4 4 9-9"/><path d="M21 7v5h-5"/>',
+  adv:'<path d="m12 2 2.9 6.3 6.6.9-4.8 4.6 1.2 6.7L12 17.3 6.1 20.5l1.2-6.7L2.5 9.2l6.6-.9z"/>'
+};
+
+const Q = [
+  { key:'goal', head:'What are you training for?',
+    help:'The anchor piece changes completely depending on this answer.',
+    opts:[
+      {v:'strength', ic:'strength', t:'Get stronger',   d:'Squat, press, deadlift. Barbells and racks.'},
+      {v:'fat',      ic:'fat',      t:'Lose fat',       d:'Conditioning first, with weights supporting it.'},
+      {v:'health',   ic:'health',   t:'Stay active',    d:'Move well, stay mobile, keep it simple.'},
+      {v:'sport',    ic:'sport',    t:'Sport performance', d:'Power, cables, explosive work.'}
+    ]},
+  { key:'home', head:'Where is it going?',
+    help:'This is the question most retailers skip, and it is the one that decides whether your setup survives the first month.',
+    opts:[
+      {v:'hdb',    ic:'hdb',    t:'HDB flat',  d:'Neighbours below. Lift and corridor limits.'},
+      {v:'condo',  ic:'condo',  t:'Condo',     d:'Service lift booking, possible bylaws.'},
+      {v:'landed', ic:'landed', t:'Landed',    d:'Ground floor or garage. Fewer limits.'},
+      {v:'office', ic:'office', t:'Office or commercial', d:'Shared use, higher duty cycle.'}
+    ]},
+  { key:'space', head:'How much floor can you give it?',
+    help:'Pace it out now if you are not sure. Two big steps is about 1.5 metres.',
+    opts:[
+      {v:'s1', plan:1.8, t:'Under 2m²',  d:'A corner of a room you share.'},
+      {v:'s2', plan:3.5, t:'2 – 5m²',    d:'A bedroom or study you can rearrange.'},
+      {v:'s3', plan:7.5, t:'5 – 10m²',   d:'A room given over to training.'},
+      {v:'s4', plan:14,  t:'10m² and up',d:'Garage, basement or a large spare room.'}
+    ]},
+  { key:'ceiling', head:'How high is the ceiling?',
+    help:'A standard HDB ceiling is about 2.6 m. A rack is 2.28 m before you stand on anything.',
+    opts:[
+      {v:'low',  ic:'low',  t:'Standard, about 2.6m', d:'Typical HDB or condo bedroom.'},
+      {v:'high', ic:'high', t:'3m or higher',         d:'Landed, garage or loft.'},
+      {v:'ask',  ic:'ask',  t:'Not sure yet',         d:'We will plan conservatively.'}
+    ]},
+  { key:'level', head:'Where are you starting from?',
+    help:'Buying for the lifter you will be in two years is how people end up with unused equipment.',
+    opts:[
+      {v:'new', ic:'new',  t:'Brand new',        d:'Never trained with weights properly.'},
+      {v:'ret', ic:'back', t:'Getting back',     d:'Trained before, off for a while.'},
+      {v:'reg', ic:'reg',  t:'Train regularly',  d:'Two to four sessions a week, consistently.'},
+      {v:'adv', ic:'adv',  t:'Advanced',         d:'Heavy loads, structured programme.'}
+    ]},
+  { key:'budget', head:'What is the budget?',
+    help:'We will show the honest total including delivery and assembly, not a starting-from price.',
+    opts:[
+      {v:'b1', cap:1000,  t:'Under S$1,000',      d:'Focused, high-use pieces only.'},
+      {v:'b2', cap:3000,  t:'S$1,000 – 3,000',    d:'A real rack and a working weight set.'},
+      {v:'b3', cap:6000,  t:'S$3,000 – 6,000',    d:'A complete room with conditioning.'},
+      {v:'b4', cap:99999, t:'S$6,000 and up',     d:'Commercial-grade, no compromises.'}
+    ]}
+];
+
+/* ─────────── state ─────────── */
+const A = {};
+let step = 0;
+const stage = document.getElementById('stage');
+const pTxt  = document.getElementById('pTxt');
+const pBar  = document.getElementById('pBar');
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function money(n){return 'S$'+n.toLocaleString('en-SG')}
+
+function renderStep(){
+  const q = Q[step];
+  const chosen = A[q.key];
+  pTxt.textContent = 'Question '+(step+1)+' of '+Q.length;
+  pBar.style.width = ((step+1)/Q.length*100)+'%';
+
+  const opts = q.opts.map(o=>{
+    let art = '';
+    if(o.ic) art = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[o.ic]+'</svg>';
+    if(o.plan!==undefined){
+      const side = Math.sqrt(o.plan), sc = 26/Math.sqrt(14), w = Math.max(11, side*sc*2.4);
+      art = '<svg width="62" height="34" viewBox="0 0 62 34" fill="none" aria-hidden="true">'+
+        '<rect x="1" y="1" width="60" height="32" stroke="oklch(0.34 0.010 60)" stroke-dasharray="3 3"/>'+
+        '<rect x="'+(31-w/2).toFixed(1)+'" y="'+(17-Math.min(w,26)/2).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.min(w,26).toFixed(1)+'" fill="oklch(0.635 0.172 46/.22)" stroke="oklch(0.635 0.172 46)" stroke-width="1.6"/></svg>';
+    }
+    if(o.cap!==undefined){
+      const bars = {1000:1,3000:2,6000:3,99999:4}[o.cap];
+      let b='';
+      for(let i=0;i<4;i++) b += '<rect x="'+(i*15)+'" y="'+(26-(i+1)*6)+'" width="10" height="'+((i+1)*6)+'" fill="'+(i<bars?'oklch(0.635 0.172 46)':'oklch(0.34 0.010 60)')+'"/>';
+      art = '<svg width="56" height="28" viewBox="0 0 56 28" aria-hidden="true">'+b+'</svg>';
+    }
+    return '<button class="opt" role="button" aria-pressed="'+(chosen===o.v)+'" data-v="'+o.v+'">'+
+      art+'<b>'+esc(o.t)+'</b><span>'+esc(o.d)+'</span></button>';
+  }).join('');
+
+  stage.innerHTML =
+    '<div class="step on">'+
+      '<div class="qnum mono">Q'+String(step+1).padStart(2,'0')+' / '+String(Q.length).padStart(2,'0')+'</div>'+
+      '<h3>'+esc(q.head)+'</h3>'+
+      '<p class="qhelp">'+esc(q.help)+'</p>'+
+      '<div class="opts">'+opts+'</div>'+
+      '<div class="qnav">'+
+        '<button class="lnk" id="back"'+(step===0?' disabled':'')+'>&#8592; Back</button>'+
+        '<button class="lnk" id="reset">Start over</button>'+
+        '<button class="go" id="next"'+(chosen?'':' disabled')+'>'+
+          (step===Q.length-1?'See my build':'Next')+' <span>&#8594;</span></button>'+
+      '</div>'+
+    '</div>';
+
+  stage.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+    A[q.key] = b.dataset.v;
+    stage.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+    document.getElementById('next').disabled = false;
+    if(step < Q.length-1) setTimeout(advance, 230);
+  }));
+  document.getElementById('next').addEventListener('click', advance);
+  document.getElementById('back').addEventListener('click', ()=>{ if(step>0){step--;renderStep();} });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    Object.keys(A).forEach(k=>delete A[k]); step=0; renderStep(); scrollToQuiz();
+  });
+}
+
+function advance(){
+  if(!A[Q[step].key]) return;
+  if(step < Q.length-1){ step++; renderStep(); }
+  else { renderResult(); }
+  scrollToQuiz();
+}
+function scrollToQuiz(){
+  const y = document.getElementById('quiz').getBoundingClientRect().top + window.scrollY - 64;
+  window.scrollTo({top:y, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+}
+
+/* ─────────── recommendation engine ─────────── */
+function build(){
+  const {goal, home, space, ceiling, level, budget} = A;
+  const cap  = {b1:1000,b2:3000,b3:6000,b4:99999}[budget];
+  const sIdx = {s1:1,s2:2,s3:3,s4:4}[space];
+  const lIdx = {new:1,ret:2,reg:3,adv:4}[level];
+  const flags = [], items = [], skipped = [];
+  let spend = 0, name, why;
+
+  const lowCeil  = ceiling === 'low' || ceiling === 'ask';
+  const upstairs = home === 'hdb' || home === 'condo';
+
+  /* Budget is a hard ceiling, so everything is added through here. Assembly is the
+     one allowed exception and is handled separately at the end. */
+  const add = it => {
+    if(!it || items.includes(it)) return false;
+    if(spend + it.price > cap){ if(!skipped.includes(it.name)) skipped.push(it.name); return false; }
+    items.push(it); spend += it.price; return true;
+  };
+
+  /* Anchor first, chosen from what leaves roughly a quarter of the budget for the
+     bar, bench and flooring that make the anchor usable. */
+  const anchorFrom = list => {
+    const room = cap * 0.72;
+    return list.find(x => x.price <= room) || list.reduce((a,b)=> a.price <= b.price ? a : b);
+  };
+
+  let anchor = null;
+
+  if(goal === 'strength' || goal === 'sport'){
+    const ladder =
+      sIdx === 1 ? [C.compact, C.wallFold] :
+      sIdx === 2 ? [C.foldRack, C.compact, C.wallFold] :
+      sIdx === 3 ? (lIdx >= 3 ? [C.titanX20, C.im2000, C.foldRack, C.compact]
+                              : [C.foldRack, C.compact, C.wallFold])
+                 : [C.titanX20, C.foldRack, C.compact];
+
+    anchor = anchorFrom(ladder);
+    add(anchor);
+
+    const WHY = new Map([
+      [C.wallFold, ['THE FOLD-AWAY BUILD',
+        'The honest answer at this budget and footprint is a rack that disappears. It bolts to a structural wall, folds to 35 cm, and leaves enough left over for the load that actually makes you stronger.']],
+      [C.compact, ['THE CORNER STRENGTH BUILD',
+        'The smallest real rack we stock. You can squat, press and pull safely without a spotter, and it still clears a shared room when you are done.']],
+      [C.foldRack, [sIdx >= 3 ? 'THE DEDICATED ROOM BUILD' : 'THE COMPACT STRENGTH BUILD',
+        'The folding rack is the piece that keeps the room dual-purpose. Open it in ten seconds, train, fold it back to 72 cm against the wall.']],
+      [C.im2000, ['THE SELF-SPOTTING BUILD',
+        'You train hard and mostly alone. The IM2000 catches a failed rep without a partner, and it sits lower than a standard rack, which matters under a normal ceiling.']],
+      [C.titanX20, [sIdx >= 4 ? 'THE FULL FLOOR BUILD' : 'THE ALL-IN-ONE BUILD',
+        'One frame covering Smith, half rack and functional trainer beats three separate stations competing for the same floor.']]
+    ]);
+    [name, why] = WHY.get(anchor);
+
+    if(goal === 'sport' && sIdx >= 3 && add(C.trainer))
+      why += ' A dual cable trainer is included for the rotational and explosive work a rack alone will not give you.';
+
+    if(sIdx >= 2) add(C.bar);
+    if(items.includes(C.bar)) add(lIdx >= 3 && cap >= 3200 ? C.bumpers150 : C.bumpers100);
+    add(sIdx <= 2 && cap < 2000 ? C.foldBench : C.bench);
+    if(lIdx >= 2) add(C.db24);
+
+  } else if(goal === 'fat'){
+    name = 'THE CONDITIONING BUILD';
+    const cardio = sIdx === 1 ? [C.bike2]
+                 : upstairs   ? [C.rower, C.bike2]
+                              : [C.bike, C.bike2];
+    anchor = anchorFrom(cardio);
+    add(anchor);
+    why = anchor === C.rower
+      ? 'Fat loss is driven by the sessions you repeat, so we picked the quietest hard machine you can keep in a flat. A rower stores upright at 0.6 m and will not carry into the unit below.'
+      : anchor === C.bike
+        ? 'An air bike is the hardest conditioning per square metre and has nothing to wear out. Dumbbells and a bench keep the strength side honest.'
+        : 'The machine you will actually get on before work beats the one that scores better on paper. A magnetic bike is near-silent, which is what makes early sessions survivable in a flat.';
+    add(C.db24);
+    if(items.includes(C.db24)) add(sIdx <= 2 ? C.foldBench : C.bench);
+    add(C.kettle);
+    add(C.bands);
+
+  } else {
+    name = 'THE STAY-ACTIVE BUILD';
+    why = 'Nothing here needs assembly, a spotter or a dedicated room. This is the setup with the highest chance of still being used in a year, which is the only number that matters at this stage.';
+    add(C.db24);
+    if(items.includes(C.db24)) add(sIdx <= 2 ? C.foldBench : C.bench);
+    add(C.kettle);
+    add(C.bands);
+    if(sIdx >= 2) add(C.bike2);
+    if(sIdx >= 3) add(C.tread);
+  }
+
+  /* Flooring last, because it is the first thing people skip and the first thing
+     they regret. Rubber whenever a bar is going overhead of a neighbour. */
+  const hasBar = items.includes(C.bar);
+  const wantsRubber = (upstairs && hasBar) || sIdx >= 3;
+  if(!(wantsRubber && add(C.floor9))) add(C.mat);
+
+  /* Assembly is allowed to push slightly past the stated budget: it is a service,
+     and quoting a rack without it is how people end up with a five-hour Saturday. */
+  const needsBuild = [C.foldRack,C.compact,C.im2000,C.titanX20,C.trainer,C.wallFold].some(x=>items.includes(x));
+  if(needsBuild && spend + C.assembly.price <= cap * 1.12){ items.push(C.assembly); spend += C.assembly.price; }
+
+  const total = spend;
+  const trimmed = skipped;
+
+  /* ── flags ── */
+  const rack = items.find(i=>i.foot[2] >= 2.0);
+  if(rack && lowCeil){
+    const clear = (2.6 - rack.foot[2]).toFixed(2);
+    flags.push({t:'Measure your ceiling before you order',
+      d:'The '+rack.name+' stands '+rack.foot[2].toFixed(2)+' m. Against a 2.6 m ceiling that leaves '+clear+' m, which is enough to rack a bar but tight for pull-ups. Overhead press outside the frame, or send us a photo and we will check the actual height.'});
+  }
+  if(upstairs && hasBar){
+    flags.push(items.includes(C.floor9)
+      ? {t:'Flooring is not optional here',
+         d:'A dropped barbell in an HDB or condo unit transmits straight into the slab. The 15 mm rubber flooring in this build is sized to the lifting area, not the whole room, to keep the cost sensible.'}
+      : {t:'This budget buys a mat, not a floor',
+         d:'A mat protects your tiles. It will not stop a dropped barbell reaching the unit below. If you plan to deadlift, treat '+money(C.floor9.price)+' of rubber flooring as part of the barbell purchase rather than an accessory, or leave the bar out until it fits.'});
+  }
+  if(upstairs){
+    flags.push({t:'Check the lift, not just the room',
+      d:'Racks ship in three cartons around 1.6 to 2.2 m long. Most HDB lifts take them, most condo service lifts need booking. Tell us your block and we will confirm before dispatch.'});
+  }
+  if(hasBar){
+    flags.push({t:'An Olympic bar needs 2.2 m of clear wall',
+      d:'That is the bar alone, before plates and before you stand next to it. It is the most common thing people forget when they plan the corner.'});
+  }
+  if(trimmed.length){
+    flags.push({t:'Trimmed to stay inside budget',
+      d:'We removed '+trimmed.join(', ')+' to keep this within '+money(cap)+'. Everything here is modular, so those are the natural next purchases rather than a compromise.'});
+  }
+  if(level === 'new' && goal === 'strength'){
+    flags.push({t:'Two sessions of coaching beats a fourth machine',
+      d:'You are new to barbell work. Nothing in this build is wasted if you later add more, but the fastest return right now is someone watching your first squat sessions.'});
+  }
+
+  /* ── footprint ── */
+  const foot = items.filter(i=>i.foot[0] > 0);
+  const openW = Math.max(...foot.map(i=>i.foot[0]), 0.5);
+  const openD = foot.reduce((t,i)=>t + i.foot[1]*0.55, 0.4);
+  const area  = Math.max(...foot.map(i=>i.foot[0]*i.foot[1]), 0.4);
+  const roomA = {s1:1.8,s2:3.5,s3:7.5,s4:14}[space];
+  const mass  = items.reduce((t,i)=>t + (i===C.bumpers150?150:i===C.bumpers100?100:i===C.db32?64:i===C.db24?48:i===C.bar?20:i===C.kettle?28:0),0);
+  const crew  = anchor && anchor.price > 2000 ? 4 : anchor && anchor.foot[2] > 1.5 ? 3 : 2;
+  const mins  = needsBuild
+    ? (anchor.price > 3500 ? 150 : anchor.price > 1200 ? 90 : 45)
+      + (items.includes(C.trainer) ? 60 : 0)
+      + (items.includes(C.floor9)  ? 30 : 0)
+    : 0;
+
+  return {name, why, items, flags, total,
+    stats:{
+      space: openW.toFixed(2)+' × '+Math.min(openD, Math.sqrt(roomA)*1.3).toFixed(2)+' m',
+      area:  area.toFixed(1)+' m² in use',
+      mass:  mass ? mass+' kg' : 'Under 40 kg',
+      crew:  crew+'-person',
+      setup: needsBuild ? '~'+mins+' min' : 'No assembly',
+      lead:  '3 working days'
+    },
+    plan:{roomA, itemW:openW, itemD:Math.min(openD, Math.sqrt(roomA)*1.3)}
+  };
+}
+
+/* ─────────── result view ─────────── */
+function renderResult(){
+  const b = build();
+  pTxt.textContent = 'Your build';
+  pBar.style.width = '100%';
+
+  const rows = b.items.map((i,n)=>
+    '<div class="line-item">'+
+      '<span class="ix">'+String(n+1).padStart(2,'0')+'</span>'+
+      '<div><b>'+esc(i.name)+ (i.live?'<span class="tag live">Live price</span>':'<span class="tag">Placeholder</span>') +'</b>'+
+      '<p>'+esc(i.why)+'</p></div>'+
+      '<span class="amt">'+money(i.price)+'</span>'+
+    '</div>').join('');
+
+  const flagHtml = b.flags.map(f=>
+    '<div class="flag">'+
+      '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/><circle cx="12" cy="12" r="9.5"/></svg>'+
+      '<div><b>'+esc(f.t)+'</b><span>'+esc(f.d)+'</span></div>'+
+    '</div>').join('');
+
+  /* top-down plan: room box with the equipment footprint drawn to scale inside */
+  const rs = Math.sqrt(b.plan.roomA);
+  const px = 250 / Math.max(rs, b.plan.itemW, b.plan.itemD);
+  const rw = rs*px, rh = Math.min(rs*px, 150);
+  const iw = b.plan.itemW*px, ih = Math.min(b.plan.itemD*px, rh-14);
+  const plan =
+    '<svg viewBox="0 0 280 176" role="img" aria-label="Top-down plan of the recommended setup inside your stated floor area">'+
+      '<rect x="14" y="12" width="'+rw.toFixed(0)+'" height="'+rh.toFixed(0)+'" fill="none" stroke="oklch(0.42 0.010 60)" stroke-dasharray="4 4"/>'+
+      '<rect x="20" y="'+(12+rh-ih-6).toFixed(0)+'" width="'+iw.toFixed(0)+'" height="'+ih.toFixed(0)+'" fill="oklch(0.635 0.172 46/.20)" stroke="oklch(0.635 0.172 46)" stroke-width="2"/>'+
+      '<text x="14" y="'+(12+rh+18).toFixed(0)+'" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="oklch(0.72 0.012 78)" letter-spacing="1">YOUR SPACE '+b.plan.roomA+' m&#178;</text>'+
+      '<text x="14" y="'+(12+rh+32).toFixed(0)+'" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="oklch(0.635 0.172 46)" letter-spacing="1">IN USE '+b.stats.area.toUpperCase()+'</text>'+
+    '</svg>';
+
+  const msg = encodeURIComponent(
+    'Hi HomeGym, I used the Build Your Gym quiz and got the '+b.name+
+    ' (about '+money(b.total)+'). My space is '+A.space+', ceiling '+A.ceiling+
+    ', home type '+A.home+'. Can we go through it?');
+
+  stage.innerHTML =
+  '<div class="step on"><div class="res">'+
+    '<div class="res-top">'+
+      '<div>'+
+        '<div class="qnum mono">Your result</div>'+
+        '<h3>'+esc(b.name)+'</h3>'+
+        '<p class="res-why">'+esc(b.why)+'</p>'+
+      '</div>'+
+      '<div class="plan">'+
+        '<span class="mono">Footprint, to scale</span>'+ plan +
+        '<dl class="stats">'+
+          '<div><dt>Open footprint</dt><dd>'+b.stats.space+'</dd></div>'+
+          '<div><dt>Added weight</dt><dd>'+b.stats.mass+'</dd></div>'+
+          '<div><dt>Delivery crew</dt><dd>'+b.stats.crew+'</dd></div>'+
+          '<div><dt>Setup time</dt><dd>'+b.stats.setup+'</dd></div>'+
+        '</dl>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="kit"><h4>What we would send</h4>'+rows+
+      '<div class="totals">'+
+        '<span class="lbl">Total, delivered</span>'+
+        '<div style="text-align:right"><span class="big">'+money(b.total)+'</span>'+
+        '<small>Free delivery over S$150 · '+b.stats.lead+' average · assembly included above where listed</small></div>'+
+      '</div>'+
+    '</div>'+
+
+    (b.flags.length ? '<div class="flags"><h4>Read this before you order</h4>'+flagHtml+'</div>' : '')+
+
+    '<div class="res-cta">'+
+      '<a class="go" href="https://wa.me/6580423952?text='+msg+'" target="_blank" rel="noopener">Send this to a specialist <span>&#8594;</span></a>'+
+      '<a class="alt" href="#">Book a showroom visit</a>'+
+      '<button class="lnk" id="again">Change my answers</button>'+
+    '</div>'+
+
+    '<p class="note">Prototype behaviour: this result is generated by a rules engine in the page. In production the same six answers would query live Magento stock and pricing, write the lead into the CRM, and hand the sales team a pre-qualified brief including block type, ceiling height and lift access, which is most of what the WhatsApp conversation currently has to establish from scratch. Items tagged <code>LIVE PRICE</code> were verified on homegym.sg; the rest are placeholders.</p>'+
+  '</div></div>';
+
+  document.getElementById('again').addEventListener('click', ()=>{ step = Q.length-1; renderStep(); scrollToQuiz(); });
+}
+
+/* space-strip shortcuts jump into the quiz with space pre-filled */
+document.querySelectorAll('.space').forEach(btn=>btn.addEventListener('click',()=>{
+  A.space = btn.dataset.jump;
+  step = 0;
+  renderStep();
+  scrollToQuiz();
+}));
+
+renderStep();
+</script>

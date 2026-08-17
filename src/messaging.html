@@ -1,0 +1,588 @@
+<title>The HomeGym Pitch</title>
+
+<style>
+:root{
+  --paper:    oklch(0.972 0.006 85);
+  --paper-2:  oklch(0.945 0.010 82);
+  --paper-3:  oklch(0.905 0.014 80);
+  --ink:      oklch(0.195 0.008 60);
+  --ink-2:    oklch(0.34 0.009 62);
+  --ink-3:    oklch(0.50 0.011 66);
+  --ink-4:    oklch(0.635 0.011 70);
+  --rule:     oklch(0.862 0.011 80);
+  --rule-2:   oklch(0.775 0.013 78);
+  --accent:   oklch(0.615 0.175 45);
+  --accent-d: oklch(0.505 0.152 43);
+  --accent-w: oklch(0.945 0.038 62);
+  --ok:       oklch(0.475 0.105 155);
+  --ok-w:     oklch(0.945 0.035 158);
+  --warn:     oklch(0.545 0.185 27);
+  --warn-w:   oklch(0.945 0.038 30);
+
+  --f-disp: "Arial Narrow","Helvetica Neue Condensed","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-body: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,monospace;
+  --ease: cubic-bezier(0.22,1,0.36,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition-duration:.01ms!important}}
+
+.page{max-width:1180px;margin:0 auto;padding:0 clamp(1.1rem,4vw,3rem) 5rem}
+.disp{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.015em;line-height:0.92;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--accent-d);text-decoration-thickness:1px;text-underline-offset:2px}
+table{font-variant-numeric:tabular-nums}
+
+/* ── doc tabs ── */
+.docnav{display:flex;gap:1px;background:var(--rule);border:1px solid var(--rule);border-top:0;margin-bottom:clamp(1.6rem,3vw,2.4rem);overflow-x:auto}
+.docnav a{flex:1;min-width:150px;background:var(--paper-2);padding:.85rem 1rem;text-decoration:none;color:var(--ink-3);transition:background .2s var(--ease),color .2s var(--ease)}
+.docnav a:hover{background:var(--paper);color:var(--ink)}
+.docnav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+.docnav .n{display:block;font-family:var(--f-mono);font-size:.55rem;letter-spacing:.14em;opacity:.7;margin-bottom:.28rem}
+.docnav .t{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.05rem;line-height:1;white-space:nowrap}
+
+/* ── masthead ── */
+.mast{border-bottom:3px solid var(--ink);padding-top:clamp(2rem,5vw,3.6rem);padding-bottom:1.4rem}
+.mast .kick{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4);margin-bottom:1.5rem}
+.mast h1{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;letter-spacing:-0.022em;line-height:0.86;font-size:clamp(2.6rem,7.4vw,5.6rem)}
+.mast h1 em{font-style:normal;color:var(--accent)}
+.mast .sub{margin-top:1.5rem;font-size:clamp(1.02rem,1.5vw,1.18rem);color:var(--ink-2);max-width:66ch;line-height:1.58}
+
+section{margin-bottom:clamp(2.8rem,5vw,4.4rem);scroll-margin-top:1.5rem}
+.sec-num{display:flex;align-items:baseline;gap:1rem;border-bottom:2px solid var(--ink);padding-bottom:.7rem;margin-bottom:1.7rem}
+.sec-num span{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.14em;color:var(--accent)}
+.sec-num h2{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(1.6rem,3.4vw,2.4rem);letter-spacing:-0.015em;line-height:1}
+.lead{font-size:1.03rem;color:var(--ink-2);max-width:68ch;margin-bottom:1.6rem;line-height:1.6}
+
+/* ── your notes marker ── */
+.yours{border:1px dashed var(--rule-2);background:var(--paper-2);padding:1rem 1.15rem;margin-bottom:1.4rem}
+.yours .lbl{display:block;font-family:var(--f-mono);font-size:.57rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.6rem}
+.yours p,.yours li{font-size:.925rem;color:var(--ink-2);line-height:1.55}
+.yours ul{margin:0;padding-left:1.1rem}
+.yours li{margin-bottom:.35rem}
+.yours li:last-child{margin-bottom:0}
+.yours q{font-style:italic;quotes:"\201C" "\201D"}
+
+/* ── the maths table ── */
+.tw{overflow-x:auto;border:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;font-size:.885rem;min-width:560px}
+th,td{text-align:left;padding:.75rem .85rem;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{background:var(--ink);color:var(--paper);font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;font-weight:500;border-bottom:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:var(--paper-2)}
+td.num{text-align:right;font-family:var(--f-mono);font-size:.83rem;white-space:nowrap}
+td.hi{background:var(--accent-w);font-weight:650;color:var(--accent-d)}
+td b{font-weight:650}
+
+/* ── pull quote / hero line ── */
+.hero-line{background:var(--ink);color:var(--paper);padding:clamp(1.6rem,3.5vw,2.6rem);margin-bottom:1.2rem}
+.hero-line .lbl{display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.hero-line q{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:clamp(1.9rem,5vw,3.4rem);line-height:0.94;letter-spacing:-0.018em;quotes:none;display:block}
+.hero-line q em{font-style:normal;color:var(--accent)}
+.hero-line .sub{margin-top:1.1rem;font-size:1rem;color:oklch(0.765 0.012 78);max-width:58ch}
+
+/* ── messaging lines ── */
+.lines{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.ln{background:var(--paper);padding:1.1rem 1.2rem;display:grid;grid-template-columns:1fr auto;gap:1.2rem;align-items:start}
+.ln .txt q{font-size:1.06rem;color:var(--ink);font-style:normal;quotes:"\201C" "\201D";line-height:1.45;display:block;font-weight:520}
+.ln .txt p{font-size:.86rem;color:var(--ink-3);margin-top:.5rem;max-width:64ch;line-height:1.5}
+.ln .verdict{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .5rem;border:1px solid var(--rule-2);white-space:nowrap;color:var(--ink-3);height:fit-content}
+.ln .verdict.keep{color:var(--ok);border-color:var(--ok);background:var(--ok-w)}
+.ln .verdict.work{color:var(--accent-d);border-color:var(--accent);background:var(--accent-w)}
+.ln .verdict.cut{color:var(--warn);border-color:var(--warn);background:var(--warn-w)}
+@media(max-width:640px){.ln{grid-template-columns:1fr}}
+
+/* ── pillars ── */
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.pil{background:var(--paper);padding:1.25rem 1.15rem;display:flex;flex-direction:column}
+.pil .n{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;color:var(--accent);margin-bottom:.6rem}
+.pil h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.32rem;line-height:1.02;margin-bottom:.6rem}
+.pil > p{font-size:.865rem;color:var(--ink-2);line-height:1.5;margin-bottom:.9rem}
+.pil .proof{margin-top:auto;padding-top:.75rem;border-top:1px solid var(--rule)}
+.pil .proof .lbl{display:block;font-family:var(--f-mono);font-size:.53rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.3rem}
+.pil .proof p{font-size:.815rem;color:var(--ink-3);line-height:1.45}
+.pil .flag{margin-top:.6rem;font-family:var(--f-mono);font-size:.53rem;letter-spacing:.09em;text-transform:uppercase;color:var(--warn)}
+@media(max-width:980px){.pillars{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.pillars{grid-template-columns:1fr}}
+
+/* ── objections ── */
+.obj{border:1px solid var(--rule);border-top:2px solid var(--ink);margin-bottom:1rem;background:var(--paper)}
+.obj > .q{padding:1.05rem 1.2rem;background:var(--paper-2);border-bottom:1px solid var(--rule);display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:baseline}
+.obj > .q .mk{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.5rem;color:var(--accent);line-height:.9}
+.obj > .q h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.3rem;line-height:1.05}
+.obj .grid{display:grid;grid-template-columns:1fr 1fr}
+.obj .col{padding:1.15rem 1.2rem}
+.obj .col + .col{border-left:1px solid var(--rule);background:var(--paper-2)}
+.obj h4{font-family:var(--f-mono);font-size:.575rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.55rem;font-weight:500}
+.obj p{font-size:.9rem;color:var(--ink-2);margin-bottom:.8rem;line-height:1.55}
+.obj p:last-child{margin-bottom:0}
+.obj .say{font-size:.95rem;color:var(--ink);font-style:italic;border-left:0;padding:.75rem .9rem;background:var(--paper);border:1px solid var(--rule-2)}
+.obj .col + .col .say{background:var(--paper)}
+@media(max-width:760px){.obj .grid{grid-template-columns:1fr}.obj .col + .col{border-left:0;border-top:1px solid var(--rule)}}
+
+/* ── brand strategy ── */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:1.3rem}
+.side{background:var(--paper);padding:1.3rem 1.25rem}
+.side h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.4rem;line-height:1;margin-bottom:.35rem}
+.side .who{font-family:var(--f-mono);font-size:.57rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-d);margin-bottom:.9rem;display:block}
+.side dl{margin:0;font-size:.875rem}
+.side dt{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);margin-top:.85rem}
+.side dt:first-child{margin-top:0}
+.side dd{margin:.25rem 0 0;color:var(--ink-2);line-height:1.5}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.callout{border:2px solid var(--ink);padding:1.2rem 1.3rem;background:var(--accent-w)}
+.callout .lbl{display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-d);margin-bottom:.6rem}
+.callout p{font-size:.955rem;color:var(--ink-2);max-width:72ch;line-height:1.6;margin-bottom:.8rem}
+.callout p:last-child{margin-bottom:0}
+.callout b{color:var(--ink);font-weight:650}
+
+/* ── funnel ── */
+.funnel{border:1px solid var(--rule)}
+.stepr{display:grid;grid-template-columns:auto 1.1fr 1.4fr;gap:1.2rem;padding:1.05rem 1.2rem;border-bottom:1px solid var(--rule);align-items:start}
+.stepr:last-child{border-bottom:0}
+.stepr:nth-child(odd){background:var(--paper-2)}
+.stepr.leak{background:var(--warn-w)}
+.stepr .n{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;font-size:1.5rem;color:var(--ink-4);line-height:.9;min-width:1.4rem}
+.stepr.leak .n{color:var(--warn)}
+.stepr h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.15rem;line-height:1.08;margin-bottom:.3rem}
+.stepr .now{font-size:.85rem;color:var(--ink-3);line-height:1.45}
+.stepr .fixbox h4{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.35rem;font-weight:500}
+.stepr .fixbox p{font-size:.87rem;color:var(--ink-2);line-height:1.5}
+.stepr .tagl{display:inline-block;font-family:var(--f-mono);font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);padding:.14rem .4rem;margin-top:.45rem}
+@media(max-width:820px){.stepr{grid-template-columns:auto 1fr}.stepr .fixbox{grid-column:2}}
+
+/* ── next actions ── */
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.act{background:var(--paper);padding:1.25rem 1.2rem}
+.act .n{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.13em;color:var(--accent);margin-bottom:.55rem}
+.act h3{font-family:var(--f-disp);font-weight:800;font-stretch:condensed;text-transform:uppercase;font-size:1.28rem;line-height:1.03;margin-bottom:.6rem}
+.act p{font-size:.87rem;color:var(--ink-2);line-height:1.52}
+@media(max-width:900px){.acts{grid-template-columns:1fr}}
+
+.caveat{border:1px solid var(--rule-2);background:var(--paper-2);padding:1.2rem 1.3rem;font-size:.895rem;color:var(--ink-2);line-height:1.6}
+.caveat b.h{display:block;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-d);margin-bottom:.55rem}
+.caveat ul{margin:.7rem 0 0;padding-left:1.1rem}
+.caveat li{margin-bottom:.4rem}
+footer{border-top:3px solid var(--ink);margin-top:3rem;padding-top:1.2rem;display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;color:var(--ink-4)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <div class="kick mono">
+    <span>Pro bono review · Positioning &amp; messaging</span>
+    <span>Built on Derek's brainstorm notes</span>
+  </div>
+  <h1>Nobody buys<br>a rack. They<br>buy <em>the habit.</em></h1>
+  <p class="sub">Your notes already contain the sharpest thing in this whole engagement: gyms cost S$200 a month, they're crowded exactly when people can go, and the best gym is the one you'll actually walk into. That is a wedge, not a slogan. This page turns it into a position, a set of lines, and answers to the two objections that kill most of your sales.</p>
+</header>
+
+<nav class="docnav">
+  <a href="teardown.html"><span class="n">Document 01</span><span class="t">The Teardown</span></a>
+  <a href="#" aria-current="page"><span class="n">Document 02</span><span class="t">Ideas &amp; Messaging</span></a>
+  <a href="prototype.html"><span class="n">Document 03</span><span class="t">The Prototype</span></a>
+</nav>
+
+<!-- ══ 01 ══ -->
+<section id="wedge">
+  <div class="sec-num"><span>01</span><h2 class="disp">The wedge</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Problem space</span>
+    <ul>
+      <li>Gyms are getting more and more expensive. S$200+ per month.</li>
+      <li>Time is scarce and you can only go before or after work.</li>
+      <li>Super crowded, waiting for equipment.</li>
+    </ul>
+  </div>
+  <p class="lead">This is the strongest material you have, and it is currently nowhere on your website. Your homepage opens with "HomeGym, your top gym equipment specialist", which says nothing a competitor couldn't also say. The three lines above say something only a home gym can answer.</p>
+  <p class="lead">The reason it works is that it reframes the price. Right now a rack is an expense sitting next to zero. Against a gym membership it is a purchase that stops costing money at a knowable date. Nobody on your site has ever done that sum for a customer.</p>
+  <p class="lead">Your S$200 figure turns out to be the conservative end. Published 2026 comparisons put <b>Virgin Active at S$220 to S$265 a month</b> and <b>Pure Fitness from S$250</b>, before add-ons. The table below uses S$220 for the premium column, so the argument holds even against the cheapest premium membership in the market.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:30%">If they're paying</th><th class="num">S$100/mo<br>budget chain</th><th class="num">S$150/mo<br>mid-tier</th><th class="num">S$220/mo<br>Virgin Active, Pure</th></tr></thead>
+    <tbody>
+      <tr><td><b>Starter setup</b><br>Dumbbells, bench, mat · S$499</td><td class="num">5.0 months</td><td class="num">3.3 months</td><td class="num hi">2.3 months</td></tr>
+      <tr><td><b>Strength setup</b><br>Folding rack, bar, plates, bench · S$1,499</td><td class="num">15.0 months</td><td class="num">10.0 months</td><td class="num hi">6.8 months</td></tr>
+      <tr><td><b>Complete gym</b><br>Full room · S$2,999</td><td class="num">30.0 months</td><td class="num">20.0 months</td><td class="num hi">13.6 months</td></tr>
+    </tbody>
+  </table></div>
+  <p class="lead" style="margin-top:1.2rem">Two multipliers make this considerably better, and both are worth saying out loud. <b>If two people in the household train, halve every number in that table.</b> A couple on Virgin Active memberships pays back the full strength setup in <b>about three and a half months</b>. And the equipment holds resale value at the end of it, where three years of membership fees are simply gone.</p>
+  <p class="lead">There's a third cost your notes point at but don't price: the commute. Four sessions a week at twenty minutes each way is roughly <b>2.7 hours a week</b>, or about six full days a year, spent travelling to a place you then queue inside.</p>
+
+  <div class="callout" style="margin-top:1.3rem">
+    <span class="lbl">The line this gives you</span>
+    <p><b>"One year at Virgin Active: S$2,640. A rack you own forever: S$1,499."</b> That is the single most persuasive sentence available to this business and nobody has written it down yet. It is checkable, it names a real alternative the reader may already be paying, and it needs no adjectives.</p>
+    <p>Three rules if you use it. Say <b>"from S$220 a month"</b> and cite the date you checked, because gym pricing moves and you don't want a factual argument with a competitor. Compare against published rack rates, not promotional sign-up offers, which is the fair version and the one that survives scrutiny. And <b>be careful which setup you put on the other side of the comparison:</b> a year at S$220 is S$2,640, which is still less than the S$2,999 complete gym. The claim only holds cleanly for the starter and strength setups, so use those.</p>
+  </div>
+</section>
+
+<!-- ══ 02 ══ -->
+<section id="prop">
+  <div class="sec-num"><span>02</span><h2 class="disp">What you're actually selling</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Value proposition</span>
+    <ul>
+      <li>In-house specialised equipment: reliable and tested quality at prices lower than branded manufacturers.</li>
+      <li>Free shipping.</li>
+      <li>Trusted by Singaporeans: 4.93 with 100+ reviews.</li>
+      <li>Decade of experience: founder Adrian has been running this business for 14 years, since his uni days.</li>
+    </ul>
+  </div>
+  <p class="lead">All four are true and only one of them is currently working hard on your site. Below is each one sharpened into something a customer feels, with a note on whether the proof is actually in place.</p>
+
+  <div class="pillars">
+    <div class="pil">
+      <span class="n mono">Pillar 01</span>
+      <h3>Built for Singapore rooms</h3>
+      <p>Not "affordable equipment". Your catalogue is genuinely engineered for the constraint everyone here has: a folding rack that collapses to 72 cm, compact racks, all-in-ones that replace three stations. That's the in-house range doing something imported brands don't bother to solve.</p>
+      <div class="proof"><span class="lbl">Proof you already own</span><p>Real folded and open dimensions on every product, and reviews from people in 3-room BTOs saying it worked.</p></div>
+    </div>
+    <div class="pil">
+      <span class="n mono">Pillar 02</span>
+      <h3>Fourteen years, one owner</h3>
+      <p>Adrian started this at university and is still running it. In a category full of dropshippers and marketplace listings that vanish when the warranty is claimed, that is the single most reassuring fact about you. It is also completely absent from your website.</p>
+      <div class="proof"><span class="lbl">Proof you already own</span><p>4.93 on Google from 100+ reviews, written proof dating back to 2013, a physical showroom, and a lifetime frame warranty you've been around long enough to actually honour.</p></div>
+      <span class="flag">Not on the site anywhere</span>
+    </div>
+    <div class="pil">
+      <span class="n mono">Pillar 03</span>
+      <h3>We build it, and we come back</h3>
+      <p>Delivery, assembly, servicing and relocation. A marketplace seller drops a box at your lift lobby. You carry it in, build it in ninety minutes, show the customer how to fold it, and you're still reachable in three years when something needs a part.</p>
+      <div class="proof"><span class="lbl">Proof you already own</span><p>Customer reviews describing the install crew by what they did, including oiling the pivot points and demonstrating the fold.</p></div>
+    </div>
+    <div class="pil">
+      <span class="n mono">Pillar 04</span>
+      <h3>Free delivery, real timelines</h3>
+      <p>Free above S$150 and a genuine three working day average. Worth stating plainly and prominently, because the alternative in this category is a four-to-six week wait on a container from overseas.</p>
+      <div class="proof"><span class="lbl">Proof you already own</span><p>Your own stated delivery averages and a local warehouse at Yishun.</p></div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.3rem">
+    <span class="lbl">Settled · use the Google number</span>
+    <p>Your site footer carries a second figure, 4.9 from 1,551, which is the on-site review count. <b>Lead with Google: 4.93 from 100+ reviews.</b> A smaller number from a source the customer can go and check themselves beats a larger one they have to take your word for, and Google reviews are the ones that show up next to your showroom in Maps when somebody searches for you.</p>
+    <p>The rule is to use one number consistently, not to hide the other. Write it as <b>"4.93 on Google, from over 100 reviews"</b> so the source is part of the claim. Keep the on-site reviews doing their real job, which is sitting on product pages as detailed written proof, and stop presenting the 1,551 as a headline rating that competes with it.</p>
+    <p><b>Where it needs to appear:</b> product pages near the price, the checkout, your ads, and the quiz result. Currently it only appears in the footer, which is the one place nobody making a decision is looking.</p>
+  </div>
+</section>
+
+<!-- ══ 03 ══ -->
+<section id="messaging">
+  <div class="sec-num"><span>03</span><h2 class="disp">The messaging</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Proposed consumer messaging</span>
+    <ul>
+      <li><q>Home Gym, The Ultimate Flex: Build a world-class gym in the comfort of your own home.</q></li>
+      <li><q>Private. Personal. Professional-Grade.</q></li>
+      <li>Home gym as an investment in yourself. A commitment to physique.</li>
+      <li><q>The best gym is the one you can go to everyday. Consistency always beats intensity.</q></li>
+      <li><q>A 20-minute workout at home is better than skipping the gym.</q></li>
+      <li>Complement your routine. Running and pull-ups outside, bench press and squats at home.</li>
+      <li>Privacy, cleanliness, and <span style="color:var(--ink-4)">[note ends here]</span></li>
+    </ul>
+  </div>
+
+  <p class="lead">My read: one of these lines is doing far more work than the others, and it isn't the one you led with.</p>
+
+  <div class="hero-line">
+    <span class="lbl">Recommended lead line</span>
+    <q>The best gym is the<br>one you'll <em>actually</em><br>go to.</q>
+    <p class="sub">Yours, with one word changed. "Can go to" states a fact. "Will actually go to" names the guilt every lapsed member already feels, and answers it in the same breath. It works because it isn't about equipment at all.</p>
+  </div>
+
+  <p class="lead">"Ultimate Flex" is the more attention-grabbing line and it has a nice double meaning, but it points at showing off. Your strongest customers, the ones in the reviews, aren't buying a status object. They're buying a way to train consistently in a small flat without paying S$200 a month to queue. Lead with the habit, keep the flex for social.</p>
+
+  <div class="lines">
+    <div class="ln">
+      <div class="txt"><q>The best gym is the one you'll actually go to.</q>
+        <p>Lead line. Names the real failure of gym memberships, which is attendance, not price. Works in an ad, on the homepage, and as the opening line of a sales conversation.</p></div>
+      <span class="verdict keep">Lead with this</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>A 20-minute session at home beats the one you skipped.</q>
+        <p>The strongest line in your notes after the one above, barely touched. It gives permission. The person reading it has skipped sessions and feels bad about it, and this tells them the bar is lower than they think.</p></div>
+      <span class="verdict keep">Use everywhere</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Your gym membership costs more than this rack. Every year.</q>
+        <p>The payback argument as a single line, pointed at the S$1,499 strength setup against S$2,640 a year at premium rates. Checkable, names a real alternative the reader may already be paying, and "every year" does the closing. In paid ads use "a premium gym" rather than a competitor's name if you'd rather not invite a fight. Do not aim this line at the S$2,999 complete gym, where the arithmetic no longer favours you.</p></div>
+      <span class="verdict keep">Strongest new line</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>4.93 on Google. 14 years. One owner.</q>
+        <p>Three facts, no adjectives. Rating, longevity, accountability, in the order a cautious buyer worries about them. Works as an ad line, a footer, and the reassurance block on a product page.</p></div>
+      <span class="verdict keep">Trust line</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Private. Personal. Professional-grade.</q>
+        <p>Good rhythm, and it covers three real benefits in three words. Best used as a supporting line under the lead, or as an ad headline on its own. Do not let it carry the whole campaign, because it describes the product rather than the customer's problem.</p></div>
+      <span class="verdict keep">Supporting line</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Run outside. Squat at home.</q>
+        <p>Your "complement your routine" note, compressed. Important because it defuses the biggest silent objection, which is that a home gym has to replace everything. It doesn't. This makes a S$499 starter setup a sensible first purchase rather than a half-measure.</p></div>
+      <span class="verdict keep">Use on entry products</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Home Gym, The Ultimate Flex.</q>
+        <p>Memorable, and the pun lands. But it aims at status, and your reviews suggest your buyers are motivated by convenience and consistency. Keep it for Instagram and finished-build photos, where showing off is the point.</p></div>
+      <span class="verdict work">Social only</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Build a world-class gym in the comfort of your own home.</q>
+        <p>"World-class" and "comfort of your own home" are both phrases every competitor can and does use. Nothing here is untrue, it's just interchangeable. If you want the aspiration, tie it to the constraint you actually solve: a serious gym that fits a room you already have.</p></div>
+      <span class="verdict cut">Rewrite</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>An investment in yourself. A commitment to your physique.</q>
+        <p>True but abstract, and it asks the reader to already be committed. The payback table in section 01 makes the same point with a number, which is far harder to argue with. Use the maths, not the sentiment.</p></div>
+      <span class="verdict work">Replace with the sum</span>
+    </div>
+    <div class="ln">
+      <div class="txt"><q>Privacy, cleanliness, and no waiting.</q>
+        <p>Your note stopped mid-sentence, so I finished it. "No waiting" is the third one because it's the specific complaint in your own problem-space notes. Together these are the three things a gym cannot give anyone at 7pm on a Tuesday.</p></div>
+      <span class="verdict keep">Completed for you</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 04 ══ -->
+<section id="objections">
+  <div class="sec-num"><span>04</span><h2 class="disp">Objection handling</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Objection handling</span>
+    <ul>
+      <li><b>Too expensive.</b> A jacked physique does not come overnight. Start slowly and build up. Progressive overload.</li>
+      <li><b>No space.</b> Start small and watch the results. A pair of adjustable dumbbells or a pull-up bar will jumpstart you along your journey.</li>
+    </ul>
+  </div>
+  <p class="lead">Both instincts are right, and both can be sharpened. The pattern that works for each: agree with the objection, reframe it, then give the smallest possible next step. I've added the three other objections that show up repeatedly in your own product reviews.</p>
+
+  <article class="obj">
+    <div class="q"><span class="mk">01</span><h3>"It's too expensive"</h3></div>
+    <div class="grid">
+      <div class="col">
+        <h4>What they actually mean</h4>
+        <p>Rarely "I can't afford it". Usually "I'm not confident enough that I'll use it to risk that much". They are pricing in the chance that it becomes a clothes rack.</p>
+        <p>Which means arguing about price loses. Arguing about risk wins.</p>
+      </div>
+      <div class="col">
+        <h4>What to say</h4>
+        <p class="say">"What are you paying for a gym now? At S$200 a month this pays for itself in about seven months, and you still own it after. Start with the rack and a bar. You can add plates as you get stronger, and progressive overload means you'll want to, so there's no point buying weight you can't lift yet."</p>
+        <p style="margin-top:.8rem">Your "progressive overload" instinct is the key. It turns a big number into a first purchase, and it's technically true rather than a sales tactic.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="obj">
+    <div class="q"><span class="mk">02</span><h3>"I don't have the space"</h3></div>
+    <div class="grid">
+      <div class="col">
+        <h4>What they actually mean</h4>
+        <p>Usually they've pictured a commercial gym in their living room and correctly concluded it won't fit. They haven't seen the small version, because your site has never shown them one sized to their room.</p>
+      </div>
+      <div class="col">
+        <h4>What to say</h4>
+        <p class="say">"How much floor can you give it? If it's a corner, adjustable dumbbells and a bench take about a square metre and stow under a bed. If you can spare two metres by one and a half, the folding rack opens for training and folds back to 72 cm against the wall. Most of our customers are in HDB flats."</p>
+        <p style="margin-top:.8rem">This is exactly what the fit quiz in document 03 automates. It's the same conversation, running while you're asleep.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="obj">
+    <div class="q"><span class="mk">03</span><h3>"My neighbours will kill me"</h3></div>
+    <div class="grid">
+      <div class="col">
+        <h4>Why this matters</h4>
+        <p>A real and specific HDB and condo fear, and the one most likely to stop a sale silently, because people don't raise it. They just don't buy.</p>
+        <p>It's an added benefit that answering it honestly sells flooring.</p>
+      </div>
+      <div class="col">
+        <h4>What to say</h4>
+        <p class="say">"Fair concern, and it's the one thing you shouldn't cheap out on. Rubber flooring under the lifting area handles it, and controlled reps on a rack are quiet anyway. It's dropping a loaded bar that carries through a slab, and that's what the flooring is for."</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="obj">
+    <div class="q"><span class="mk">04</span><h3>"I'll never get it assembled"</h3></div>
+    <div class="grid">
+      <div class="col">
+        <h4>Why this matters</h4>
+        <p>Your own reviews contain a customer who spent five hours on self-assembly and another who said it would have taken a whole day. Prospects read those.</p>
+        <p>You have the answer already and you're selling it as a S$200 dropdown option nobody understands.</p>
+      </div>
+      <div class="col">
+        <h4>What to say</h4>
+        <p class="say">"You can build it yourself, and people do, but plan on three to five hours and a second pair of hands. Or we do it in about ninety minutes, check every bolt, and show you how to fold it and where to oil it. That's the S$200."</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="obj">
+    <div class="q"><span class="mk">05</span><h3>"What if it breaks, or you disappear?"</h3></div>
+    <div class="grid">
+      <div class="col">
+        <h4>Why this matters</h4>
+        <p>The unspoken risk in buying from a smaller local seller instead of a marketplace or a global brand. A lifetime warranty is only worth something if the company outlives the product.</p>
+      </div>
+      <div class="col">
+        <h4>What to say</h4>
+        <p class="say">"We've been doing this for fourteen years, from the same showroom, under the same owner. The frame warranty is lifetime and we hold parts. If you move flat, we'll take it apart and rebuild it in the new place."</p>
+        <p style="margin-top:.8rem">This is Adrian's story earning its keep. It only works if the website says it somewhere.</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ══ 05 ══ -->
+<section id="brand">
+  <div class="sec-num"><span>05</span><h2 class="disp">Your brand vs their brand</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Open question</span>
+    <p>Home Gym branded products vs manufacturer branded products.</p>
+  </div>
+  <p class="lead">You're already running both. Vigor appears to be the house range and carries your hero products: the Titan X20, the folding power rack, the compact rack. Alongside it you stock outside names like Ironmaster. The question isn't which to pick. It's what each one is for.</p>
+
+  <div class="two">
+    <div class="side">
+      <h3 class="disp">House brand</h3>
+      <span class="who">Vigor · your hero products</span>
+      <dl>
+        <dt>What it gives you</dt><dd>Margin, and control over what gets built. You can engineer for a Singapore flat because you decide the spec.</dd>
+        <dt>What it costs you</dt><dd>Trust has to be earned rather than borrowed. A buyer has never heard of Vigor and has to be given a reason to believe.</dd>
+        <dt>Nobody can price-check you</dt><dd>The single biggest commercial advantage. A Vigor folding rack cannot be found S$200 cheaper on a marketplace, because it only exists here.</dd>
+      </dl>
+    </div>
+    <div class="side">
+      <h3 class="disp">Manufacturer brands</h3>
+      <span class="who">Ironmaster and similar</span>
+      <dl>
+        <dt>What it gives you</dt><dd>Instant credibility. Someone researching racks arrives already knowing the name, which shortens the sale considerably.</dd>
+        <dt>What it costs you</dt><dd>Thinner margin, and the customer can and will compare your price against everyone else carrying the same product.</dd>
+        <dt>Its real job</dt><dd>Being the recognisable name that gets someone through the door and makes your house range look like the better value once they're comparing.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="lbl">Recommendation</span>
+    <p><b>Keep both, but stop treating them as equals.</b> Lead with the house brand on everything space-related, because that's where you've genuinely built something nobody else sells and where price comparison is impossible. Carry a small number of well-known outside brands as trust anchors, priced honestly, and let them do the job of proving you're a real fitness retailer rather than a reseller.</p>
+    <p>The thing to fix first is that <b>your house brand currently has no story.</b> "Vigor" appears on your products as a name with nothing behind it. It needs a page saying who specifies it, what it's tested to, and why it's built the way it is. You already have the raw material: your folding rack page cites independent testing to a structural safety standard. That's exactly the kind of fact that turns an unknown name into a credible one, and right now it's buried in a bullet list halfway down a product page.</p>
+  </div>
+</section>
+
+<!-- ══ 06 ══ -->
+<section id="funnel">
+  <div class="sec-num"><span>06</span><h2 class="disp">The journey, and where it leaks</h2></div>
+  <div class="yours">
+    <span class="lbl">From your notes · Current workflow</span>
+    <ul>
+      <li>1. User receives ad or does research · 2. Visits website and looks at products · 3. Reaches out on WhatsApp to schedule visit · 4. Comes to showroom and browses · 5. Makes purchase · 6. Schedule shipping and delivery · 7. Post-order fulfilment</li>
+    </ul>
+  </div>
+  <p class="lead">Mapping your seven steps against what I found on the site. Three of them leak, and they're marked. Note that step 3 is doing a job it shouldn't have to: it's absorbing all the work step 2 fails to do.</p>
+
+  <div class="funnel">
+    <div class="stepr">
+      <span class="n">1</span>
+      <div><h3>Ad or research</h3><p class="now">They see an ad or search for home gym equipment.</p></div>
+      <div class="fixbox"><h4>Opportunity</h4><p>This is where the payback maths belongs. An ad that says "S$200 a month buys you a queue" does more work than one showing a rack.</p></div>
+    </div>
+
+    <div class="stepr leak">
+      <span class="n">2</span>
+      <div><h3>Visits the website</h3><p class="now">Looks at products, can't filter anything, and search returns the wrong item for the obvious question.</p><span class="tagl">Leak</span></div>
+      <div class="fixbox"><h4>What's wrong</h4><p>The site can list products but can't help anyone choose one. Everyone with a real question has no option but to go to step 3, including the many who instead just close the tab. You never see those.</p></div>
+    </div>
+
+    <div class="stepr leak">
+      <span class="n">3</span>
+      <div><h3>WhatsApp to schedule a visit</h3><p class="now">Every question, every space check, every booking, through one number in office hours.</p><span class="tagl">Leak · and a ceiling</span></div>
+      <div class="fixbox"><h4>What's wrong</h4><p>This step is carrying the entire sales process, and it's capped by how many messages one person can answer. Anything arriving on a Sunday waits. Fit quiz plus online booking pulls most of this load off you.</p></div>
+    </div>
+
+    <div class="stepr">
+      <span class="n">4</span>
+      <div><h3>Showroom visit</h3><p class="now">They come to French Road and browse. Not everything is on display.</p></div>
+      <div class="fixbox"><h4>Opportunity</h4><p>Your strongest step, and it should be qualified before they arrive. If the quiz already produced a spec, you know what to have out on the floor before they walk in.</p></div>
+    </div>
+
+    <div class="stepr">
+      <span class="n">5</span>
+      <div><h3>Purchase</h3><p class="now">Order placed, assembly chosen from a dropdown.</p></div>
+      <div class="fixbox"><h4>Opportunity</h4><p>Reword the assembly option here using your customers' own words. Easiest revenue in the entire report.</p></div>
+    </div>
+
+    <div class="stepr leak">
+      <span class="n">6</span>
+      <div><h3>Shipping and delivery</h3><p class="now">Scheduled manually. Confirmation SMS one to two days before.</p><span class="tagl">Manual work</span></div>
+      <div class="fixbox"><h4>Your idea, and it's a good one</h4><p>Automated WhatsApp shipping updates. Full note below.</p></div>
+    </div>
+
+    <div class="stepr">
+      <span class="n">7</span>
+      <div><h3>Post-order</h3><p class="now">Delivered, installed, and then nothing.</p></div>
+      <div class="fixbox"><h4>What's missing</h4><p>No review request, which is why your newest review is from 2021. No servicing follow-up. Every completed order should trigger both.</p></div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.3rem">
+    <span class="lbl">Your idea · Automated WhatsApp shipping updates</span>
+    <p><b>Do this one. It's cheap, and it pays back twice.</b> Order confirmed, dispatched, arriving tomorrow, crew on the way, installed. Five automatic messages on the channel your customers already use, triggered from the order status you're already updating.</p>
+    <p>The obvious return is that it removes a category of message you currently answer by hand: "where is my order". The less obvious return is the one that matters more. <b>The last message in the sequence is the natural place to ask for a review</b>, two to three weeks later, once they've actually trained on the thing. That single automation fixes the stale-reviews problem from document 01 without you doing anything extra.</p>
+    <p>Worth knowing before you scope it: WhatsApp charges for business-initiated messages and requires templates to be approved in advance, so this is a proper setup rather than a weekend job. Budget a couple of weeks and do it alongside the delivery scheduling.</p>
+  </div>
+</section>
+
+<!-- ══ 07 ══ -->
+<section id="next">
+  <div class="sec-num"><span>07</span><h2 class="disp">What to write first</h2></div>
+  <p class="lead">Three pieces of copy that need no developer and no budget. You could write all three this week.</p>
+  <div class="acts">
+    <div class="act">
+      <span class="n mono">Write this first</span>
+      <h3>The Adrian page</h3>
+      <p>Four hundred words and one photograph. Started at university, fourteen years, same showroom, why you started specifying your own equipment instead of just reselling. This is the cheapest trust you will ever buy, and it answers objection 05 permanently. Right now a visitor cannot tell whether you're a real business or a storefront.</p>
+    </div>
+    <div class="act">
+      <span class="n mono">Then this</span>
+      <h3>The homepage headline</h3>
+      <p>Replace "HomeGym, your top gym equipment specialist" with the lead line and the payback sum underneath it. Nothing else on the page has to change to test whether it works. It's the highest-traffic sentence you own and it currently says nothing.</p>
+    </div>
+    <div class="act">
+      <span class="n mono">Then this</span>
+      <h3>The Vigor page</h3>
+      <p>Who specifies it, what it's tested to, what the warranty really covers, and why it's built for small flats. Pull the safety-standard testing out of the product bullet list and give it a page. Turns an unfamiliar name into a reason to buy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 08 ══ -->
+<section id="caveats">
+  <div class="sec-num"><span>08</span><h2 class="disp">Where I've guessed</h2></div>
+  <div class="caveat">
+    <b class="h">Check these before anything goes to print</b>
+    <ul>
+      <li><b>Gym membership prices.</b> Checked 16 Aug 2026 against published 2026 comparison guides, not against the gyms' own pages. Virgin Active came back at S$220 to S$265 and Pure Fitness from S$250. Confirm on the operators' own sites before the payback table goes into a paid ad, and re-check it every few months.</li>
+      <li><b>Your Google rating.</b> 4.93 from 100+ is taken from your notes as given. I could not pull your Google Business Profile directly to verify it, so check the live figure before printing it and round down rather than up.</li>
+      <li><b>Vigor as your house brand.</b> Inferred from the catalogue, where Vigor carries your hero products and outside names sit alongside it. If that's wrong, section 05 needs rethinking.</li>
+      <li><b>Adrian's story.</b> Taken from your notes as given. Fourteen years from uni days is the detail that makes it land, so make sure the dates are right before publishing it.</li>
+      <li><b>Which lines actually work.</b> My verdicts in section 03 are judgement, not data. They're worth testing rather than trusting, and the homepage headline is the cheapest place to test.</li>
+      <li><b>Re-run the payback sums if any price changes.</b> They're arithmetic, not estimates, but they're only right for the prices in the table. If a gym raises its rate or you change a setup price, the months change with it.</li>
+    </ul>
+    <p style="margin-top:1rem;font-size:.83rem;color:var(--ink-3)">Gym pricing sources, checked 16 Aug 2026: <a href="https://gyms.sg/blog/gym-membership-prices-singapore-2026">Gyms.sg 2026 membership price guide</a>, <a href="https://www.singsaver.com.sg/credit-card/blog/cheapest-gym-in-singapore-anytime-fitness-virgin-active-and-more">SingSaver gym comparison</a>, <a href="https://www.gyms.sg/blog/pure-fitness-singapore-guide">Gyms.sg Pure Fitness guide</a>. All are third-party comparison sites rather than the operators' own pages.</p>
+  </div>
+</section>
+
+<footer>
+  <span class="mono">HomeGym.sg · Ideas &amp; messaging · Pro bono</span>
+  <span class="mono">Built on Derek's brainstorm notes</span>
+</footer>
+
+</div>
