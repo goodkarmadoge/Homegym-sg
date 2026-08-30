@@ -6,9 +6,13 @@
   "description": "Pro bono site and business teardown of homegym.sg, with a positioning brief and a guided-selling prototype",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/test-engine.mjs",
+    "build:quiz": "node scripts/build-quiz.mjs",
+    "test": "npm run test:engine && npm run test:matcher",
+    "test:engine": "node scripts/test-engine.mjs",
+    "test:matcher": "node --test test/matcher.test.mjs",
+    "sweep": "node scripts/sweep.mjs",
     "verify": "node scripts/verify.mjs",
-    "check": "npm run test && npm run build && npm run verify",
+    "check": "npm run test && npm run sweep && npm run build && npm run verify",
     "check:images": "node scripts/check-images.mjs"
   },
   "engines": {
