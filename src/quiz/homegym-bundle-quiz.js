@@ -1,9 +1,9 @@
 /**
- * <homegym-bundle-quiz> — Homegym.sg personalised bundle quiz.
+ * <homegym-bundle-quiz>, Homegym.sg personalised bundle quiz.
  *
  * A framework-agnostic custom element. Four questions, ten bundles, one match.
- * Everything renders inside an open shadow root, so it drops into any page —
- * Bootstrap, Tailwind, raw Magento — with no style bleed in either direction.
+ * Everything renders inside an open shadow root, so it drops into any page
+ * (Bootstrap, Tailwind, raw Magento) with no style bleed in either direction.
  *
  *   <homegym-bundle-quiz
  *     theme="light"                    light (default, homegym.sg's own) | dark
@@ -26,8 +26,8 @@ import { STYLES } from './styles.js';
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
 const TOTAL_STEPS = 4;
 
-/* The budget slider's ends. The top of the range is a floor, not a ceiling —
-   it renders as "S$7,500+" — so anyone with more to spend still lands on the
+/* The budget slider's ends. The top of the range is a floor, not a ceiling:
+   it renders as "S$7,500+", so anyone with more to spend still lands on the
    most capable bundle rather than being told their number is out of range. */
 const BUDGET_MIN = 2500;
 const BUDGET_MAX = 7500;
@@ -87,7 +87,7 @@ const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 /**
  * Nudge `accent` toward white (on a dark ground) or black (on a light one)
  * until it clears 4.5:1 for text. The button keeps the pure accent as its
- * background — only accent-coloured TEXT gets adjusted. Returns the original
+ * background, only accent-coloured TEXT gets adjusted. Returns the original
  * string untouched for non-hex values, which we cannot measure.
  */
 function readableAccent(accent, backgroundHex) {
@@ -231,7 +231,7 @@ class HomegymBundleQuiz extends HTMLElement {
         JSON.stringify({ step: this.state.step, answers: this.state.answers })
       );
     } catch {
-      /* Private mode, storage disabled, quota — all fine, the quiz works without it. */
+      /* Private mode, storage disabled, quota, all fine, the quiz works without it. */
     }
   }
 
@@ -247,7 +247,7 @@ class HomegymBundleQuiz extends HTMLElement {
         if (step >= 1 && step <= TOTAL_STEPS) this.state.step = step;
       }
     } catch {
-      /* Corrupt payload — start clean rather than crash. */
+      /* Corrupt payload, start clean rather than crash. */
     }
   }
 
@@ -325,8 +325,8 @@ class HomegymBundleQuiz extends HTMLElement {
 
     const canGoBack = step > 1;
     const isLast = step === TOTAL_STEPS;
-    // Once a bundle has been built, every step can jump straight back to it —
-    // otherwise correcting one answer means clicking Continue through the rest.
+    // Once a bundle has been built, every step can jump straight back to it.
+    // Otherwise correcting one answer means clicking Continue through the rest.
     const hasResult = Boolean(this.state.result);
 
     return `
@@ -351,7 +351,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <h1 class="headline" tabindex="-1" data-focus>What do you actually want to train?</h1>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
       <fieldset class="options options--two">
-        <legend class="visually-hidden">Training functions — choose at least one</legend>
+        <legend class="visually-hidden">Training functions, choose at least one</legend>
         ${FUNCTION_OPTIONS.map((o) => `
           <label class="option option--check${chosen.has(o.tag) ? ' is-selected' : ''}">
             <input type="checkbox" name="function" value="${esc(o.tag)}" ${chosen.has(o.tag) ? 'checked' : ''}>
@@ -382,7 +382,7 @@ class HomegymBundleQuiz extends HTMLElement {
     // than something to hunt past.
     return `
       <h1 class="headline" tabindex="-1" data-focus>How much floor space have you got?</h1>
-      <p class="subhead">Measure the clear area — wall to wall, in metres. Most HDB bedrooms give you about 2.5 &times; 3.</p>
+      <p class="subhead">Measure the clear area, wall to wall, in metres. Most HDB bedrooms give you about 2.5 &times; 3.</p>
       <div class="dims">
         ${dim('length', 'Length (m)', length)}
         ${dim('depth', 'Depth (m)', depth)}
@@ -500,15 +500,10 @@ class HomegymBundleQuiz extends HTMLElement {
     const bundle = BUNDLES.find((b) => b.id === this.state.shownBundleId) || res.primary;
     const a = this.state.answers;
 
-    const savings = bundle.products.reduce((sum, id) => {
-      const p = PRODUCTS[id];
-      return sum + (p.was ? p.was - p.price : 0);
-    }, 0);
-
     const matched = a.functions.filter((f) => bundle.functions.includes(f));
 
     // Deliberately no "S$X under budget" chip. Coming in under budget is a
-    // guarantee of the matcher, not a feature of this bundle — naming the
+    // guarantee of the matcher, not a feature of this bundle, naming the
     // leftover only invites the question of why we did not spend it. When a
     // bundle genuinely is over budget the fallback banner says so instead.
     const chips = [
@@ -517,8 +512,8 @@ class HomegymBundleQuiz extends HTMLElement {
         ? `${matched.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`
         : `${bundle.functions.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`,
       // The level is only a REASON when it agrees with what they told us. When
-      // it does not — an advanced lifter matched to an intermediate bundle on
-      // space and budget — saying "Intermediate level" argues against the match
+      // it does not, an advanced lifter matched to an intermediate bundle on
+      // space and budget, saying "Intermediate level" argues against the match
       // rather than for it, so fall back to another fact that is always true.
       bundle.level === a.level
         ? `Built for ${bundle.level}`
@@ -540,7 +535,6 @@ class HomegymBundleQuiz extends HTMLElement {
 
         <div class="pricebox">
           <span class="pricebox__total">${this.money(bundle.price)}</span>
-          ${savings > 0 ? `<span class="pricebox__save">you save <b>${this.money(savings)}</b> against RRP</span>` : ''}
         </div>
 
         <p class="pitch">${esc(bundle.pitch)}</p>
@@ -548,12 +542,12 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="actions">
           ${this.whatsapp
             ? `<button class="btn btn--wa btn--lg" data-action="whatsapp" type="button">${WA_SVG} Send my bundle on WhatsApp</button>`
-            /* No WhatsApp number configured — fall back to the contact page so a
+            /* No WhatsApp number configured, fall back to the contact page so a
                host embedding this can never end up with a result and no way to act. */
             : `<a class="btn btn--primary btn--lg" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                   data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
-          ${/* Only when a host has actually wired a cart. With none configured —
-                the case today — WhatsApp is the single call to action. */
+          ${/* Only when a host has actually wired a cart. With none configured
+                (the case today) WhatsApp is the single call to action. */
             this.cartEndpoint
               ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>`
               : ''}
@@ -574,7 +568,7 @@ class HomegymBundleQuiz extends HTMLElement {
           <div class="total-row">Bundle total <b>${this.money(bundle.price)}</b></div>
           <p class="fineprint">
             Prices are current sale prices as at 30 August 2026 and exclude delivery and installation,
-            which are quoted separately — these units run from 90&nbsp;kg to over 300&nbsp;kg.
+            which are quoted separately. These units run from 90&nbsp;kg to over 300&nbsp;kg.
           </p>
         </section>
 
@@ -611,9 +605,9 @@ class HomegymBundleQuiz extends HTMLElement {
     const over = res.debug?.overBudgetBy || 0;
     const text =
       res.fallback === FALLBACK.BUDGET
-        ? `Nothing fits both your space and your exact budget — this one is ${this.money(over)} over. It's the closest match we have.`
+        ? `Nothing fits both your space and your exact budget. This one is ${this.money(over)} over. It's the closest match we have.`
       : res.fallback === FALLBACK.SPACE
-        ? "This needs about 0.5 m more depth than you entered. Worth measuring again — it's the right machine for what you want to train."
+        ? "This needs about 0.5 m more depth than you entered. Worth measuring again. It's the right machine for what you want to train."
       : res.fallback === FALLBACK.SMALLEST
         ? 'Tight space. Here&rsquo;s what genuinely fits.'
         : '';
@@ -645,7 +639,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </article>`;
   }
 
-  /** Fallback tier 4 — nothing fits. Never fabricate a bundle. */
+  /** Fallback tier 4, nothing fits. Never fabricate a bundle. */
   viewTalk() {
     const a = this.state.answers;
     return `
@@ -656,7 +650,7 @@ class HomegymBundleQuiz extends HTMLElement {
           <p class="subhead" style="margin:0 auto 8px;max-width:46ch">
             At ${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m there is nothing in the range we can
             recommend in good conscience. Rather than sell you something that will not fit, we would
-            rather look at the room with you — wall-mounted and folding options open up below this size.
+            rather look at the room with you. Wall-mounted and folding options open up below this size.
           </p>
           <div class="actions">
             ${this.whatsapp
@@ -703,7 +697,7 @@ class HomegymBundleQuiz extends HTMLElement {
       v = Math.min(3, Math.max(1, Math.round(v * 2) / 2));
       this.state.answers[t.name] = v;
 
-      // Patch in place — a full re-render here would drop slider focus mid-drag.
+      // Patch in place, a full re-render here would drop slider focus mid-drag.
       this.shadowRoot.querySelectorAll(`[name="${t.name}"]`).forEach((el) => {
         if (el === t) return;
         el.value = el.type === 'number' ? v.toFixed(1) : String(v);
@@ -901,8 +895,8 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   /**
-   * Add-to-cart. Only reachable when the host has configured a cart-endpoint —
-   * with none set, WhatsApp is the single call to action and this never renders.
+   * Add-to-cart. Only reachable when the host has configured a cart-endpoint.
+   * With none set, WhatsApp is the single call to action and this never renders.
    */
   _cta() {
     const bundle = this._currentBundle();
@@ -954,7 +948,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /**
    * Open WhatsApp with the whole match pre-written, addressed to the business.
    *
-   * NOTE: a browser cannot SEND a WhatsApp message — the visitor taps send in
+   * NOTE: a browser cannot SEND a WhatsApp message, the visitor taps send in
    * their own client. Genuinely automatic sending needs the WhatsApp Business
    * Cloud API called from a server that holds the access token; that token can
    * never live in this file. See README → "The WhatsApp CTA".
@@ -965,11 +959,11 @@ class HomegymBundleQuiz extends HTMLElement {
     const lines = [];
 
     if (bundle) {
-      lines.push(`Hi Homegym.sg — I took the bundle quiz and got *${bundle.name}* (${this.money(bundle.price)}).`);
+      lines.push(`Hi Homegym.sg, I took the bundle quiz and got *${bundle.name}* (${this.money(bundle.price)}).`);
       lines.push('');
       lines.push('*My answers*');
     } else {
-      lines.push('Hi Homegym.sg — I took the bundle quiz and nothing in the range fits my space.');
+      lines.push('Hi Homegym.sg, I took the bundle quiz and nothing in the range fits my space.');
       lines.push('');
       lines.push('*My answers*');
     }
@@ -985,12 +979,12 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('*The bundle*');
       bundle.products.forEach((id) => {
         const p = PRODUCTS[id];
-        if (p) lines.push(`- ${p.name} — ${this.money(p.price)}`);
+        if (p) lines.push(`- ${p.name}: ${this.money(p.price)}`);
       });
       lines.push('');
       lines.push(`Total: ${this.money(bundle.price)}`);
       lines.push('');
-      lines.push('Could you confirm availability, delivery and installation — and when I could come down to the showroom to try these?');
+      lines.push('Could you confirm availability, delivery and installation, and when I could come down to the showroom to try these?');
     } else {
       lines.push('');
       lines.push('Could you advise what would work in this space, and when I could come down to the showroom?');

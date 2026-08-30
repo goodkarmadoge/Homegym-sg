@@ -22,7 +22,7 @@ export const PAGES = [
   { file: 'bundle-quiz.html', emoji: '🎯',
     desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.',
     // homegym.sg's own typefaces: Open Sans for body, Oswald for nav and
-    // buttons. Loaded here so they are available inside the shadow root too —
+    // buttons. Loaded here so they are available inside the shadow root too:
     // font loading is document-scoped, not tree-scoped. On homegym.sg itself
     // both are already loaded and this costs nothing.
     head: '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
@@ -90,12 +90,12 @@ function main() {
 
     if (p.file === 'bundle-quiz.html') {
       if (!body.includes(QUIZ_SCRIPT_TAG)) {
-        console.error(`${p.file}: the quiz module tag is missing — expected exactly:\n  ${QUIZ_SCRIPT_TAG}`);
+        console.error(`${p.file}: the quiz module tag is missing, expected exactly:\n  ${QUIZ_SCRIPT_TAG}`);
         process.exit(1);
       }
       // Replacer FUNCTION, not a replacement string: the bundle contains
       // `'S$' + value` for the SGD prefix, and in a replacement string `$'`
-      // means "everything after the match" — it silently ate the quote and
+      // means "everything after the match", it silently ate the quote and
       // shipped a page whose script would not parse.
       body = body.replace(QUIZ_SCRIPT_TAG, () => `<script>\n${quizBundle}\n</script>`);
     }
