@@ -293,7 +293,18 @@ export const STYLES = css`
     padding: 18px;
     margin-bottom: 22px;
   }
-  .room svg { display: block; width: 100%; height: auto; }
+  /* The plan is a reference, not the hero of the step, so it is capped rather
+     than allowed to fill the column — unconstrained it rendered around 700px
+     square on desktop. At 340px it is roughly half that and the SVG's own type
+     lands at a normal 13–14px instead of being scaled up to 30px. On a narrow
+     phone the cap never binds, so nothing shrinks below what it was. */
+  .room svg {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    height: auto;
+    margin: 0 auto;
+  }
   .room__caption {
     display: flex;
     justify-content: space-between;
@@ -412,6 +423,13 @@ export const STYLES = css`
   .btn--wa:hover { filter: brightness(1.06); }
   .btn--wa svg { width: 19px; height: 19px; }
 
+  /* WhatsApp is the single call to action on the result, so it carries the
+     weight a primary button normally would. */
+  .btn--lg { min-height: 56px; padding: 0 32px; font-size: 16px; }
+  .btn--lg svg { width: 22px; height: 22px; }
+
+  .cta-note { margin-top: 14px; max-width: 52ch; }
+
   .btn--text {
     font-family: var(--f-body);
     background: none;
@@ -427,13 +445,6 @@ export const STYLES = css`
     font-size: 14px;
   }
   .btn--text:hover { color: var(--text); }
-
-  .link-inline {
-    color: var(--link-ink);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    font-weight: 700;
-  }
 
   .validation {
     color: var(--sale-ink);

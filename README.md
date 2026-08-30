@@ -54,9 +54,9 @@ Every attribute is optional; the values above are the defaults.
 | `theme` | `light` (default, homegym.sg's own white ground) or `dark` |
 | `accent` | Any CSS colour. Hex values are contrast-corrected — see below |
 | `currency` | Currency code. `SGD` renders as `S$2,241`; anything else goes through `Intl.NumberFormat` |
-| `cart-endpoint` | If set, the primary CTA becomes **Add all to cart** and POSTs the product list here. If unset, it becomes **Enquire about this bundle** |
-| `contact-url` | Where the enquiry CTA and the "let's talk" card send people |
-| `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces |
+| `cart-endpoint` | Optional. If set, an **Add all to cart** button appears alongside the WhatsApp CTA and POSTs the product list here. Unset by default, so WhatsApp is the only call to action |
+| `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
+| `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
 | `start-step` | Deep-link straight to a step, 1–4 |
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
@@ -90,7 +90,7 @@ Every meaningful action fires a `CustomEvent` that bubbles and crosses the shado
 | `quiz:step` | `{ step, answers }` |
 | `quiz:complete` | `{ answers, bundleId, bundleName, price, fallbackUsed }` |
 | `quiz:product-click` | `{ bundleId, productId, productName, price, url }` |
-| `quiz:cta-click` | `{ bundleId, bundleName, price, action }` — `action` is `enquire`, `add-to-cart` or `whatsapp` |
+| `quiz:cta-click` | `{ bundleId, bundleName, price, action }` — `action` is `whatsapp` or `add-to-cart` |
 | `quiz:alternate-view` | `{ fromBundleId, toBundleId }` |
 | `quiz:restart` | `{ completedBefore }` |
 
@@ -159,7 +159,7 @@ Rung 3 currently never fires: rung 2's space relaxation always unlocks something
 
 ## The WhatsApp CTA
 
-The secondary CTA opens WhatsApp with the whole match pre-written — answers, bundle, every product and price — addressed to the business number, and the visitor taps send.
+WhatsApp is **the** call to action on the result view. It opens WhatsApp with the whole match pre-written — answers, bundle, every product and price — addressed to the business number, and the visitor taps send. The message closes by asking to confirm availability and book a showroom visit, which is what the supporting line under the button promises.
 
 **A web page cannot send a WhatsApp message on someone's behalf.** There is no browser API for it. Automatic sending requires the WhatsApp Business Cloud API called from a server holding an access token, and that token can never live in client-side JavaScript — publishing it would let anyone send messages as HomeGym. The deep link is the honest version: one tap, no backend, no per-message cost, and it arrives as a real conversation you can reply to.
 
