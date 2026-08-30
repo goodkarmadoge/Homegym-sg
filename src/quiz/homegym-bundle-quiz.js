@@ -356,12 +356,12 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="view">
           <div aria-live="polite" class="visually-hidden">Step ${step} of ${TOTAL_STEPS}</div>
           ${inner}
-          <div class="validation" role="status">${esc(blocked)}</div>
           <div class="actions">
             <button class="btn btn--primary" data-action="next" type="button"
                     ${blocked ? 'disabled aria-disabled="true"' : ''}>
               ${isLast ? 'Build my bundle' : 'Continue'} ${ARROW}
             </button>
+            <span class="validation" role="status">${esc(blocked)}</span>
             ${canGoBack ? `<button class="btn btn--text" data-action="back" type="button">${BACK_ARROW} Back</button>` : ''}
             ${hasResult && !isLast ? `<button class="btn btn--text" data-action="forward" type="button">Forward to my bundle ${ARROW}</button>` : ''}
           </div>

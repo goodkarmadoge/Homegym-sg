@@ -47,12 +47,12 @@ p{margin:0}
 
 header .wrap{
   display:flex;align-items:center;justify-content:space-between;
-  gap:16px;min-height:76px;flex-wrap:wrap;
+  gap:16px;min-height:58px;flex-wrap:wrap;
 }
 .logo{display:flex;align-items:center;text-decoration:none}
 /* The logo is colour artwork; the system prints photography black and white but
    a brand mark is not photography, so it is left alone. */
-.logo img{display:block;height:34px;width:auto}
+.logo img{display:block;height:28px;width:auto}
 .masthead-note{
   font-size:13px;font-weight:800;letter-spacing:.12em;
   text-transform:uppercase;color:var(--n700);
@@ -63,35 +63,48 @@ header .wrap{
 
 /* ── Hero ───────────────────────────────────────────────────────────────── */
 
-.hero{padding:clamp(28px,6vw,64px) 0 clamp(20px,3vw,32px)}
+/* One horizontal band rather than a stack. The headline sits left, the
+   supporting copy and the counts run beside it, so the hero uses the full
+   column width instead of a narrow ribbon down the left with the whole right
+   half empty. Whole band is roughly 150px tall, which leaves the fold for the
+   quiz itself. */
+.hero{padding:clamp(14px,2vw,22px) 0 clamp(12px,1.4vw,16px);border-bottom:2px solid var(--divider)}
+.hero .wrap{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:clamp(20px,4vw,56px);flex-wrap:wrap;
+}
+/* The lead takes the width its headline needs so BUILD YOUR BUNDLE sets on
+   one line on a laptop; the aside takes what is left. */
+.hero__lead{flex:1 1 560px;min-width:min(100%,300px)}
+.hero__aside{flex:0 1 420px;min-width:min(100%,300px)}
+
 .hero .kicker{
   font-size:13px;font-weight:800;letter-spacing:.12em;
   text-transform:uppercase;color:var(--accent-700);
 }
 .hero h1{
-  margin:16px 0 0;
+  margin:10px 0 0;
   font-weight:800;text-transform:uppercase;
-  font-size:clamp(38px,7vw,76px);line-height:.95;letter-spacing:-.03em;
-  max-width:16ch;
+  /* No max-width: at this size "BUILD YOUR BUNDLE" sets on one line on a
+     laptop, which is what stops the band being three deep. */
+  font-size:clamp(32px,4.6vw,56px);line-height:.95;letter-spacing:-.03em;
 }
 .hero p{
-  margin:20px 0 0;max-width:52ch;color:var(--n700);
-  font-size:clamp(15px,1.4vw,17px);
+  margin:0;color:var(--n700);
+  font-size:clamp(15px,1.3vw,16px);line-height:1.5;
 }
 
+/* The three counts as one line of small caps rather than three stat blocks,
+   and a single rule under the band instead of a rule above and below. */
 .facts{
-  display:flex;flex-wrap:wrap;gap:clamp(24px,5vw,56px);
-  margin-top:clamp(24px,4vw,40px);
-  border-top:2px solid var(--divider);border-bottom:2px solid var(--divider);
-  padding:20px 0;
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px clamp(16px,2vw,28px);
+  margin-top:12px;
+  font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--n700);
 }
 .fact .n{
-  font-size:clamp(24px,3.4vw,38px);font-weight:800;
-  line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
-}
-.fact .l{
-  margin-top:8px;color:var(--n700);
-  font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  font-size:15px;color:var(--text);letter-spacing:0;
+  font-variant-numeric:tabular-nums;margin-right:6px;
 }
 
 /* ── Quiz mount ─────────────────────────────────────────────────────────── */
@@ -129,17 +142,17 @@ footer a{color:var(--accent-700)}
 <main>
   <section class="hero">
     <div class="wrap">
-      <p class="kicker">Four questions</p>
-      <h1>Build your bundle</h1>
-      <p>
-        Tell us what you want to train, the floor you have, where you are at and what
-        you will spend. We will match you to one complete setup. Every item priced and
-        linked, nothing to work out yourself.
-      </p>
-      <div class="facts">
-        <div class="fact"><div class="n">10</div><div class="l">Bundles</div></div>
-        <div class="fact"><div class="n">4</div><div class="l">Questions</div></div>
-        <div class="fact"><div class="n">60s</div><div class="l">To an answer</div></div>
+      <div class="hero__lead">
+        <p class="kicker">Four questions</p>
+        <h1>Build your bundle</h1>
+      </div>
+      <div class="hero__aside">
+        <p>What you want to train, your floor, your level, your budget. We match one complete setup, every item priced and linked.</p>
+        <p class="facts">
+          <span class="fact"><span class="n">10</span>Bundles</span>
+          <span class="fact"><span class="n">4</span>Questions</span>
+          <span class="fact"><span class="n">60s</span>To an answer</span>
+        </p>
       </div>
     </div>
   </section>

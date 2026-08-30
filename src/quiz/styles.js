@@ -103,7 +103,7 @@ export const STYLES = css`
   .quiz {
     max-width: 1180px;
     margin: 0 auto;
-    padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 40px) 80px;
+    padding: clamp(10px, 1.2vw, 16px) clamp(16px, 4vw, 40px) 80px;
   }
 
   /* Every step body rises in. Killed entirely under reduced motion. */
@@ -115,7 +115,7 @@ export const STYLES = css`
 
   /* ── Progress header ────────────────────────────────────────────────────── */
 
-  .progress { margin-bottom: clamp(28px, 4vw, 46px); }
+  .progress { margin-bottom: clamp(16px, 2vw, 24px); }
   .progress__meta {
     display: flex;
     justify-content: space-between;
@@ -147,20 +147,20 @@ export const STYLES = css`
   [data-focus]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .headline {
-    font-size: clamp(32px, 5.4vw, 60px);
+    font-size: clamp(28px, 3.8vw, 46px);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: -0.02em;
-    line-height: 0.95;
-    max-width: 20ch;
-    margin-bottom: 18px;
+    line-height: 0.98;
+    max-width: 24ch;
+    margin-bottom: 10px;
   }
   .subhead {
     font-size: clamp(15px, 1.4vw, 17px);
     font-weight: 400;
     color: var(--n700);
-    max-width: 46ch;
-    margin-bottom: clamp(24px, 3vw, 34px);
+    max-width: 60ch;
+    margin-bottom: clamp(14px, 1.6vw, 20px);
     line-height: 1.5;
   }
   .eyebrow {
@@ -418,7 +418,7 @@ export const STYLES = css`
     align-items: center;
     gap: 22px;
     flex-wrap: wrap;
-    margin-top: clamp(34px, 5vw, 60px);
+    margin-top: clamp(14px, 1.6vw, 20px);
   }
   .actions--result { gap: 12px; margin-top: 26px; }
 
@@ -477,12 +477,14 @@ export const STYLES = css`
   }
   .btn--text:hover { color: var(--accent-700); }
 
+  /* Sits in the actions row beside the disabled button rather than above it,
+     so an unanswered step does not reserve a band of its own. */
   .validation {
     font-size: 14px;
     font-weight: 600;
     color: var(--accent-700);
-    min-height: 20px;
-    margin-top: 14px;
+    max-width: 34ch;
+    line-height: 1.35;
   }
 
   /* ── Matching transition ────────────────────────────────────────────────── */
