@@ -26,6 +26,12 @@ import { STYLES } from './styles.js';
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
 const TOTAL_STEPS = 4;
 
+/* The budget slider's ends. The top of the range is a floor, not a ceiling —
+   it renders as "S$7,500+" — so anyone with more to spend still lands on the
+   most capable bundle rather than being told their number is out of range. */
+const BUDGET_MIN = 2500;
+const BUDGET_MAX = 7500;
+
 const DEFAULT_ANSWERS = {
   functions: [],
   length: 2.5,
@@ -48,6 +54,7 @@ const WA_SVG =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.23-8.24 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.78.97-.15.16-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29Z"/></svg>';
 
 const ARROW = '<span aria-hidden="true">&#8594;</span>';
+const BACK_ARROW = '<span aria-hidden="true">&#8592;</span>';
 
 /* ── Colour: keep a client-supplied accent readable ──────────────────────── */
 
@@ -318,6 +325,9 @@ class HomegymBundleQuiz extends HTMLElement {
 
     const canGoBack = step > 1;
     const isLast = step === TOTAL_STEPS;
+    // Once a bundle has been built, every step can jump straight back to it —
+    // otherwise correcting one answer means clicking Continue through the rest.
+    const hasResult = Boolean(this.state.result);
 
     return `
       <div class="quiz">
@@ -326,10 +336,11 @@ class HomegymBundleQuiz extends HTMLElement {
         ${inner}
         <div class="validation" role="alert">${esc(this.state.error)}</div>
         <div class="actions">
+          ${canGoBack ? `<button class="btn btn--ghost" data-action="back" type="button">${BACK_ARROW} Back</button>` : ''}
           <button class="btn btn--primary" data-action="next" type="button">
-            ${isLast ? 'Show my bundle' : 'Continue'} ${ARROW}
+            ${isLast ? 'Build my bundle' : 'Continue'} ${ARROW}
           </button>
-          ${canGoBack ? '<button class="btn btn--text" data-action="back" type="button">Back</button>' : ''}
+          ${hasResult && !isLast ? `<button class="btn btn--text" data-action="forward" type="button">Forward to my bundle ${ARROW}</button>` : ''}
         </div>
       </div>`;
   }
@@ -366,25 +377,23 @@ class HomegymBundleQuiz extends HTMLElement {
         </div>
       </div>`;
 
+    // Controls first, diagram second: the sliders are what the user came here to
+    // operate, and the plan below them reads as the result of the input rather
+    // than something to hunt past.
     return `
       <h1 class="headline" tabindex="-1" data-focus>How much floor space have you got?</h1>
       <p class="subhead">Measure the clear area — wall to wall, in metres. Most HDB bedrooms give you about 2.5 &times; 3.</p>
+      <div class="dims">
+        ${dim('length', 'Length (m)', length)}
+        ${dim('depth', 'Depth (m)', depth)}
+      </div>
       <div class="room">${this.roomSvg(length, depth)}
         <div class="room__caption">
           <span>Drawn to scale against a 3 &times; 3 m reference</span>
           <span class="room__area" data-room-area>${(length * depth).toFixed(2)} m&sup2;</span>
         </div>
       </div>
-      <div class="dims">
-        ${dim('length', 'Length (m)', length)}
-        ${dim('depth', 'Depth (m)', depth)}
-      </div>
-      <p class="note">Add at least 0.5 m of clearance in front of any rack for pulling the bar out. We've already accounted for this in every bundle footprint.</p>
-      <p class="note" style="margin-top:10px">
-        More than 3 &times; 3?
-        <a class="link-inline" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
-           data-action="custom-build">Talk to us about a custom build ${ARROW}</a>
-      </p>`;
+      <p class="note">Add at least 0.5 m of clearance in front of any rack for pulling the bar out. We've already accounted for this in every bundle footprint.</p>`;
   }
 
   /**
@@ -451,15 +460,24 @@ class HomegymBundleQuiz extends HTMLElement {
       </fieldset>`;
   }
 
+  /** The top of the range reads as a floor, so "S$7,500" renders "S$7,500+". */
+  budgetLabel(v) {
+    return this.money(v) + (v >= BUDGET_MAX ? '+' : '');
+  }
+
   step4() {
     const b = this.state.answers.budget;
     return `
       <h1 class="headline" tabindex="-1" data-focus>What's your budget?</h1>
       <p class="subhead">All prices in SGD. Delivery and installation quoted separately.</p>
-      <div class="budget__value" data-budget-value aria-live="polite">${this.money(b)}</div>
-      <input type="range" name="budget" min="2500" max="7500" step="250" value="${b}"
-             aria-label="Budget in Singapore dollars">
-      <div class="budget__ends"><span>${this.money(2500)}</span><span>${this.money(7500)}</span></div>
+      <div class="budget__value" data-budget-value aria-live="polite">${this.budgetLabel(b)}</div>
+      <input type="range" name="budget" min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="250" value="${b}"
+             aria-label="Budget in Singapore dollars"
+             aria-valuetext="${this.budgetLabel(b)}">
+      <div class="budget__ends">
+        <span>${this.money(BUDGET_MIN)}</span>
+        <span>${this.money(BUDGET_MAX)}+</span>
+      </div>
       <p class="note" style="margin-top:22px">Every bundle we show is priced at current sale prices and comes in under your number.</p>`;
   }
 
@@ -468,7 +486,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="quiz">
         <div class="matching">
           <div class="matching__spinner" aria-hidden="true"></div>
-          <p class="headline" tabindex="-1" data-focus role="status">Matching you to a bundle&hellip;</p>
+          <p class="headline" tabindex="-1" data-focus role="status">Building your personalized home gym&hellip;</p>
         </div>
       </div>`;
   }
@@ -488,14 +506,23 @@ class HomegymBundleQuiz extends HTMLElement {
     }, 0);
 
     const matched = a.functions.filter((f) => bundle.functions.includes(f));
-    const under = a.budget - bundle.price;
 
+    // Deliberately no "S$X under budget" chip. Coming in under budget is a
+    // guarantee of the matcher, not a feature of this bundle — naming the
+    // leftover only invites the question of why we did not spend it. When a
+    // bundle genuinely is over budget the fallback banner says so instead.
     const chips = [
       `Fits ${bundle.footprint.length.toFixed(1)} &times; ${bundle.footprint.depth.toFixed(1)} m`,
       matched.length
         ? `${matched.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`
         : `${bundle.functions.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`,
-      under >= 0 ? `${this.money(under)} under budget` : `${this.money(-under)} over your number`
+      // The level is only a REASON when it agrees with what they told us. When
+      // it does not — an advanced lifter matched to an intermediate bundle on
+      // space and budget — saying "Intermediate level" argues against the match
+      // rather than for it, so fall back to another fact that is always true.
+      bundle.level === a.level
+        ? `Built for ${bundle.level}`
+        : `${bundle.trains.length} movements covered`
     ];
 
     const alternates = res.alternates.filter((alt) => alt.id !== bundle.id).slice(0, 2);
@@ -519,11 +546,22 @@ class HomegymBundleQuiz extends HTMLElement {
         <p class="pitch">${esc(bundle.pitch)}</p>
 
         <div class="actions">
-          <button class="btn btn--primary" data-action="cta" type="button">
-            ${this.cartEndpoint ? 'Add all to cart' : 'Enquire about this bundle'} ${ARROW}
-          </button>
-          ${this.whatsapp ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send this to us on WhatsApp</button>` : ''}
+          ${this.whatsapp
+            ? `<button class="btn btn--wa btn--lg" data-action="whatsapp" type="button">${WA_SVG} Send my bundle on WhatsApp</button>`
+            /* No WhatsApp number configured — fall back to the contact page so a
+               host embedding this can never end up with a result and no way to act. */
+            : `<a class="btn btn--primary btn--lg" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+                  data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
+          ${/* Only when a host has actually wired a cart. With none configured —
+                the case today — WhatsApp is the single call to action. */
+            this.cartEndpoint
+              ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>`
+              : ''}
         </div>
+        <p class="note cta-note">
+          Want to try before you buy? Send it over and we'll book you a time to come
+          down to the showroom and put your hands on everything in this bundle.
+        </p>
 
         <section class="section">
           <h2 class="section__title">What you'll train</h2>
@@ -560,6 +598,7 @@ class HomegymBundleQuiz extends HTMLElement {
         </section>` : ''}
 
         <div class="retake">
+          <button class="btn btn--ghost" data-action="back-to-steps" type="button">${BACK_ARROW} Back to my budget</button>
           <button class="btn btn--text" data-action="adjust" type="button">Adjust my answers</button>
           <button class="btn btn--text" data-action="restart" type="button">Start over</button>
         </div>
@@ -620,9 +659,11 @@ class HomegymBundleQuiz extends HTMLElement {
             rather look at the room with you — wall-mounted and folding options open up below this size.
           </p>
           <div class="actions">
-            <a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
-               data-action="cta-contact">Talk to us ${ARROW}</a>
-            ${this.whatsapp ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} WhatsApp us</button>` : ''}
+            ${this.whatsapp
+              ? `<button class="btn btn--wa btn--lg" data-action="whatsapp" type="button">${WA_SVG} Message us on WhatsApp</button>`
+              : `<a class="btn btn--primary btn--lg" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+                    data-action="cta-contact">Talk to us ${ARROW}</a>`}
+            <button class="btn btn--ghost" data-action="back-to-steps" type="button">${BACK_ARROW} Back</button>
             <button class="btn btn--text" data-action="restart" type="button">Start over</button>
           </div>
         </div>
@@ -684,7 +725,8 @@ class HomegymBundleQuiz extends HTMLElement {
       if (!Number.isFinite(v)) return;
       this.state.answers.budget = v;
       const display = this.shadowRoot.querySelector('[data-budget-value]');
-      if (display) display.textContent = this.money(v);
+      if (display) display.textContent = this.budgetLabel(v);
+      t.setAttribute('aria-valuetext', this.budgetLabel(v));
       this._save();
     }
   }
@@ -697,6 +739,8 @@ class HomegymBundleQuiz extends HTMLElement {
     switch (action) {
       case 'next':      e.preventDefault(); this._next(); break;
       case 'back':      e.preventDefault(); this._back(); break;
+      case 'forward':   e.preventDefault(); this._forward(); break;
+      case 'back-to-steps': e.preventDefault(); this._backToSteps(); break;
       case 'restart':   e.preventDefault(); this._restart(); break;
       case 'adjust':    e.preventDefault(); this._adjust(); break;
       case 'alternate': e.preventDefault(); this._showAlternate(parseInt(el.dataset.bundle, 10)); break;
@@ -776,6 +820,28 @@ class HomegymBundleQuiz extends HTMLElement {
     window.setTimeout(finish, 1200);
   }
 
+  /**
+   * Forward from a step straight to the finished bundle, skipping the steps in
+   * between. Only offered once a bundle exists, so every answer it needs has
+   * already been given and validated. Re-runs the match rather than restoring
+   * the old result, since the whole point is that an answer just changed.
+   */
+  _forward() {
+    if (!this.state.result) return;
+    this._submit();
+  }
+
+  /** Back out of the result to the last question, answers intact. */
+  _backToSteps() {
+    this.state.view = 'quiz';
+    this.state.step = TOTAL_STEPS;
+    this.state.error = '';
+    this._shouldFocus = true;
+    this._save();
+    this.render();
+    this.emit('quiz:step', { step: TOTAL_STEPS, answers: this._answersOut() });
+  }
+
   _adjust() {
     this.state.view = 'quiz';
     this.state.step = 1;
@@ -834,30 +900,22 @@ class HomegymBundleQuiz extends HTMLElement {
     });
   }
 
+  /**
+   * Add-to-cart. Only reachable when the host has configured a cart-endpoint —
+   * with none set, WhatsApp is the single call to action and this never renders.
+   */
   _cta() {
     const bundle = this._currentBundle();
-    if (!bundle) return;
-    const action = this.cartEndpoint ? 'add-to-cart' : 'enquire';
+    if (!bundle || !this.cartEndpoint) return;
 
     this.emit('quiz:cta-click', {
       bundleId: bundle.id,
       bundleName: bundle.name,
       price: bundle.price,
-      action
+      action: 'add-to-cart'
     });
 
-    if (this.cartEndpoint) {
-      this._postToCart(bundle);
-      return;
-    }
-
-    // No cart endpoint: hand off to the contact page in a NEW TAB, carrying the
-    // match so the enquiry arrives with context. The host page is never navigated.
-    const url = new URL(this.contactUrl, window.location.href);
-    url.searchParams.set('bundle', bundle.name);
-    url.searchParams.set('bundle_id', String(bundle.id));
-    url.searchParams.set('price', String(bundle.price));
-    window.open(url.toString(), '_blank', 'noopener');
+    this._postToCart(bundle);
   }
 
   /**
@@ -932,10 +990,10 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('');
       lines.push(`Total: ${this.money(bundle.price)}`);
       lines.push('');
-      lines.push('Could you confirm availability, delivery and installation for this?');
+      lines.push('Could you confirm availability, delivery and installation — and when I could come down to the showroom to try these?');
     } else {
       lines.push('');
-      lines.push('Could you advise what would work in this space?');
+      lines.push('Could you advise what would work in this space, and when I could come down to the showroom?');
     }
 
     this.emit('quiz:cta-click', {
