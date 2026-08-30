@@ -6,9 +6,25 @@
  * the host might otherwise inherit into the component (Bootstrap and Tailwind
  * both set box-sizing and line-height globally).
  *
- * Colour tokens are defined once on :host and overridden for the light theme.
- * --accent-ink is computed at runtime (see contrast.js) so a client-supplied
- * accent still clears 4.5:1 for text.
+ * ── The palette is homegym.sg's own, read off the live site on 30 Aug 2026 ──
+ *   ground        #FFFFFF
+ *   body text     #333333
+ *   body face     "Open Sans", Helvetica, Arial
+ *   display face  Oswald (their nav and .action buttons)
+ *   primary CTA   #FF6924 with BLACK text, square corners
+ *   links         #22B4FF
+ *   sale red      #F64127
+ *   borders       0px radius everywhere — their whole UI is square
+ *
+ * Two deliberate departures from the live site, both accessibility fixes:
+ *   1. Link blue #22B4FF scores 2.32:1 on white and fails WCAG AA badly. Text
+ *      uses --link-ink (#0077B3, 4.89:1) instead; the raw blue is kept for
+ *      non-text accents where contrast rules do not apply.
+ *   2. #FF6924 as TEXT on white is 2.88:1. --accent-ink is recomputed at runtime
+ *      (see readableAccent in the component) so accent-coloured text always
+ *      clears 4.5:1, whatever accent a host page passes in.
+ *
+ * The dark theme is kept behind theme="dark" for placements on a dark ground.
  */
 
 /** Identity tag — exists so editors syntax-highlight the block as CSS. */
@@ -21,37 +37,51 @@ export const STYLES = css`
     display: block;
     contain: layout style;
 
-    --bg: #0E0E10;
-    --surface: #17171A;
-    --surface-2: #1F1F23;
-    --text: #F5F5F3;
-    --muted: #8A8A8F;
-    --line: #2A2A30;
-    --accent: #FF5A1F;
-    --accent-ink: #FF5A1F;      /* text-safe accent, recomputed at runtime */
-    --on-accent: #0E0E10;
+    /* Light — homegym.sg's own palette. This is the default. */
+    --bg: #FFFFFF;
+    --surface: #F7F7F7;
+    --surface-2: #F0F0F0;
+    --text: #333333;
+    --muted: #666666;
+    --line: #DDDDDD;
+    --line-strong: #BBBBBB;
+    --accent: #FF6924;
+    --accent-ink: #FF6924;      /* text-safe accent, recomputed at runtime */
+    --on-accent: #000000;       /* their CTA buttons use black text */
+    --link: #22B4FF;
+    --link-ink: #0077B3;        /* AA-safe version of the link blue */
+    --sale: #F64127;            /* their brand red — background only, black text on it */
+    --sale-ink: #C62D14;        /* AA-safe red for red TEXT on white */
     --tile: #FFFFFF;            /* product images always sit on white */
-    --radius: 12px;
-    --radius-lg: 18px;
+
+    --radius: 0px;              /* homegym.sg is square throughout */
+    --radius-lg: 0px;
     --step: 180ms;
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --f-body: "Open Sans", Helvetica, Arial, sans-serif;
+    --f-display: Oswald, "Open Sans", Helvetica, Arial, sans-serif;
+
+    font-family: var(--f-body);
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  :host([theme='light']) {
-    --bg: #FFFFFF;
-    --surface: #F6F6F4;
-    --surface-2: #EDEDEA;
-    --text: #0E0E10;
-    --muted: #5A5A60;
-    --line: #DCDCD8;
+  :host([theme='dark']) {
+    --bg: #111111;
+    --surface: #1A1A1A;
+    --surface-2: #222222;
+    --text: #F5F5F3;
+    --muted: #A8A8A8;
+    --line: #333333;
+    --line-strong: #4A4A4A;
+    --on-accent: #000000;
+    --sale-ink: #FF8A70;
+    --link-ink: #5CC8FF;
     --tile: #FFFFFF;
   }
 
@@ -60,7 +90,7 @@ export const STYLES = css`
   .quiz {
     max-width: 860px;
     margin: 0 auto;
-    padding: 24px 20px 64px;
+    padding: 28px 20px 64px;
   }
   .quiz--result { max-width: 1100px; }
 
@@ -71,22 +101,22 @@ export const STYLES = css`
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+    font-family: var(--f-display);
     font-size: 13px;
-    letter-spacing: 0.08em;
+    font-weight: 500;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 10px;
   }
   .progress__track {
-    height: 3px;
-    background: var(--line);
-    border-radius: 2px;
+    height: 4px;
+    background: var(--surface-2);
     overflow: hidden;
   }
   .progress__fill {
     height: 100%;
     background: var(--accent);
-    border-radius: 2px;
     transition: width var(--step) var(--ease);
   }
 
@@ -102,30 +132,33 @@ export const STYLES = css`
   [data-focus]:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
 
   .headline {
-    font-size: clamp(1.5rem, 4.5vw, 2.125rem);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-    font-weight: 650;
-    margin-bottom: 10px;
+    font-family: var(--f-display);
+    font-size: clamp(1.6rem, 5vw, 2.5rem);
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 12px;
   }
   .subhead {
     color: var(--muted);
     font-size: 15px;
     margin-bottom: 28px;
-    max-width: 54ch;
+    max-width: 56ch;
   }
   .eyebrow {
+    font-family: var(--f-display);
     font-size: 12px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--accent-ink);
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .note {
     color: var(--muted);
     font-size: 13.5px;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 
   /* ── Option cards (Step 1 multi-select, Step 3 single-select) ───────────── */
@@ -148,13 +181,13 @@ export const STYLES = css`
     gap: 14px;
     min-height: 44px;
     padding: 16px 18px;
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     cursor: pointer;
     transition: background var(--step) var(--ease), border-color var(--step) var(--ease);
   }
-  .option:hover { border-color: var(--muted); }
+  .option:hover { border-color: var(--line-strong); background: var(--surface); }
 
   /* The real control stays in the accessibility tree and keeps native keyboard
      behaviour — it is only visually replaced by .option__mark. */
@@ -169,21 +202,21 @@ export const STYLES = css`
   .option__mark {
     flex: 0 0 auto;
     width: 22px; height: 22px;
-    margin-top: 1px;
-    border: 2px solid var(--muted);
+    margin-top: 2px;
+    border: 2px solid var(--line-strong);
     background: transparent;
     display: grid;
     place-items: center;
     transition: background var(--step) var(--ease), border-color var(--step) var(--ease);
   }
-  .option--check .option__mark { border-radius: 6px; }
+  .option--check .option__mark { border-radius: 0; }
   .option--radio .option__mark { border-radius: 50%; }
   .option__mark svg { width: 13px; height: 13px; opacity: 0; transition: opacity var(--step) var(--ease); }
 
   /* These are spans inside a <label>, so they need an explicit block display —
      as inline elements the helper text runs on from the label. */
   .option__body { min-width: 0; display: block; }
-  .option__label { display: block; font-weight: 550; line-height: 1.35; }
+  .option__label { display: block; font-weight: 700; line-height: 1.35; }
   .option__help { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3px; }
 
   /* Selected state is a filled accent block, not a border tint — it has to be
@@ -200,7 +233,7 @@ export const STYLES = css`
     color: var(--on-accent);
   }
   .option.is-selected .option__help,
-  .option:has(input:checked) .option__help { color: var(--on-accent); opacity: 0.75; }
+  .option:has(input:checked) .option__help { color: var(--on-accent); opacity: 0.72; }
   .option.is-selected .option__mark,
   .option:has(input:checked) .option__mark { background: var(--on-accent); border-color: var(--on-accent); }
   .option.is-selected .option__mark svg,
@@ -212,7 +245,7 @@ export const STYLES = css`
      has to be drawn on the label that wraps it. */
   .option:focus-within {
     outline: 3px solid var(--accent-ink);
-    outline-offset: 3px;
+    outline-offset: 2px;
   }
 
   /* ── Space step ─────────────────────────────────────────────────────────── */
@@ -224,10 +257,16 @@ export const STYLES = css`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     gap: 12px;
   }
-  .dim__label { font-weight: 550; font-size: 14px; }
+  .dim__label {
+    font-family: var(--f-display);
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
   .dim__row { display: flex; align-items: center; gap: 14px; }
   .dim__row input[type='range'] { flex: 1 1 auto; min-width: 0; }
 
@@ -238,11 +277,12 @@ export const STYLES = css`
     padding: 0 10px;
     font: inherit;
     font-size: 15px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--text);
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 0;
     text-align: center;
   }
   .dim__number:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 2px; }
@@ -250,9 +290,8 @@ export const STYLES = css`
   .room {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
     padding: 18px;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
   }
   .room svg { display: block; width: 100%; height: auto; }
   .room__caption {
@@ -263,7 +302,12 @@ export const STYLES = css`
     font-size: 13px;
     color: var(--muted);
   }
-  .room__area { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 550; white-space: nowrap; }
+  .room__area {
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    font-weight: 700;
+    white-space: nowrap;
+  }
 
   /* ── Range inputs ───────────────────────────────────────────────────────── */
 
@@ -277,22 +321,20 @@ export const STYLES = css`
     cursor: pointer;
   }
   input[type='range']:focus { outline: none; }
-  input[type='range']:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; border-radius: 6px; }
+  input[type='range']:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
 
   input[type='range']::-webkit-slider-runnable-track {
     height: 4px;
-    background: var(--line);
-    border-radius: 2px;
+    background: var(--surface-2);
   }
   input[type='range']::-moz-range-track {
     height: 4px;
-    background: var(--line);
-    border-radius: 2px;
+    background: var(--surface-2);
   }
   input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 28px; height: 28px;
-    margin-top: -12px;
+    width: 26px; height: 26px;
+    margin-top: -11px;
     border-radius: 50%;
     background: var(--accent);
     border: 3px solid var(--bg);
@@ -300,7 +342,7 @@ export const STYLES = css`
     transition: transform var(--step) var(--ease);
   }
   input[type='range']::-moz-range-thumb {
-    width: 22px; height: 22px;
+    width: 20px; height: 20px;
     border-radius: 50%;
     background: var(--accent);
     border: 3px solid var(--bg);
@@ -311,13 +353,14 @@ export const STYLES = css`
   /* ── Budget step ────────────────────────────────────────────────────────── */
 
   .budget__value {
+    font-family: var(--f-display);
     font-size: clamp(2.5rem, 11vw, 4rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     line-height: 1;
     color: var(--accent-ink);
     font-variant-numeric: tabular-nums;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
   }
   .budget__ends {
     display: flex;
@@ -339,11 +382,14 @@ export const STYLES = css`
   }
 
   .btn {
-    font: inherit;
-    font-weight: 600;
+    font-family: var(--f-display);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
     min-height: 48px;
-    padding: 0 24px;
-    border-radius: 10px;
+    padding: 0 26px;
+    border-radius: 0;
     border: 1px solid transparent;
     cursor: pointer;
     display: inline-flex;
@@ -356,39 +402,43 @@ export const STYLES = css`
   .btn:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; }
 
   .btn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .btn--primary:hover { filter: brightness(1.08); }
+  .btn--primary:hover { filter: brightness(1.07); }
   .btn--primary[disabled] { opacity: 0.35; cursor: not-allowed; filter: none; }
 
-  .btn--ghost { background: transparent; color: var(--text); border-color: var(--line); }
-  .btn--ghost:hover { border-color: var(--muted); }
+  .btn--ghost { background: transparent; color: var(--text); border-color: var(--line-strong); }
+  .btn--ghost:hover { border-color: var(--text); }
 
   .btn--wa { background: #25D366; color: #06251A; border-color: #25D366; }
   .btn--wa:hover { filter: brightness(1.06); }
   .btn--wa svg { width: 19px; height: 19px; }
 
   .btn--text {
+    font-family: var(--f-body);
     background: none;
     border: none;
-    color: var(--muted);
+    color: var(--link-ink);
+    text-transform: none;
+    letter-spacing: 0;
     text-decoration: underline;
     text-underline-offset: 3px;
     padding: 12px 4px;
     min-height: 44px;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
   }
   .btn--text:hover { color: var(--text); }
 
   .link-inline {
-    color: var(--accent-ink);
+    color: var(--link-ink);
     text-decoration: underline;
     text-underline-offset: 3px;
-    font-weight: 550;
+    font-weight: 700;
   }
 
   .validation {
-    color: var(--accent-ink);
+    color: var(--sale-ink);
     font-size: 14px;
-    font-weight: 550;
+    font-weight: 700;
     min-height: 20px;
   }
 
@@ -404,7 +454,7 @@ export const STYLES = css`
   }
   .matching__spinner {
     width: 34px; height: 34px;
-    border: 3px solid var(--line);
+    border: 3px solid var(--surface-2);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 800ms linear infinite;
@@ -417,75 +467,80 @@ export const STYLES = css`
     display: flex;
     gap: 12px;
     padding: 16px 18px;
-    background: var(--surface-2);
+    background: var(--surface);
     border: 1px solid var(--line);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius);
+    border-left: 4px solid var(--accent);
     margin-bottom: 28px;
     font-size: 14.5px;
     line-height: 1.55;
   }
 
   .result__name {
+    font-family: var(--f-display);
     font-size: clamp(2rem, 6vw, 3.5rem);
-    line-height: 1.02;
-    letter-spacing: -0.035em;
-    font-weight: 700;
-    margin-bottom: 12px;
+    line-height: 1.04;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 10px;
   }
   .result__tagline {
-    font-size: clamp(1rem, 2.6vw, 1.25rem);
+    font-size: clamp(1rem, 2.4vw, 1.2rem);
     font-weight: 400;
     color: var(--muted);
-    margin-bottom: 22px;
-    max-width: 40ch;
+    margin-bottom: 24px;
+    max-width: 44ch;
   }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 7px 13px;
+    padding: 8px 13px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 999px;
     font-size: 13.5px;
-    font-weight: 500;
+    font-weight: 600;
   }
   .chip svg { width: 13px; height: 13px; flex: 0 0 auto; }
-  .chip svg path { stroke: var(--accent); }
+  .chip svg path { stroke: var(--accent-ink); }
 
   .pricebox {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
     gap: 8px 16px;
-    padding: 22px 0;
+    padding: 20px 0;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
     margin-bottom: 24px;
   }
   .pricebox__total {
+    font-family: var(--f-display);
     font-size: clamp(1.75rem, 5vw, 2.5rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-weight: 600;
     color: var(--accent-ink);
     font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
   .pricebox__save { color: var(--muted); font-size: 15px; }
-  .pricebox__save b { color: var(--text); font-weight: 600; }
+  .pricebox__save b { color: var(--sale-ink); font-weight: 700; }
 
-  .pitch { font-size: 16px; line-height: 1.6; margin-bottom: 20px; max-width: 62ch; }
+  .pitch { font-size: 16px; line-height: 1.65; margin-bottom: 20px; max-width: 64ch; }
 
   .section { margin-top: 44px; }
   .section__title {
-    font-size: 13px;
-    letter-spacing: 0.14em;
+    font-family: var(--f-display);
+    font-size: 14px;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--text);
     font-weight: 600;
     margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
   }
 
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -493,7 +548,6 @@ export const STYLES = css`
     padding: 8px 14px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 999px;
     font-size: 14px;
   }
 
@@ -509,15 +563,17 @@ export const STYLES = css`
   .card {
     display: flex;
     flex-direction: column;
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
     overflow: hidden;
+    transition: border-color var(--step) var(--ease);
   }
+  .card:hover { border-color: var(--line-strong); }
   .card__media {
     position: relative;
     aspect-ratio: 1 / 1;
     background: var(--tile);
+    border-bottom: 1px solid var(--line);
     display: grid;
     place-items: center;
     overflow: hidden;
@@ -534,45 +590,45 @@ export const STYLES = css`
     inset: 0;
     display: grid;
     place-items: center;
-    background: #EFEFEC;
-    color: #55555C;
+    background: #F0F0F0;
+    color: #8A8A8A;
+    font-family: var(--f-display);
     font-size: 44px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-weight: 600;
   }
   /* An explicit `display` beats the [hidden] attribute's UA `display:none`, so
      without this the fallback tile sits on top of every product photo forever. */
   .card__fallback[hidden] { display: none; }
   .card__badge {
     position: absolute;
-    top: 10px; left: 10px;
-    background: #0E0E10;
-    color: #F5F5F3;
+    top: 0; left: 0;
+    background: var(--text);
+    color: #FFFFFF;
+    font-family: var(--f-display);
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    padding: 5px 9px;
-    border-radius: 6px;
+    padding: 6px 10px;
   }
-  .card__body { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-  .card__name { font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .card__body { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .card__name { font-size: 15px; font-weight: 700; line-height: 1.35; }
   .card__prices { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .card__price { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .card__price { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .card__was { color: var(--muted); text-decoration: line-through; font-size: 14px; font-variant-numeric: tabular-nums; }
   .card__sale {
-    background: var(--accent);
-    color: var(--on-accent);
-    font-size: 10.5px;
-    font-weight: 700;
+    background: var(--sale);
+    color: #000000;
+    font-family: var(--f-display);
+    font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.08em;
-    padding: 3px 7px;
-    border-radius: 4px;
+    padding: 3px 8px;
   }
   .card__link {
     margin-top: auto;
-    color: var(--accent-ink);
-    font-weight: 600;
+    color: var(--link-ink);
+    font-weight: 700;
     font-size: 14px;
     text-decoration: none;
     display: inline-flex;
@@ -581,7 +637,7 @@ export const STYLES = css`
     min-height: 44px;
   }
   .card__link:hover { text-decoration: underline; text-underline-offset: 3px; }
-  .card__link:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; border-radius: 4px; }
+  .card__link:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; }
 
   .total-row {
     display: flex;
@@ -594,7 +650,13 @@ export const STYLES = css`
     font-size: 15px;
     color: var(--muted);
   }
-  .total-row b { color: var(--text); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .total-row b {
+    font-family: var(--f-display);
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Alternates */
   .alts { display: grid; gap: 12px; }
@@ -604,20 +666,25 @@ export const STYLES = css`
     gap: 16px;
     flex-wrap: wrap;
     padding: 18px;
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
     text-align: left;
     width: 100%;
     font: inherit;
     color: inherit;
     cursor: pointer;
-    transition: border-color var(--step) var(--ease);
+    transition: border-color var(--step) var(--ease), background var(--step) var(--ease);
   }
-  .alt:hover { border-color: var(--muted); }
-  .alt:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; }
+  .alt:hover { border-color: var(--line-strong); background: var(--surface); }
+  .alt:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 2px; }
   .alt__main { flex: 1 1 220px; min-width: 0; }
-  .alt__name { font-weight: 650; font-size: 17px; }
+  .alt__name {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
   .alt__tagline { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
   .alt__meta {
     display: flex;
@@ -627,8 +694,8 @@ export const STYLES = css`
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
-  .alt__price { color: var(--text); font-weight: 650; font-size: 17px; }
-  .alt__cta { color: var(--accent-ink); font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .alt__price { color: var(--text); font-weight: 700; font-size: 18px; }
+  .alt__cta { color: var(--link-ink); font-weight: 700; font-size: 14px; white-space: nowrap; }
 
   .retake {
     display: flex;
@@ -652,7 +719,6 @@ export const STYLES = css`
     padding: 48px 24px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
   }
   .talk .headline { margin-bottom: 14px; }
   .talk .actions { justify-content: center; }

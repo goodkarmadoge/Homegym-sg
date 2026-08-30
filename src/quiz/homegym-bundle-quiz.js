@@ -6,8 +6,8 @@
  * Bootstrap, Tailwind, raw Magento — with no style bleed in either direction.
  *
  *   <homegym-bundle-quiz
- *     theme="dark"                     dark | light
- *     accent="#FF5A1F"                 any CSS colour; hex gets a contrast fix
+ *     theme="light"                    light (default, homegym.sg's own) | dark
+ *     accent="#FF6924"                 any CSS colour; hex gets a contrast fix
  *     currency="SGD"
  *     cart-endpoint="/checkout/cart/add"
  *     contact-url="/contact"
@@ -97,11 +97,15 @@ function readableAccent(accent, backgroundHex) {
   return toHex(target);
 }
 
-/** Black or white, whichever is more readable on the accent itself. */
+/**
+ * Black or white, whichever is more readable on the accent itself.
+ * homegym.sg puts black text on its orange CTA, and #FF6924 scores 7.30:1 that
+ * way against 2.97:1 for white, so the default lands on their choice anyway.
+ */
 function inkOn(accent) {
   const rgb = parseHex(accent);
-  if (!rgb) return '#0E0E10';
-  return contrastRatio(rgb, [14, 14, 16]) >= contrastRatio(rgb, [245, 245, 243]) ? '#0E0E10' : '#F5F5F3';
+  if (!rgb) return '#000000';
+  return contrastRatio(rgb, [0, 0, 0]) >= contrastRatio(rgb, [255, 255, 255]) ? '#000000' : '#FFFFFF';
 }
 
 /* ── Element ─────────────────────────────────────────────────────────────── */
@@ -141,8 +145,10 @@ class HomegymBundleQuiz extends HTMLElement {
 
   /* ── Attribute accessors ─────────────────────────────────────────────── */
 
-  get theme() { return this.getAttribute('theme') === 'light' ? 'light' : 'dark'; }
-  get accent() { return this.getAttribute('accent') || '#FF5A1F'; }
+  /* Light is the default: this quiz is meant to read as a page of homegym.sg,
+     which is white-ground. theme="dark" is for placements on a dark host. */
+  get theme() { return this.getAttribute('theme') === 'dark' ? 'dark' : 'light'; }
+  get accent() { return this.getAttribute('accent') || '#FF6924'; }
   get currency() { return this.getAttribute('currency') || 'SGD'; }
   get cartEndpoint() { return this.getAttribute('cart-endpoint') || ''; }
   get contactUrl() { return this.getAttribute('contact-url') || '/contact'; }
@@ -248,7 +254,7 @@ class HomegymBundleQuiz extends HTMLElement {
     // Custom properties set inline on the host beat the :host defaults, and
     // `all: initial` does not reset custom properties, so this is the cheapest
     // way to theme without a second stylesheet.
-    const bg = this.theme === 'light' ? '#FFFFFF' : '#0E0E10';
+    const bg = this.theme === 'dark' ? '#111111' : '#FFFFFF';
     this.style.setProperty('--accent', this.accent);
     this.style.setProperty('--accent-ink', readableAccent(this.accent, bg));
     this.style.setProperty('--on-accent', inkOn(this.accent));
