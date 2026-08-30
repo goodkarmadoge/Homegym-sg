@@ -1,0 +1,146 @@
+<title>HomeGym.sg — Personalised Bundle Quiz</title>
+
+<style>
+/* Page chrome only. Everything inside <homegym-bundle-quiz> is styled in the
+   shadow root by src/quiz/styles.js and cannot be reached from here — which is
+   the whole point of the component. This page is deliberately standalone: it
+   carries no site navigation and links to nothing else in the engagement, so it
+   can be deployed on its own at homegym.sg/bundle-quiz. */
+:root{
+  --bg:        #0E0E10;
+  --bg-deep:   #08080A;
+  --fg:        #F5F5F3;
+  --fg-60:     rgba(245,245,243,0.62);
+  --fg-40:     rgba(245,245,243,0.42);
+  --line:      rgba(255,255,255,0.10);
+  --line-soft: rgba(255,255,255,0.055);
+  --accent:    #FF5A1F;
+
+  --f-sans: Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono: ui-monospace,"SF Mono","Cascadia Mono","Geist Mono","Roboto Mono",Menlo,monospace;
+  --gut:    clamp(1.15rem,4vw,3rem);
+}
+
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:var(--f-sans);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1100px;margin:0 auto;padding-inline:var(--gut)}
+a{color:inherit}
+h1,h2{margin:0;text-wrap:balance}
+p{margin:0}
+
+.mono{font-family:var(--f-mono);font-size:.72rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+.mark{display:inline-flex;align-items:center;gap:.6rem;color:var(--fg-40)}
+.mark::before{content:"//";color:var(--accent)}
+
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:99;
+  background:var(--accent);color:#0E0E10;padding:.75rem 1.25rem;font-weight:700;text-decoration:none;
+}
+.skip:focus{left:0}
+
+/* ── Masthead ───────────────────────────────────────────────────────────── */
+
+header{border-bottom:1px solid var(--line-soft)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:60px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.6rem;font-weight:700;letter-spacing:-0.02em;text-decoration:none}
+.brand b{color:var(--accent)}
+.masthead-note{color:var(--fg-40)}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+
+.hero{padding:clamp(2.75rem,8vw,5rem) 0 clamp(1.75rem,4vw,2.75rem)}
+.hero h1{
+  margin:1.1rem 0 0;
+  font-size:clamp(2.3rem,7vw,4.25rem);line-height:1.03;letter-spacing:-0.04em;font-weight:300;
+  max-width:15ch;
+}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{margin:1.35rem 0 0;max-width:54ch;color:var(--fg-60);font-size:clamp(1rem,1.9vw,1.12rem)}
+
+.facts{display:flex;flex-wrap:wrap;gap:clamp(1.5rem,5vw,3rem);margin-top:2.25rem}
+.fact .n{font-family:var(--f-mono);font-size:clamp(1.4rem,3vw,2rem);font-weight:700;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums}
+.fact .l{margin-top:.45rem;color:var(--fg-40);font-family:var(--f-mono);font-size:.64rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+
+/* ── Quiz mount ─────────────────────────────────────────────────────────── */
+
+.quiz-section{padding:0 0 clamp(3rem,7vw,5rem)}
+.quiz-shell{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#0E0E10}
+
+/* Reserve roughly the height the quiz occupies so the page does not jump as
+   the custom element upgrades — then release it, so short views like the
+   "let's talk" card are not padded out with dead space. */
+homegym-bundle-quiz{display:block}
+homegym-bundle-quiz:not(:defined){min-height:620px}
+
+.noscript{padding:3rem var(--gut);text-align:center;color:var(--fg-60)}
+.noscript a{color:var(--accent)}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+footer{border-top:1px solid var(--line-soft);padding:1.75rem 0;color:var(--fg-40)}
+footer .wrap{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+</style>
+
+<a class="skip" href="#quiz">Skip to the quiz</a>
+
+<header>
+  <div class="wrap">
+    <span class="brand">Home<b>Gym</b>.sg</span>
+    <span class="mono masthead-note">Bundle quiz</span>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="mono mark">Four questions</span>
+      <h1>Stop browsing. <em>Get told what to buy.</em></h1>
+      <p>
+        What you want to train, the floor you have, where you are at and what you will
+        spend. One matched bundle at the end, with every item priced and linked — not a
+        catalogue to wade through.
+      </p>
+      <div class="facts">
+        <div class="fact"><div class="n">10</div><div class="l">Bundles</div></div>
+        <div class="fact"><div class="n">4</div><div class="l">Questions</div></div>
+        <div class="fact"><div class="n">60s</div><div class="l">To an answer</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="quiz-section" id="quiz">
+    <div class="wrap">
+      <div class="quiz-shell">
+        <homegym-bundle-quiz
+          theme="dark"
+          accent="#FF5A1F"
+          currency="SGD"
+          contact-url="https://homegym.sg/contact"
+          whatsapp="6580423952"
+        ></homegym-bundle-quiz>
+        <noscript>
+          <div class="noscript">
+            <p>The quiz needs JavaScript. Browse the range at
+              <a href="https://homegym.sg/strength.html" target="_blank" rel="noopener">homegym.sg</a>,
+              or message us on WhatsApp and we will size a build for you.</p>
+          </div>
+        </noscript>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="mono">Prices as at 30 Aug 2026 &middot; Excludes delivery and installation</span>
+    <span class="mono">Concept build</span>
+  </div>
+</footer>
+
+<!-- Dev loads the ES modules straight from src/quiz/. scripts/build.mjs swaps
+     this exact tag for the inlined single-file bundle when building dist/. -->
+<script type="module" src="quiz/homegym-bundle-quiz.js"></script>

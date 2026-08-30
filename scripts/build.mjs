@@ -4,6 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bundle as buildQuizBundle, SIZE_LIMIT } from './build-quiz.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
@@ -18,7 +19,14 @@ export const PAGES = [
     desc: 'Positioning and messaging: the gym-cost wedge, four value pillars, graded lines, five objections and the leaking funnel.' },
   { file: 'prototype.html', emoji: '🏋️',
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
+  { file: 'bundle-quiz.html', emoji: '🎯',
+    desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.' },
 ];
+
+// The dev-time module tag in src/bundle-quiz.html, swapped for the inlined
+// single-file bundle at build time. Kept as one exact string so a rename in the
+// fragment fails the build loudly instead of shipping a page with no quiz.
+const QUIZ_SCRIPT_TAG = '<script type="module" src="quiz/homegym-bundle-quiz.js"></script>';
 
 const RESET = `*,*::before,*::after{box-sizing:border-box}html{-moz-text-size-adjust:none;-webkit-text-size-adjust:none;text-size-adjust:none}body{margin:0}img,picture,svg,video{max-width:100%}input,button,textarea,select{font:inherit}`;
 
@@ -53,18 +61,43 @@ function main() {
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
 
+  // Built once and used twice: inlined into bundle-quiz.html so the page is
+  // self-contained, and emitted as its own file so any Homegym.sg page can
+  // embed the quiz with a single <script src> tag.
+  const quizBundle = buildQuizBundle();
+  const quizBytes = Buffer.byteLength(quizBundle);
+  if (quizBytes > SIZE_LIMIT) {
+    console.error(`quiz bundle is ${(quizBytes / 1024).toFixed(1)} KB, over the ${SIZE_LIMIT / 1024} KB budget`);
+    process.exit(1);
+  }
+  writeFileSync(join(OUT, 'homegym-bundle-quiz.min.js'), quizBundle);
+
   for (const p of PAGES) {
     const raw = readFileSync(join(SRC, p.file), 'utf8');
     const title = (raw.match(/<title>([\s\S]*?)<\/title>/) || [, 'HomeGym.sg'])[1].trim();
     const style = (raw.match(/<style>[\s\S]*?<\/style>/) || [''])[0];
-    const body = raw
+    let body = raw
       .replace(/<title>[\s\S]*?<\/title>/, '')
       .replace(/<style>[\s\S]*?<\/style>/, '')
       .trim();
 
+    if (p.file === 'bundle-quiz.html') {
+      if (!body.includes(QUIZ_SCRIPT_TAG)) {
+        console.error(`${p.file}: the quiz module tag is missing — expected exactly:\n  ${QUIZ_SCRIPT_TAG}`);
+        process.exit(1);
+      }
+      // Replacer FUNCTION, not a replacement string: the bundle contains
+      // `'S$' + value` for the SGD prefix, and in a replacement string `$'`
+      // means "everything after the match" — it silently ate the quote and
+      // shipped a page whose script would not parse.
+      body = body.replace(QUIZ_SCRIPT_TAG, () => `<script>\n${quizBundle}\n</script>`);
+    }
+
     writeFileSync(join(OUT, p.file), buildPage({ title, style, body, desc: p.desc, emoji: p.emoji }));
-    console.log(`built dist/${p.file.padEnd(16)} ${(Buffer.byteLength(body) / 1024).toFixed(0)} KB  "${title}"`);
+    console.log(`built dist/${p.file.padEnd(18)} ${(Buffer.byteLength(body) / 1024).toFixed(0)} KB  "${title}"`);
   }
+
+  console.log(`built dist/${'homegym-bundle-quiz.min.js'.padEnd(18)} ${(quizBytes / 1024).toFixed(0)} KB  embeddable component`);
 
   writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
   writeFileSync(join(OUT, '.nojekyll'), '');

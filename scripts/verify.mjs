@@ -46,6 +46,34 @@ for (const p of PAGES) {
   }
 }
 
+// The quiz bundle is inlined into bundle-quiz.html and also emitted on its own.
+// The two must be byte-identical.
+//
+// This exists because they once were not: build.mjs inlined the bundle with a
+// replacement STRING, and `$'` inside `'S$' + value` is a special replacement
+// pattern meaning "everything after the match". It ate the closing quote, and
+// the page shipped with a script that would not parse — while the standalone
+// file was perfectly fine. Comparing the two catches any repeat instantly.
+const embedPath = join(OUT, 'homegym-bundle-quiz.min.js');
+const quizPage = join(OUT, 'bundle-quiz.html');
+if (!existsSync(embedPath)) {
+  fail('homegym-bundle-quiz.min.js: missing from dist/');
+} else if (existsSync(quizPage)) {
+  const standalone = readFileSync(embedPath, 'utf8').trim();
+  const page = readFileSync(quizPage, 'utf8');
+  const inline = page.slice(page.indexOf('<script>') + 8, page.indexOf('</script>')).trim();
+
+  if (!inline) fail('bundle-quiz.html: no inline quiz bundle found');
+  else if (inline !== standalone) {
+    fail(
+      'bundle-quiz.html: the inlined bundle does not match dist/homegym-bundle-quiz.min.js ' +
+      `(${inline.length} vs ${standalone.length} chars) — something mangled it during inlining`
+    );
+  }
+  if (!/customElements\.define/.test(inline)) fail('bundle-quiz.html: inlined bundle never defines the element');
+  if (!/<homegym-bundle-quiz\b/.test(page)) fail('bundle-quiz.html: the component is never mounted');
+}
+
 if (!existsSync(join(OUT, 'robots.txt'))) fail('robots.txt: missing');
 else if (!/Disallow: \//.test(readFileSync(join(OUT, 'robots.txt'), 'utf8')))
   fail('robots.txt: does not disallow crawling');
