@@ -6,28 +6,35 @@
  * the host might otherwise inherit into the component (Bootstrap and Tailwind
  * both set box-sizing and line-height globally).
  *
- * ── The palette is homegym.sg's own, read off the live site on 30 Aug 2026 ──
- *   ground        #FFFFFF
- *   body text     #333333
- *   body face     "Open Sans", Helvetica, Arial
- *   display face  Oswald (their nav and .action buttons)
- *   primary CTA   #FF6924 with BLACK text, square corners
- *   links         #22B4FF
- *   sale red      #F64127
- *   borders       0px radius everywhere, their whole UI is square
+ * ── Modernist design system, per the design handoff of 30 Aug 2026 ──────────
+ *   ground        #ffffff (the quiz sits on the site's white content area,
+ *                 not the system's own #f3f2f2)
+ *   text          #201e1d
+ *   accent        #ec3013
+ *   type          Archivo 400 / 600 / 800 throughout
+ *   radius        0 everywhere. Non-negotiable in this system.
+ *   rules         2px, never a hairline where a 2px rule is specified
+ *   alignment     flush left, including labels inside wide buttons
+ *   photography   grayscale, via the .grayscale wrapper
  *
- * Two deliberate departures from the live site, both accessibility fixes:
- *   1. Link blue #22B4FF scores 2.32:1 on white and fails WCAG AA badly. Text
- *      uses --link-ink (#0077B3, 4.89:1) instead; the raw blue is kept for
- *      non-text accents where contrast rules do not apply.
- *   2. #FF6924 as TEXT on white is 2.88:1. --accent-ink is recomputed at runtime
- *      (see readableAccent in the component) so accent-coloured text always
- *      clears 4.5:1, whatever accent a host page passes in.
+ * TWO DELIBERATE DEVIATIONS, both to hold WCAG AA. Each steps one notch along
+ * the system's own ramp, which is the mechanism the system itself prescribes
+ * for text on tinted fills:
  *
- * The dark theme is kept behind theme="dark" for placements on a dark ground.
+ *   1. White on --accent is 4.20:1, under the 4.5 needed for the option-card
+ *      title at its small end (16px) and its 14px description. Any surface that
+ *      carries white text uses --accent-600 (#dd2b0f, 4.74:1) instead. Chrome
+ *      that carries no text, meaning the progress fill, section rules and plan
+ *      outline, keeps the true accent. The two reds are all but
+ *      indistinguishable side by side.
+ *   2. --neutral-600 is 4.30:1 on white. Small text the handoff assigns to it
+ *      (step name, slider min and max) uses --neutral-700 (6.52:1).
+ *
+ * The handoff's option description at 88% white would be 3.95:1 even on
+ * accent-600, so it renders at full white.
  */
 
-/** Identity tag, exists so editors syntax-highlight the block as CSS. */
+/** Identity tag, so editors syntax-highlight the block as CSS. */
 const css = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
 export const STYLES = css`
@@ -37,160 +44,179 @@ export const STYLES = css`
     display: block;
     contain: layout style;
 
-    /* Light, homegym.sg's own palette. This is the default. */
     --bg: #FFFFFF;
-    --surface: #F7F7F7;
-    --surface-2: #F0F0F0;
-    --text: #333333;
-    --muted: #666666;
-    --line: #DDDDDD;
-    --line-strong: #BBBBBB;
-    --accent: #FF6924;
-    --accent-ink: #FF6924;      /* text-safe accent, recomputed at runtime */
-    --on-accent: #000000;       /* their CTA buttons use black text */
-    --link: #22B4FF;
-    --link-ink: #0077B3;        /* AA-safe version of the link blue */
-    --sale: #F64127;            /* their brand red, background only, black text on it */
-    --sale-ink: #C62D14;        /* AA-safe red for red TEXT on white */
-    --tile: #FFFFFF;            /* product images always sit on white */
+    --text: #201e1d;
 
-    --radius: 0px;              /* homegym.sg is square throughout */
-    --radius-lg: 0px;
-    --step: 180ms;
-    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --n100: #f8f4f4;
+    --n200: #eae7e7;
+    --n300: #d7d3d3;
+    --n400: #bab6b6;
+    --n500: #9b9797;
+    --n600: #7d7979;
+    --n700: #605d5d;
+    --n800: #444141;
 
-    --f-body: "Open Sans", Helvetica, Arial, sans-serif;
-    --f-display: Oswald, "Open Sans", Helvetica, Arial, sans-serif;
+    --accent: #ec3013;
+    --accent-100: #fff2ef;
+    --accent-600: #dd2b0f;   /* accent that carries white text */
+    --accent-700: #ae1800;   /* accent at paragraph size */
+    --accent-ink: #ae1800;   /* recomputed at runtime only for a custom accent */
+    --on-accent: #FFFFFF;
 
-    font-family: var(--f-body);
+    --divider: rgba(32, 30, 29, 0.4);
+    --tile: var(--n100);
+
+    --radius: 0px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --f: Archivo, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    font-family: var(--f);
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--text);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
   }
 
+  /* Dark placements. The system is a light theme; this is a courtesy inversion
+     for hosts that need one, not part of the handoff. */
   :host([theme='dark']) {
-    --bg: #111111;
-    --surface: #1A1A1A;
-    --surface-2: #222222;
-    --text: #F5F5F3;
-    --muted: #A8A8A8;
-    --line: #333333;
-    --line-strong: #4A4A4A;
-    --on-accent: #000000;
-    --sale-ink: #FF8A70;
-    --link-ink: #5CC8FF;
+    --bg: #161514;
+    --text: #f6f4f3;
+    --n100: #211f1e;
+    --n200: #2a2827;
+    --n300: #3a3736;
+    --n400: #4d4a49;
+    --n500: #6e6a69;
+    --n600: #979392;
+    --n700: #b6b2b1;
+    --n800: #d6d2d1;
+    --accent-100: #2a1310;
+    --accent-ink: #ff8a70;
+    --divider: rgba(246, 244, 243, 0.4);
     --tile: #FFFFFF;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
 
   .quiz {
-    max-width: 860px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 28px 20px 64px;
+    padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 40px) 80px;
   }
-  .quiz--result { max-width: 1100px; }
 
-  /* ── Progress ───────────────────────────────────────────────────────────── */
+  /* Every step body rises in. Killed entirely under reduced motion. */
+  .view { animation: dcRise .4s var(--ease) both; }
+  @keyframes dcRise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
 
-  .progress { margin-bottom: 32px; }
+  /* ── Progress header ────────────────────────────────────────────────────── */
+
+  .progress { margin-bottom: clamp(28px, 4vw, 46px); }
   .progress__meta {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-family: var(--f-display);
+    gap: 16px;
     font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.09em;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
-  .progress__track {
-    height: 4px;
-    background: var(--surface-2);
-    overflow: hidden;
-  }
+  .progress__step { color: var(--text); }
+  .progress__name { color: var(--n700); }
+  .progress__track { height: 4px; background: var(--n200); }
   .progress__fill {
     height: 100%;
     background: var(--accent);
-    transition: width var(--step) var(--ease);
+    transition: width .45s var(--ease);
   }
 
-  /* ── Typography ─────────────────────────────────────────────────────────── */
+  /* ── Type ───────────────────────────────────────────────────────────────── */
 
   h1, h2, h3, p { margin: 0; }
 
   /* Each view's heading takes focus on a step change so screen readers land in
-     the right place. That focus is programmatic, not keyboard-initiated, so the
-     ring is suppressed for it, :focus-visible still draws one if a keyboard
-     user ever reaches the heading themselves. */
+     the right place. That focus is programmatic, so the ring is suppressed for
+     it; :focus-visible still draws one if a keyboard user reaches it directly. */
   [data-focus]:focus { outline: none; }
-  [data-focus]:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
+  [data-focus]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .headline {
-    font-family: var(--f-display);
-    font-size: clamp(1.6rem, 5vw, 2.5rem);
-    line-height: 1.1;
-    letter-spacing: 0.005em;
+    font-size: clamp(32px, 5.4vw, 60px);
+    font-weight: 800;
     text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    max-width: 20ch;
+    margin-bottom: 18px;
   }
   .subhead {
-    color: var(--muted);
-    font-size: 15px;
-    margin-bottom: 28px;
-    max-width: 56ch;
+    font-size: clamp(15px, 1.4vw, 17px);
+    font-weight: 400;
+    color: var(--n700);
+    max-width: 46ch;
+    margin-bottom: clamp(24px, 3vw, 34px);
+    line-height: 1.5;
   }
   .eyebrow {
-    font-family: var(--f-display);
-    font-size: 12px;
-    letter-spacing: 0.16em;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--accent-ink);
-    font-weight: 600;
-    margin-bottom: 10px;
+    color: var(--accent-700);
+    margin-bottom: 12px;
   }
   .note {
-    color: var(--muted);
-    font-size: 13.5px;
-    line-height: 1.6;
+    font-size: 14px;
+    color: var(--n700);
+    line-height: 1.5;
+    max-width: 60ch;
   }
 
-  /* ── Option cards (Step 1 multi-select, Step 3 single-select) ───────────── */
+  /* The system's 2px rule. Never softened to a hairline. */
+  .hr {
+    height: 2px;
+    background: var(--divider);
+    border: 0;
+    margin: 22px 0;
+  }
+
+  /* ── Option cards ───────────────────────────────────────────────────────── */
 
   .options {
     display: grid;
-    gap: 10px;
-    margin-bottom: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
     border: 0;
     padding: 0;
+    margin: 0;
   }
-  @media (min-width: 640px) {
-    .options--two { grid-template-columns: 1fr 1fr; }
-  }
+  .options--single { grid-template-columns: 1fr; max-width: 860px; }
 
   .option {
     position: relative;
     display: flex;
+    gap: 16px;
     align-items: flex-start;
-    gap: 14px;
-    min-height: 44px;
-    padding: 16px 18px;
+    min-height: 76px;
+    padding: 18px 20px;
     background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border: 1px solid var(--n300);
     cursor: pointer;
-    transition: background var(--step) var(--ease), border-color var(--step) var(--ease);
+    user-select: none;
+    transition: background .15s, border-color .15s;
   }
-  .option:hover { border-color: var(--line-strong); background: var(--surface); }
+  .option:hover { background: var(--n100); border-color: var(--n400); }
 
   /* The real control stays in the accessibility tree and keeps native keyboard
-     behaviour, it is only visually replaced by .option__mark. */
+     behaviour. The handoff drives these as role="button" divs; native inputs in
+     a label give the same interaction with correct checkbox and radio semantics
+     and no keydown handling, so they are kept. */
   .option input {
     position: absolute;
     width: 1px; height: 1px;
@@ -200,124 +226,133 @@ export const STYLES = css`
   }
 
   .option__mark {
-    flex: 0 0 auto;
-    width: 22px; height: 22px;
-    margin-top: 2px;
-    border: 2px solid var(--line-strong);
-    background: transparent;
+    flex: 0 0 24px;
+    width: 24px; height: 24px;
+    margin-top: 1px;
+    border: 2px solid var(--n400);
+    background: var(--bg);
     display: grid;
     place-items: center;
-    transition: background var(--step) var(--ease), border-color var(--step) var(--ease);
+    transition: background .15s, border-color .15s;
   }
-  .option--check .option__mark { border-radius: 0; }
-  .option--radio .option__mark { border-radius: 50%; }
-  .option__mark svg { width: 13px; height: 13px; opacity: 0; transition: opacity var(--step) var(--ease); }
+  .option--check .option__mark { border-radius: 0; }   /* multi-select: square */
+  .option--radio .option__mark { border-radius: 50%; } /* single-select: round */
+  .option__mark svg {
+    width: 14px; height: 14px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
 
-  /* These are spans inside a <label>, so they need an explicit block display:
-     as inline elements the helper text runs on from the label. */
   .option__body { min-width: 0; display: block; }
-  .option__label { display: block; font-weight: 700; line-height: 1.35; }
-  .option__help { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+  .option__label {
+    display: block;
+    font-size: clamp(16px, 1.5vw, 19px);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .option__help {
+    display: block;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--n700);
+    margin-top: 5px;
+  }
 
-  /* Selected state is a filled accent block, not a border tint, it has to be
-     unmistakable on a phone screen in daylight.
-
-     Written twice on purpose: .is-selected is toggled by JS and works
-     everywhere; :has() is the progressive-enhancement path that also catches
-     state changes the component did not drive (autofill, form reset). Engines
-     without :has() simply drop the rules they cannot parse. */
+  /* Selected: solid fill with the double-edge look from the mockups.
+     .is-selected is toggled by JS and works everywhere; :has() is the
+     progressive-enhancement path for state the component did not drive. */
   .option.is-selected,
   .option:has(input:checked) {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+    background: var(--accent-600);
+    border-color: var(--accent-700);
+    outline: 3px solid var(--accent-600);
+    outline-offset: -3px;
   }
+  .option.is-selected .option__label,
+  .option:has(input:checked) .option__label { color: #FFFFFF; }
   .option.is-selected .option__help,
-  .option:has(input:checked) .option__help { color: var(--on-accent); opacity: 0.72; }
+  .option:has(input:checked) .option__help { color: #FFFFFF; }
   .option.is-selected .option__mark,
-  .option:has(input:checked) .option__mark { background: var(--on-accent); border-color: var(--on-accent); }
+  .option:has(input:checked) .option__mark { background: var(--text); border-color: var(--text); }
   .option.is-selected .option__mark svg,
   .option:has(input:checked) .option__mark svg { opacity: 1; }
   .option.is-selected .option__mark svg path,
-  .option:has(input:checked) .option__mark svg path { stroke: var(--accent); }
+  .option:has(input:checked) .option__mark svg path { stroke: #FFFFFF; }
 
-  /* The real input is visually hidden but still focusable, so the focus ring
-     has to be drawn on the label that wraps it. */
-  .option:focus-within {
-    outline: 3px solid var(--accent-ink);
-    outline-offset: 2px;
+  /* The input is visually hidden but still focusable, so the ring is drawn on
+     the label that wraps it. */
+  .option:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── Step 2: space ──────────────────────────────────────────────────────── */
+
+  /* The handoff puts the plan left and the sliders right. Source order is
+     reversed here so the controls come first when the columns wrap on a phone,
+     which is what was asked for. The plan panel holds nothing focusable, so
+     visual order and tab order cannot disagree. */
+  .space {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(20px, 3vw, 40px);
+    align-items: stretch;
+  }
+  .space__controls { flex: 1 1 320px; min-width: 280px; }
+  .space__plan { flex: 0 1 420px; min-width: 280px; }
+
+  .room {
+    border: 1px solid var(--n300);
+    background: var(--n100);
+    padding: clamp(14px, 1.6vw, 20px);
+    height: 100%;
+  }
+  .room__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .room__ref {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--n700);
+  }
+  .room__area {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--accent-700);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .room svg { display: block; width: 100%; height: auto; }
+  .room__caption {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--n700);
+    line-height: 1.45;
   }
 
-  /* ── Space step ─────────────────────────────────────────────────────────── */
-
-  .dims { display: grid; gap: 22px; margin-bottom: 24px; }
-  @media (min-width: 560px) { .dims { grid-template-columns: 1fr 1fr; } }
-
+  .dim { margin-bottom: 22px; }
   .dim__head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+    align-items: baseline;
     gap: 12px;
+    margin-bottom: 8px;
   }
   .dim__label {
-    font-family: var(--f-display);
-    font-weight: 500;
-    font-size: 14px;
-    letter-spacing: 0.06em;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-  .dim__row { display: flex; align-items: center; gap: 14px; }
-  .dim__row input[type='range'] { flex: 1 1 auto; min-width: 0; }
-
-  .dim__number {
-    flex: 0 0 84px;
-    width: 84px;
-    height: 44px;
-    padding: 0 10px;
-    font: inherit;
-    font-size: 15px;
-    font-weight: 700;
+  .dim__value {
+    font-size: 24px;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: var(--text);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 0;
-    text-align: center;
-  }
-  .dim__number:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 2px; }
-
-  .room {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    padding: 18px;
-    margin-bottom: 22px;
-  }
-  /* The plan is a reference, not the hero of the step, so it is capped rather
-     than allowed to fill the column, unconstrained it rendered around 700px
-     square on desktop. At 340px it is roughly half that and the SVG's own type
-     lands at a normal 13-14px instead of being scaled up to 30px. On a narrow
-     phone the cap never binds, so nothing shrinks below what it was. */
-  .room svg {
-    display: block;
-    width: 100%;
-    max-width: 340px;
-    height: auto;
-    margin: 0 auto;
-  }
-  .room__caption {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .room__area {
-    font-variant-numeric: tabular-nums;
-    color: var(--text);
-    font-weight: 700;
-    white-space: nowrap;
+    line-height: 1;
   }
 
   /* ── Range inputs ───────────────────────────────────────────────────────── */
@@ -326,60 +361,54 @@ export const STYLES = css`
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 44px;               /* full 44px touch target, visually a thin track */
-    background: transparent;
-    margin: 0;
+    height: 4px;
+    background: var(--n300);
+    margin: 14px 0;
     cursor: pointer;
   }
   input[type='range']:focus { outline: none; }
-  input[type='range']:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
 
-  input[type='range']::-webkit-slider-runnable-track {
-    height: 4px;
-    background: var(--surface-2);
-  }
-  input[type='range']::-moz-range-track {
-    height: 4px;
-    background: var(--surface-2);
-  }
   input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 26px; height: 26px;
-    margin-top: -11px;
-    border-radius: 50%;
+    width: 22px; height: 22px;
+    border-radius: 0;
     background: var(--accent);
     border: 3px solid var(--bg);
     box-shadow: 0 0 0 1px var(--accent);
-    transition: transform var(--step) var(--ease);
+    cursor: grab;
   }
   input[type='range']::-moz-range-thumb {
-    width: 20px; height: 20px;
-    border-radius: 50%;
+    width: 22px; height: 22px;
+    border-radius: 0;
     background: var(--accent);
     border: 3px solid var(--bg);
     box-shadow: 0 0 0 1px var(--accent);
+    cursor: grab;
   }
-  input[type='range']:active::-webkit-slider-thumb { transform: scale(1.1); }
+  input[type='range']:active::-webkit-slider-thumb { cursor: grabbing; }
+  input[type='range']:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--text); outline-offset: 2px; }
+  input[type='range']:focus-visible::-moz-range-thumb { outline: 2px solid var(--text); outline-offset: 2px; }
 
-  /* ── Budget step ────────────────────────────────────────────────────────── */
-
-  .budget__value {
-    font-family: var(--f-display);
-    font-size: clamp(2.5rem, 11vw, 4rem);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1;
-    color: var(--accent-ink);
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 22px;
-  }
-  .budget__ends {
+  .ends {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
-    color: var(--muted);
+    gap: 12px;
+    font-size: 14px;
+    color: var(--n700);
     font-variant-numeric: tabular-nums;
-    margin-top: 2px;
+  }
+
+  /* ── Step 4: budget ─────────────────────────────────────────────────────── */
+
+  .budget { max-width: 760px; }
+  .budget__value {
+    font-size: clamp(48px, 9vw, 88px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--accent-700);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 18px;
   }
 
   /* ── Buttons ────────────────────────────────────────────────────────────── */
@@ -387,70 +416,73 @@ export const STYLES = css`
   .actions {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 32px;
+    gap: 22px;
     flex-wrap: wrap;
+    margin-top: clamp(34px, 5vw, 60px);
   }
+  .actions--result { gap: 12px; margin-top: 26px; }
 
   .btn {
-    font-family: var(--f-display);
+    font-family: var(--f);
     font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0.07em;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    min-height: 48px;
-    padding: 0 26px;
-    border-radius: 0;
-    border: 1px solid transparent;
-    cursor: pointer;
+    line-height: 1;
+    /* Flush left, including inside a button wider than its label. */
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 9px;
+    justify-content: flex-start;
+    gap: 14px;
+    min-height: 52px;
+    padding: 16px 26px;
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
     text-decoration: none;
-    transition: background var(--step) var(--ease), border-color var(--step) var(--ease), opacity var(--step) var(--ease);
+    transition: background .15s, border-color .15s, color .15s;
   }
-  .btn:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .btn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .btn--primary:hover { filter: brightness(1.07); }
-  .btn--primary[disabled] { opacity: 0.35; cursor: not-allowed; filter: none; }
+  .btn--primary { background: var(--accent-600); color: #FFFFFF; }
+  .btn--primary:hover { background: var(--accent-700); }
+  .btn--primary[disabled] { opacity: 0.45; cursor: not-allowed; }
 
-  .btn--ghost { background: transparent; color: var(--text); border-color: var(--line-strong); }
-  .btn--ghost:hover { border-color: var(--text); }
+  .btn--outline {
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--text);
+  }
+  .btn--outline:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
 
-  .btn--wa { background: #25D366; color: #06251A; border-color: #25D366; }
-  .btn--wa:hover { filter: brightness(1.06); }
-  .btn--wa svg { width: 19px; height: 19px; }
-
-  /* WhatsApp is the single call to action on the result, so it carries the
-     weight a primary button normally would. */
-  .btn--lg { min-height: 56px; padding: 0 32px; font-size: 16px; }
-  .btn--lg svg { width: 22px; height: 22px; }
-
-  .cta-note { margin-top: 14px; max-width: 52ch; }
+  /* WhatsApp keeps its own brand green: it is the single call to action, and the
+     one place a colour from outside the system earns its keep. #06251A on
+     #25D366 is 8.23:1. */
+  .btn--wa { background: #25D366; color: #06251A; }
+  .btn--wa:hover { background: #1EBE5A; }
+  .btn--wa svg { width: 20px; height: 20px; flex: 0 0 auto; }
 
   .btn--text {
-    font-family: var(--f-body);
     background: none;
-    border: none;
-    color: var(--link-ink);
-    text-transform: none;
+    border: 0;
+    padding: 14px 2px;
+    min-height: 44px;
+    font-size: 14px;
+    font-weight: 600;
     letter-spacing: 0;
+    text-transform: none;
+    color: var(--n800);
     text-decoration: underline;
     text-underline-offset: 3px;
-    padding: 12px 4px;
-    min-height: 44px;
-    font-weight: 600;
-    font-size: 14px;
   }
-  .btn--text:hover { color: var(--text); }
+  .btn--text:hover { color: var(--accent-700); }
 
   .validation {
-    color: var(--sale-ink);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--accent-700);
     min-height: 20px;
+    margin-top: 14px;
   }
 
   /* ── Matching transition ────────────────────────────────────────────────── */
@@ -458,187 +490,207 @@ export const STYLES = css`
   .matching {
     min-height: 45vh;
     display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 20px;
-    text-align: center;
+    align-content: center;
+    gap: 22px;
   }
   .matching__spinner {
     width: 34px; height: 34px;
-    border: 3px solid var(--surface-2);
+    border: 3px solid var(--n200);
     border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 800ms linear infinite;
+    animation: spin .8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── Result ─────────────────────────────────────────────────────────────── */
 
   .banner {
-    display: flex;
-    gap: 12px;
-    padding: 16px 18px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--accent);
+    border: 2px solid var(--accent);
+    background: var(--accent-100);
+    padding: 16px 20px;
     margin-bottom: 28px;
-    font-size: 14.5px;
-    line-height: 1.55;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--n800);
+  }
+  .banner__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-700);
+    margin-bottom: 6px;
   }
 
   .result__name {
-    font-family: var(--f-display);
-    font-size: clamp(2rem, 6vw, 3.5rem);
-    line-height: 1.04;
-    letter-spacing: 0.005em;
+    font-size: clamp(34px, 6vw, 68px);
+    font-weight: 800;
     text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: 10px;
+    letter-spacing: -0.025em;
+    line-height: 0.92;
+    margin-bottom: 14px;
   }
   .result__tagline {
-    font-size: clamp(1rem, 2.4vw, 1.2rem);
+    font-size: clamp(16px, 1.6vw, 19px);
     font-weight: 400;
-    color: var(--muted);
-    margin-bottom: 24px;
-    max-width: 44ch;
+    color: var(--n700);
+    max-width: 52ch;
+    margin-bottom: 22px;
   }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
   .chip {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 8px 13px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    font-size: 13.5px;
+    gap: 8px;
+    border: 1px solid var(--n300);
+    background: var(--n100);
+    padding: 9px 14px;
+    font-size: 13px;
     font-weight: 600;
   }
   .chip svg { width: 13px; height: 13px; flex: 0 0 auto; }
-  .chip svg path { stroke: var(--accent-ink); }
+  .chip svg path { stroke: var(--accent); }
 
-  .pricebox {
+  .pricerow {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 8px 16px;
-    padding: 20px 0;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 24px;
+    gap: 10px 18px;
   }
-  .pricebox__total {
-    font-family: var(--f-display);
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
-    font-weight: 600;
-    color: var(--accent-ink);
-    font-variant-numeric: tabular-nums;
+  .pricerow__total {
+    font-size: clamp(38px, 6vw, 62px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
     line-height: 1;
+    color: var(--accent-700);
+    font-variant-numeric: tabular-nums;
+  }
+  .pricerow__meta { font-size: 14px; color: var(--n700); }
+
+  .pitch {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--n800);
+    max-width: 60ch;
   }
 
-  .pitch { font-size: 16px; line-height: 1.65; margin-bottom: 20px; max-width: 64ch; }
+  .cta-note { margin-top: 16px; max-width: 52ch; }
 
   .section { margin-top: 44px; }
   .section__title {
-    font-family: var(--f-display);
-    font-size: 14px;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--text);
-    font-weight: 600;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent);
     display: inline-block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 18px;
   }
 
   .pills { display: flex; flex-wrap: wrap; gap: 8px; }
   .pill {
-    padding: 8px 14px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    font-size: 14px;
+    border: 1px solid var(--n300);
+    padding: 8px 13px;
+    font-size: 13px;
+    font-weight: 600;
   }
 
-  /* Product grid, 1 col, 2 up at 640, 3 up at 1024 */
+  /* Product grid. The 1px gap on a neutral-300 ground IS the hairline, so
+     cells share rules rather than doubling them up. */
   .grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--n300);
+    border: 1px solid var(--n300);
   }
-  @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-
-  .card {
-    display: flex;
-    flex-direction: column;
-    background: var(--bg);
-    border: 1px solid var(--line);
-    overflow: hidden;
-    transition: border-color var(--step) var(--ease);
-  }
-  .card:hover { border-color: var(--line-strong); }
+  .card { display: flex; flex-direction: column; background: var(--bg); }
   .card__media {
     position: relative;
     aspect-ratio: 1 / 1;
     background: var(--tile);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--n300);
     display: grid;
     place-items: center;
     overflow: hidden;
   }
+  /* Every content photograph prints black and white in this system. */
+  .grayscale { filter: grayscale(1) contrast(1.08); width: 100%; height: 100%; }
   .card__media img {
     width: 100%; height: 100%;
     object-fit: contain;
-    padding: 12px;
+    padding: 14px;
+    mix-blend-mode: multiply;
     display: block;
   }
-  /* Fallback tile when the CloudFront cache path 404s. */
   .card__fallback {
     position: absolute;
     inset: 0;
     display: grid;
     place-items: center;
-    background: #F0F0F0;
-    color: #8A8A8A;
-    font-family: var(--f-display);
-    font-size: 44px;
-    font-weight: 600;
+    background: var(--n100);
+    color: var(--n500);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 12px;
   }
-  /* An explicit `display` beats the [hidden] attribute's UA `display:none`, so
-     without this the fallback tile sits on top of every product photo forever. */
+  /* An explicit display value beats the [hidden] attribute's UA display:none,
+     so without this the fallback plate sits on top of every product photo.
+     No backticks in here: this whole sheet is a JS template literal. */
   .card__fallback[hidden] { display: none; }
+
+  .card__body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+  .card__name { font-size: 15px; font-weight: 800; line-height: 1.3; }
+  .card__prices {
+    margin-top: auto;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card__price { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .card__was {
+    font-size: 13px;
+    color: var(--n700);
+    text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+  }
+  .card__sale {
+    background: var(--accent-600);
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 6px;
+  }
   .card__badge {
     position: absolute;
     top: 0; left: 0;
     background: var(--text);
     color: #FFFFFF;
-    font-family: var(--f-display);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    padding: 6px 10px;
-  }
-  .card__body { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-  .card__name { font-size: 15px; font-weight: 700; line-height: 1.35; }
-  .card__prices { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .card__price { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .card__was { color: var(--muted); text-decoration: line-through; font-size: 14px; font-variant-numeric: tabular-nums; }
-  .card__sale {
-    background: var(--sale);
-    color: #000000;
-    font-family: var(--f-display);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
+    padding: 4px 8px;
+    z-index: 1;
   }
   .card__link {
-    margin-top: auto;
-    color: var(--link-ink);
+    font-size: 13px;
     font-weight: 700;
-    font-size: 14px;
+    color: var(--accent-700);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -646,91 +698,104 @@ export const STYLES = css`
     min-height: 44px;
   }
   .card__link:hover { text-decoration: underline; text-underline-offset: 3px; }
-  .card__link:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 3px; }
+  .card__link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .total-row {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: baseline;
-    gap: 12px;
+    gap: 16px;
+    flex-wrap: wrap;
     margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
-    font-size: 15px;
-    color: var(--muted);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--n700);
   }
   .total-row b {
-    font-family: var(--f-display);
-    color: var(--text);
     font-size: 22px;
-    font-weight: 600;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--text);
     font-variant-numeric: tabular-nums;
   }
 
   /* Alternates */
-  .alts { display: grid; gap: 12px; }
+  .alts { display: grid; gap: 1px; background: var(--n300); border: 1px solid var(--n300); }
   .alt {
     display: flex;
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
-    padding: 18px;
+    padding: 18px 20px;
     background: var(--bg);
-    border: 1px solid var(--line);
     text-align: left;
     width: 100%;
-    font: inherit;
+    font-family: var(--f);
     color: inherit;
+    border: 0;
     cursor: pointer;
-    transition: border-color var(--step) var(--ease), background var(--step) var(--ease);
+    transition: background .15s;
   }
-  .alt:hover { border-color: var(--line-strong); background: var(--surface); }
-  .alt:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 2px; }
+  .alt:hover { background: var(--n100); }
+  .alt:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .alt__main { flex: 1 1 220px; min-width: 0; }
   .alt__name {
-    font-family: var(--f-display);
-    font-weight: 600;
     font-size: 18px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
   }
-  .alt__tagline { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+  .alt__tagline { font-size: 13px; color: var(--n700); margin-top: 4px; }
   .alt__meta {
     display: flex;
     align-items: baseline;
     gap: 16px;
     font-size: 14px;
-    color: var(--muted);
+    color: var(--n700);
     font-variant-numeric: tabular-nums;
   }
-  .alt__price { color: var(--text); font-weight: 700; font-size: 18px; }
-  .alt__cta { color: var(--link-ink); font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .alt__price { font-size: 18px; font-weight: 800; color: var(--text); }
+  .alt__cta {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-700);
+    white-space: nowrap;
+  }
 
   .retake {
     display: flex;
+    align-items: center;
     gap: 20px;
     flex-wrap: wrap;
-    margin-top: 44px;
-    padding-top: 24px;
-    border-top: 1px solid var(--line);
+    margin-top: 20px;
+  }
+  .summary {
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--n700);
+    font-variant-numeric: tabular-nums;
   }
 
   .fineprint {
-    margin-top: 20px;
-    color: var(--muted);
+    margin-top: 18px;
     font-size: 13px;
-    line-height: 1.6;
+    color: var(--n700);
+    line-height: 1.55;
+    max-width: 60ch;
   }
 
-  /* "Let's talk" card, fallback tier 4 */
+  /* "Let's talk", the last rung of the fallback ladder */
   .talk {
-    text-align: center;
-    padding: 48px 24px;
-    background: var(--surface);
-    border: 1px solid var(--line);
+    border: 2px solid var(--text);
+    padding: clamp(28px, 5vw, 48px);
+    max-width: 760px;
   }
   .talk .headline { margin-bottom: 14px; }
-  .talk .actions { justify-content: center; }
 
   .visually-hidden {
     position: absolute !important;
@@ -742,7 +807,8 @@ export const STYLES = css`
     border: 0;
   }
 
-  /* Nothing bounces, and under reduced motion nothing moves at all. */
+  /* Nothing floats and nothing bounces. Under reduced motion the step entrance
+     and the progress transition go away entirely. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -750,6 +816,7 @@ export const STYLES = css`
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+    .view { animation: none; }
   }
 `;
 

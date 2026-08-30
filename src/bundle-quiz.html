@@ -4,110 +4,113 @@
 /* Page chrome only. Everything inside <homegym-bundle-quiz> is styled in the
    shadow root by src/quiz/styles.js and cannot be reached from here.
 
-   The palette and typefaces are homegym.sg's own, read off the live site on
-   30 Aug 2026: white ground, #333 text, Open Sans body, Oswald for nav and
-   buttons, #FF6924 CTA orange with black text, #22B4FF links, square corners.
-   The page is deliberately standalone, a slim header and footer rather than a
-   hand-copy of their Magento navigation, which would drift out of sync the
-   moment they change a menu. */
-:root{
-  --bg:        #FFFFFF;
-  --surface:   #F7F7F7;
-  --surface-2: #F0F0F0;
-  --text:      #333333;
-  --muted:     #666666;
-  --line:      #DDDDDD;
-  --accent:    #FF6924;   /* their CTA orange */
-  --accent-ink:#C24A10;   /* AA-safe orange for text on white */
-  --link-ink:  #0077B3;   /* AA-safe version of their #22B4FF */
-  --sale:      #F64127;
+   Modernist design system, per the handoff of 30 Aug 2026: Archivo throughout,
+   #201e1d ink, a single #ec3013 accent, zero corner radius, strong 2px rules,
+   everything flush left. The ground is white rather than the system's own
+   #f3f2f2 because the quiz sits on the site's white content area.
 
-  --f-body:    "Open Sans", Helvetica, Arial, sans-serif;
-  --f-display: Oswald, "Open Sans", Helvetica, Arial, sans-serif;
-  --gut:       clamp(1rem, 4vw, 3rem);
+   The page is deliberately standalone: a masthead and a footer rather than a
+   hand-copy of the Magento navigation, which would drift out of sync the moment
+   they change a menu. */
+:root{
+  --text:      #201e1d;
+  --n100:      #f8f4f4;
+  --n300:      #d7d3d3;
+  --n700:      #605d5d;
+  --accent:    #ec3013;
+  --accent-700:#ae1800;
+  --divider:   rgba(32,30,29,.4);
+
+  --f: Archivo, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --gut: clamp(16px, 4vw, 40px);
 }
 
 body{
-  background:var(--bg);color:var(--text);
-  font-family:var(--f-body);font-size:16px;line-height:1.6;
+  background:#fff;color:var(--text);
+  font-family:var(--f);font-size:16px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
 
-.wrap{max-width:1100px;margin:0 auto;padding-inline:var(--gut)}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:var(--gut)}
 a{color:inherit}
-h1,h2{margin:0}
+h1{margin:0}
 p{margin:0}
 
 .skip{
   position:absolute;left:-9999px;top:0;z-index:99;
-  background:var(--accent);color:#000;padding:.75rem 1.25rem;
-  font-family:var(--f-display);font-weight:500;text-transform:uppercase;text-decoration:none;
+  background:var(--accent);color:#fff;padding:14px 22px;text-decoration:none;
+  font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:15px;
 }
 .skip:focus{left:0}
 
 /* ── Masthead ───────────────────────────────────────────────────────────── */
 
-header{border-bottom:1px solid var(--line);background:#fff}
-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:72px;flex-wrap:wrap}
+header .wrap{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;min-height:76px;flex-wrap:wrap;
+}
 .logo{display:flex;align-items:center;text-decoration:none}
+/* The logo is colour artwork; the system prints photography black and white but
+   a brand mark is not photography, so it is left alone. */
 .logo img{display:block;height:34px;width:auto}
-@media(max-width:560px){.logo img{height:27px}}
 .masthead-note{
-  font-family:var(--f-display);font-size:.72rem;font-weight:500;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  font-size:13px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--n700);
 }
 
-/* Thin accent rule under the header, echoing their orange */
-.rule{height:3px;background:var(--accent)}
+/* The system's 2px rule, not a hairline. */
+.rule{height:2px;background:var(--text)}
 
 /* ── Hero ───────────────────────────────────────────────────────────────── */
 
-.hero{padding:clamp(2.25rem,6vw,3.75rem) 0 clamp(1.5rem,3vw,2.25rem);text-align:center}
-.hero .eyebrow{
-  font-family:var(--f-display);font-size:.75rem;font-weight:500;
-  letter-spacing:.18em;text-transform:uppercase;color:var(--accent-ink);
+.hero{padding:clamp(28px,6vw,64px) 0 clamp(20px,3vw,32px)}
+.hero .kicker{
+  font-size:13px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent-700);
 }
 .hero h1{
-  margin:.9rem 0 0;
-  font-family:var(--f-display);font-weight:600;text-transform:uppercase;
-  font-size:clamp(2rem,6vw,3.5rem);line-height:1.06;letter-spacing:.01em;
+  margin:16px 0 0;
+  font-weight:800;text-transform:uppercase;
+  font-size:clamp(38px,7vw,76px);line-height:.95;letter-spacing:-.03em;
+  max-width:16ch;
 }
-.hero p{margin:1.1rem auto 0;max-width:52ch;color:var(--muted);font-size:clamp(1rem,1.8vw,1.1rem)}
+.hero p{
+  margin:20px 0 0;max-width:52ch;color:var(--n700);
+  font-size:clamp(15px,1.4vw,17px);
+}
 
 .facts{
-  display:flex;flex-wrap:wrap;justify-content:center;
-  gap:clamp(1.5rem,5vw,3.5rem);margin-top:2rem;
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  padding:1.25rem 0;
+  display:flex;flex-wrap:wrap;gap:clamp(24px,5vw,56px);
+  margin-top:clamp(24px,4vw,40px);
+  border-top:2px solid var(--divider);border-bottom:2px solid var(--divider);
+  padding:20px 0;
 }
 .fact .n{
-  font-family:var(--f-display);font-size:clamp(1.4rem,3vw,1.9rem);
-  font-weight:600;line-height:1;font-variant-numeric:tabular-nums;
+  font-size:clamp(24px,3.4vw,38px);font-weight:800;
+  line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
 }
 .fact .l{
-  margin-top:.35rem;color:var(--muted);font-family:var(--f-display);
-  font-size:.66rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  margin-top:8px;color:var(--n700);
+  font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
 }
 
 /* ── Quiz mount ─────────────────────────────────────────────────────────── */
 
-.quiz-section{padding:clamp(1.5rem,4vw,2.5rem) 0 clamp(3rem,7vw,4.5rem)}
-.quiz-shell{border:1px solid var(--line);background:#fff}
+.quiz-section{padding:0 0 clamp(40px,7vw,72px)}
 
-/* Reserve roughly the height the quiz occupies so the page does not jump as
-   the custom element upgrades, then release it, so short views like the
-   "let's talk" card are not padded out with dead space. */
+/* Reserve roughly the height the quiz occupies so the page does not jump as the
+   custom element upgrades, then release it so short views are not padded out. */
 homegym-bundle-quiz{display:block}
 homegym-bundle-quiz:not(:defined){min-height:620px}
 
-.noscript{padding:3rem var(--gut);text-align:center;color:var(--muted)}
-.noscript a{color:var(--link-ink)}
+.noscript{padding:48px var(--gut);color:var(--n700);max-width:60ch}
+.noscript a{color:var(--accent-700)}
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 
-footer{border-top:1px solid var(--line);background:var(--surface);padding:1.75rem 0;color:var(--muted)}
-footer .wrap{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font-size:.8rem}
-footer a{color:var(--link-ink)}
+footer{border-top:2px solid var(--divider);padding:24px 0 40px;color:var(--n700)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
+footer a{color:var(--accent-700)}
 </style>
 
 <a class="skip" href="#quiz">Skip to the quiz</a>
@@ -126,7 +129,7 @@ footer a{color:var(--link-ink)}
 <main>
   <section class="hero">
     <div class="wrap">
-      <p class="eyebrow">Four questions</p>
+      <p class="kicker">Four questions</p>
       <h1>Build your bundle</h1>
       <p>
         Tell us what you want to train, the floor you have, where you are at and what
@@ -142,24 +145,18 @@ footer a{color:var(--link-ink)}
   </section>
 
   <section class="quiz-section" id="quiz">
-    <div class="wrap">
-      <div class="quiz-shell">
-        <homegym-bundle-quiz
-          theme="light"
-          accent="#FF6924"
-          currency="SGD"
-          contact-url="https://homegym.sg/contact"
-          whatsapp="6580423952"
-        ></homegym-bundle-quiz>
-        <noscript>
-          <div class="noscript">
-            <p>The quiz needs JavaScript. Browse the range at
-              <a href="https://homegym.sg/strength.html" target="_blank" rel="noopener">homegym.sg</a>,
-              or message us on WhatsApp and we will size a build for you.</p>
-          </div>
-        </noscript>
+    <homegym-bundle-quiz
+      currency="SGD"
+      contact-url="https://homegym.sg/contact"
+      whatsapp="6580423952"
+    ></homegym-bundle-quiz>
+    <noscript>
+      <div class="noscript wrap">
+        <p>The quiz needs JavaScript. Browse the range at
+          <a href="https://homegym.sg/strength.html" target="_blank" rel="noopener">homegym.sg</a>,
+          or message us on WhatsApp and we will size a build for you.</p>
       </div>
-    </div>
+    </noscript>
   </section>
 </main>
 

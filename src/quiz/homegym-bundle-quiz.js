@@ -7,7 +7,7 @@
  *
  *   <homegym-bundle-quiz
  *     theme="light"                    light (default, homegym.sg's own) | dark
- *     accent="#FF6924"                 any CSS colour; hex gets a contrast fix
+ *     accent="#ec3013"                 any CSS colour; hex gets a contrast fix
  *     currency="SGD"
  *     cart-endpoint="/checkout/cart/add"
  *     contact-url="/contact"
@@ -32,12 +32,18 @@ const TOTAL_STEPS = 4;
 const BUDGET_MIN = 2500;
 const BUDGET_MAX = 7500;
 
+/* Floor sliders. 0.1 m steps let the plan drawing actually track the room;
+   0.5 m made it jump a whole half-metre at a time. */
+const DIM_MIN = 1;
+const DIM_MAX = 3;
+const DIM_STEP = 0.1;
+
 const DEFAULT_ANSWERS = {
   functions: [],
   length: 2.5,
   depth: 3.0,
   level: null,
-  budget: 4000
+  budget: 5000
 };
 
 /* ── Small helpers ───────────────────────────────────────────────────────── */
@@ -155,7 +161,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Light is the default: this quiz is meant to read as a page of homegym.sg,
      which is white-ground. theme="dark" is for placements on a dark host. */
   get theme() { return this.getAttribute('theme') === 'dark' ? 'dark' : 'light'; }
-  get accent() { return this.getAttribute('accent') || '#FF6924'; }
+  get accent() { return this.getAttribute('accent') || '#ec3013'; }
   get currency() { return this.getAttribute('currency') || 'SGD'; }
   get cartEndpoint() { return this.getAttribute('cart-endpoint') || ''; }
   get contactUrl() { return this.getAttribute('contact-url') || '/contact'; }
@@ -258,13 +264,23 @@ class HomegymBundleQuiz extends HTMLElement {
   /* ── Rendering ───────────────────────────────────────────────────────── */
 
   render() {
-    // Custom properties set inline on the host beat the :host defaults, and
-    // `all: initial` does not reset custom properties, so this is the cheapest
-    // way to theme without a second stylesheet.
-    const bg = this.theme === 'dark' ? '#111111' : '#FFFFFF';
-    this.style.setProperty('--accent', this.accent);
-    this.style.setProperty('--accent-ink', readableAccent(this.accent, bg));
-    this.style.setProperty('--on-accent', inkOn(this.accent));
+    // Only override the design system's accent when a host has actually asked
+    // for one. Left alone, the Modernist ramp in the stylesheet applies, with
+    // its own hand-picked steps for text and for fills that carry white text.
+    // Inline custom properties beat :host, and `all: initial` does not reset
+    // custom properties, so this is the cheapest way to theme.
+    if (this.hasAttribute('accent')) {
+      const bg = this.theme === 'dark' ? '#161514' : '#FFFFFF';
+      const ink = readableAccent(this.accent, bg);
+      this.style.setProperty('--accent', this.accent);
+      this.style.setProperty('--accent-600', this.accent);
+      this.style.setProperty('--accent-700', ink);
+      this.style.setProperty('--accent-ink', ink);
+      this.style.setProperty('--on-accent', inkOn(this.accent));
+    } else {
+      ['--accent', '--accent-600', '--accent-700', '--accent-ink', '--on-accent']
+        .forEach((prop) => this.style.removeProperty(prop));
+    }
 
     let body;
     if (this.state.view === 'matching') body = this.viewMatching();
@@ -304,8 +320,8 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <div class="progress">
         <div class="progress__meta">
-          <span>Step ${this.state.step} of ${TOTAL_STEPS}</span>
-          <span>${['Function', 'Space', 'Level', 'Budget'][this.state.step - 1]}</span>
+          <span class="progress__step">Step ${this.state.step} of ${TOTAL_STEPS}</span>
+          <span class="progress__name">${['Function', 'Space', 'Level', 'Budget'][this.state.step - 1]}</span>
         </div>
         <div class="progress__track" role="progressbar"
              aria-valuenow="${this.state.step}" aria-valuemin="1" aria-valuemax="${TOTAL_STEPS}"
@@ -329,20 +345,39 @@ class HomegymBundleQuiz extends HTMLElement {
     // Otherwise correcting one answer means clicking Continue through the rest.
     const hasResult = Boolean(this.state.result);
 
+    // Continue is disabled until the step is answered, per the handoff. The
+    // hint line still says why, so a keyboard user who lands on a dead button
+    // is told what is missing rather than left guessing.
+    const blocked = this._blockedReason();
+
     return `
       <div class="quiz">
         ${this.progress()}
-        <div aria-live="polite" class="visually-hidden">Step ${step} of ${TOTAL_STEPS}</div>
-        ${inner}
-        <div class="validation" role="alert">${esc(this.state.error)}</div>
-        <div class="actions">
-          ${canGoBack ? `<button class="btn btn--ghost" data-action="back" type="button">${BACK_ARROW} Back</button>` : ''}
-          <button class="btn btn--primary" data-action="next" type="button">
-            ${isLast ? 'Build my bundle' : 'Continue'} ${ARROW}
-          </button>
-          ${hasResult && !isLast ? `<button class="btn btn--text" data-action="forward" type="button">Forward to my bundle ${ARROW}</button>` : ''}
+        <div class="view">
+          <div aria-live="polite" class="visually-hidden">Step ${step} of ${TOTAL_STEPS}</div>
+          ${inner}
+          <div class="validation" role="status">${esc(blocked)}</div>
+          <div class="actions">
+            <button class="btn btn--primary" data-action="next" type="button"
+                    ${blocked ? 'disabled aria-disabled="true"' : ''}>
+              ${isLast ? 'Build my bundle' : 'Continue'} ${ARROW}
+            </button>
+            ${canGoBack ? `<button class="btn btn--text" data-action="back" type="button">${BACK_ARROW} Back</button>` : ''}
+            ${hasResult && !isLast ? `<button class="btn btn--text" data-action="forward" type="button">Forward to my bundle ${ARROW}</button>` : ''}
+          </div>
         </div>
       </div>`;
+  }
+
+  /** Why Continue is unavailable on this step, or '' when it is available. */
+  _blockedReason() {
+    if (this.state.step === 1 && this.state.answers.functions.length === 0) {
+      return 'Pick at least one thing you want to train.';
+    }
+    if (this.state.step === 3 && !this.state.answers.level) {
+      return 'Pick the option that describes you best.';
+    }
+    return '';
   }
 
   step1() {
@@ -350,7 +385,7 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <h1 class="headline" tabindex="-1" data-focus>What do you actually want to train?</h1>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
-      <fieldset class="options options--two">
+      <fieldset class="options">
         <legend class="visually-hidden">Training functions, choose at least one</legend>
         ${FUNCTION_OPTIONS.map((o) => `
           <label class="option option--check${chosen.has(o.tag) ? ' is-selected' : ''}">
@@ -368,32 +403,44 @@ class HomegymBundleQuiz extends HTMLElement {
     const { length, depth } = this.state.answers;
     const dim = (id, label, value) => `
       <div class="dim">
-        <div class="dim__head"><label class="dim__label" for="${id}-range">${label}</label></div>
-        <div class="dim__row">
-          <input type="range" id="${id}-range" name="${id}" min="1" max="3" step="0.5" value="${value}"
-                 aria-label="${label} in metres">
-          <input type="number" class="dim__number" name="${id}" min="1" max="3" step="0.5" value="${value.toFixed(1)}"
-                 aria-label="${label} in metres, numeric entry">
+        <div class="dim__head">
+          <label class="dim__label" for="${id}-range">${label}</label>
+          <span class="dim__value" data-dim-value="${id}">${value.toFixed(1)} m</span>
         </div>
+        <input type="range" id="${id}-range" name="${id}"
+               min="${DIM_MIN}" max="${DIM_MAX}" step="${DIM_STEP}" value="${value}"
+               aria-label="${label} in metres" aria-valuetext="${value.toFixed(1)} metres">
       </div>`;
 
-    // Controls first, diagram second: the sliders are what the user came here to
-    // operate, and the plan below them reads as the result of the input rather
-    // than something to hunt past.
+    // The handoff runs the plan down the left and the sliders down the right.
+    // Source order is controls-then-plan so that when the two columns wrap on a
+    // phone the sliders come first, which is what was asked for. The plan holds
+    // nothing focusable, so nothing can read out of order.
     return `
-      <h1 class="headline" tabindex="-1" data-focus>How much floor space have you got?</h1>
-      <p class="subhead">Measure the clear area, wall to wall, in metres. Most HDB bedrooms give you about 2.5 &times; 3.</p>
-      <div class="dims">
-        ${dim('length', 'Length (m)', length)}
-        ${dim('depth', 'Depth (m)', depth)}
-      </div>
-      <div class="room">${this.roomSvg(length, depth)}
-        <div class="room__caption">
-          <span>Drawn to scale against a 3 &times; 3 m reference</span>
+      <h1 class="headline" tabindex="-1" data-focus>How much floor can you give it?</h1>
+      <p class="subhead">Drag the room to the size you actually have. We check every bundle against it.</p>
+      <div class="space">
+        <div class="space__controls">
+          ${dim('length', 'Length (m)', length)}
+          ${dim('depth', 'Depth (m)', depth)}
+          <div class="hr"></div>
+          <p class="note">Leave at least 0.5 m of clearance in front of any rack to pull the bar out. Every footprint we quote already includes it.</p>
+        </div>
+        <div class="space__plan">${this.roomPanel(length, depth)}</div>
+      </div>`;
+  }
+
+  /** The plan panel: reference label, live area readout, drawing, caption. */
+  roomPanel(length, depth) {
+    return `
+      <div class="room">
+        <div class="room__head">
+          <span class="room__ref">3 &times; 3 m reference</span>
           <span class="room__area" data-room-area>${(length * depth).toFixed(2)} m&sup2;</span>
         </div>
-      </div>
-      <p class="note">Add at least 0.5 m of clearance in front of any rack for pulling the bar out. We've already accounted for this in every bundle footprint.</p>`;
+        ${this.roomSvg(length, depth)}
+        <p class="room__caption">Drawn to scale. The dashed square is 3 &times; 3 m, the largest room we plan for as standard.</p>
+      </div>`;
   }
 
   /**
@@ -402,42 +449,39 @@ class HomegymBundleQuiz extends HTMLElement {
    * shoulders, which is what makes the rectangle mean anything.
    */
   roomSvg(length, depth) {
-    const U = 100;
-    const PAD = 26;
+    const U = 100;          // 100 units = 1 metre
+    const O = 20;           // origin, top-left of the reference square
     const SIZE = 3 * U;
     const w = length * U;
     const h = depth * U;
-    const x = PAD;
-    const y = PAD + (SIZE - h);
 
+    // 0.5 m grid across the whole reference square, not just the selected room,
+    // so the room reads as a rectangle laid onto a fixed scale.
     const grid = [];
-    for (let m = 0.5; m < length; m += 0.5) {
-      grid.push(`<line x1="${x + m * U}" y1="${y}" x2="${x + m * U}" y2="${y + h}" stroke="var(--line)" stroke-width="1"/>`);
-    }
-    for (let m = 0.5; m < depth; m += 0.5) {
-      grid.push(`<line x1="${x}" y1="${y + m * U}" x2="${x + w}" y2="${y + m * U}" stroke="var(--line)" stroke-width="1"/>`);
+    for (let m = 0.5; m < 3; m += 0.5) {
+      const p = O + m * U;
+      grid.push(`<line x1="${p}" y1="${O}" x2="${p}" y2="${O + SIZE}" stroke="var(--n300)" stroke-width="1"/>`);
+      grid.push(`<line x1="${O}" y1="${p}" x2="${O + SIZE}" y2="${p}" stroke="var(--n300)" stroke-width="1"/>`);
     }
 
-    const hx = x + w / 2;
-    const hy = y + h - 42;
+    const hx = O + w / 2;
+    const hy = O + h - 40;
 
     return `
-      <svg viewBox="0 0 ${SIZE + PAD * 2} ${SIZE + PAD * 2}" role="img"
+      <svg viewBox="0 0 340 340" role="img"
            aria-label="Floor plan: ${length.toFixed(1)} metres by ${depth.toFixed(1)} metres, ${(length * depth).toFixed(2)} square metres">
-        <rect x="${PAD}" y="${PAD}" width="${SIZE}" height="${SIZE}"
-              fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 6"/>
-        <text x="${PAD}" y="${PAD - 9}" fill="var(--muted)" font-size="13" font-family="inherit">3 &times; 3 m max</text>
-        <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="2.5" rx="2"/>
         ${grid.join('')}
-        <g opacity="0.85">
-          <ellipse cx="${hx}" cy="${hy}" rx="25" ry="16" fill="var(--muted)"/>
-          <circle cx="${hx}" cy="${hy}" r="11" fill="var(--text)"/>
-        </g>
-        <text x="${x + w / 2}" y="${y - 10}" fill="var(--accent-ink)" font-size="15" font-weight="600"
+        <rect x="${O}" y="${O}" width="${SIZE}" height="${SIZE}"
+              fill="none" stroke="var(--n400)" stroke-width="2" stroke-dasharray="7 6"/>
+        <rect x="${O}" y="${O}" width="${w}" height="${h}"
+              fill="var(--accent-100)" stroke="var(--accent)" stroke-width="4"/>
+        <ellipse cx="${hx}" cy="${hy}" rx="26" ry="13" fill="var(--n500)"/>
+        <circle cx="${hx}" cy="${hy}" r="9" fill="var(--n800)"/>
+        <text x="${O + w / 2}" y="14" fill="var(--accent-700)" font-size="17" font-weight="800"
               text-anchor="middle" font-family="inherit">${length.toFixed(1)} m</text>
-        <text x="${x + w + 12}" y="${y + h / 2}" fill="var(--accent-ink)" font-size="15" font-weight="600"
+        <text x="${O + w + 20}" y="${O + h / 2}" fill="var(--accent-700)" font-size="17" font-weight="800"
               text-anchor="middle" font-family="inherit"
-              transform="rotate(90 ${x + w + 12} ${y + h / 2})">${depth.toFixed(1)} m</text>
+              transform="rotate(90 ${O + w + 20} ${O + h / 2})">${depth.toFixed(1)} m</text>
       </svg>`;
   }
 
@@ -446,7 +490,7 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <h1 class="headline" tabindex="-1" data-focus>Where are you at right now?</h1>
       <p class="subhead">This sets how much machine you'll actually use, not how hard you train.</p>
-      <fieldset class="options">
+      <fieldset class="options options--single">
         <legend class="visually-hidden">Fitness level</legend>
         ${LEVEL_OPTIONS.map((o) => `
           <label class="option option--radio${current === o.value ? ' is-selected' : ''}">
@@ -470,21 +514,24 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <h1 class="headline" tabindex="-1" data-focus>What's your budget?</h1>
       <p class="subhead">All prices in SGD. Delivery and installation quoted separately.</p>
+      <div class="budget">
       <div class="budget__value" data-budget-value aria-live="polite">${this.budgetLabel(b)}</div>
       <input type="range" name="budget" min="${BUDGET_MIN}" max="${BUDGET_MAX}" step="250" value="${b}"
              aria-label="Budget in Singapore dollars"
              aria-valuetext="${this.budgetLabel(b)}">
-      <div class="budget__ends">
+      <div class="ends">
         <span>${this.money(BUDGET_MIN)}</span>
-        <span>${this.money(BUDGET_MAX)}+</span>
+        <span>${this.money(BUDGET_MAX)} +</span>
       </div>
-      <p class="note" style="margin-top:22px">Every bundle we show is priced at current sale prices and comes in under your number.</p>`;
+      <div class="hr"></div>
+      <p class="note">Every bundle we show is priced at current sale prices and comes in under your number. Delivery and installation are quoted separately.</p>
+      </div>`;
   }
 
   viewMatching() {
     return `
       <div class="quiz">
-        <div class="matching">
+        <div class="view matching">
           <div class="matching__spinner" aria-hidden="true"></div>
           <p class="headline" tabindex="-1" data-focus role="status">Building your personalized home gym&hellip;</p>
         </div>
@@ -524,6 +571,7 @@ class HomegymBundleQuiz extends HTMLElement {
 
     return `
       <div class="quiz quiz--result">
+        <div class="view">
         ${this.banner(res)}
         <p class="eyebrow">Your match</p>
         <h1 class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</h1>
@@ -533,18 +581,21 @@ class HomegymBundleQuiz extends HTMLElement {
           ${chips.map((c) => `<span class="chip">${CHECK_SVG}${c}</span>`).join('')}
         </div>
 
-        <div class="pricebox">
-          <span class="pricebox__total">${this.money(bundle.price)}</span>
+        <div class="hr"></div>
+        <div class="pricerow">
+          <span class="pricerow__total">${this.money(bundle.price)}</span>
+          <span class="pricerow__meta">${bundle.products.length} items</span>
         </div>
+        <div class="hr"></div>
 
         <p class="pitch">${esc(bundle.pitch)}</p>
 
-        <div class="actions">
+        <div class="actions actions--result">
           ${this.whatsapp
-            ? `<button class="btn btn--wa btn--lg" data-action="whatsapp" type="button">${WA_SVG} Send my bundle on WhatsApp</button>`
+            ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send my bundle on WhatsApp</button>`
             /* No WhatsApp number configured, fall back to the contact page so a
                host embedding this can never end up with a result and no way to act. */
-            : `<a class="btn btn--primary btn--lg" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+            : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                   data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
           ${/* Only when a host has actually wired a cart. With none configured
                 (the case today) WhatsApp is the single call to action. */
@@ -565,7 +616,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <section class="section">
           <h2 class="section__title">What's in the bundle</h2>
           <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
-          <div class="total-row">Bundle total <b>${this.money(bundle.price)}</b></div>
+          <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
           <p class="fineprint">
             Prices are current sale prices as at 30 August 2026 and exclude delivery and installation,
             which are quoted separately. These units run from 90&nbsp;kg to over 300&nbsp;kg.
@@ -591,10 +642,13 @@ class HomegymBundleQuiz extends HTMLElement {
           </div>
         </section>` : ''}
 
+        <div class="hr"></div>
         <div class="retake">
-          <button class="btn btn--ghost" data-action="back-to-steps" type="button">${BACK_ARROW} Back to my budget</button>
+          <button class="btn btn--text" data-action="back-to-steps" type="button">${BACK_ARROW} Back to my budget</button>
           <button class="btn btn--text" data-action="adjust" type="button">Adjust my answers</button>
-          <button class="btn btn--text" data-action="restart" type="button">Start over</button>
+          <button class="btn btn--text" data-action="restart" type="button">Start again</button>
+        </div>
+        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.level || "any level")} &middot; ${this.budgetLabel(a.budget)} budget</p>
         </div>
       </div>`;
   }
@@ -611,18 +665,19 @@ class HomegymBundleQuiz extends HTMLElement {
       : res.fallback === FALLBACK.SMALLEST
         ? 'Tight space. Here&rsquo;s what genuinely fits.'
         : '';
-    return text ? `<div class="banner" role="status">${text}</div>` : '';
+    return text ? `<div class="banner" role="status"><span class="banner__label">Nearest match</span>${text}</div>` : '';
   }
 
   productCard(id, bundle) {
     const p = PRODUCTS[id];
     if (!p) return '';
-    const initial = esc(p.name.trim().charAt(0).toUpperCase());
     return `
       <article class="card">
         <div class="card__media">
-          <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" data-fallback>
-          <div class="card__fallback" hidden aria-hidden="true">${initial}</div>
+          <span class="grayscale">
+            <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" data-fallback>
+          </span>
+          <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
           ${p.note ? `<span class="card__badge">${esc(p.note)}</span>` : ''}
         </div>
         <div class="card__body">
@@ -644,20 +699,20 @@ class HomegymBundleQuiz extends HTMLElement {
     const a = this.state.answers;
     return `
       <div class="quiz">
-        <div class="talk">
+        <div class="view talk">
           <p class="eyebrow">No honest match</p>
           <h1 class="headline" tabindex="-1" data-focus>Let's talk</h1>
-          <p class="subhead" style="margin:0 auto 8px;max-width:46ch">
+          <p class="subhead">
             At ${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m there is nothing in the range we can
             recommend in good conscience. Rather than sell you something that will not fit, we would
             rather look at the room with you. Wall-mounted and folding options open up below this size.
           </p>
           <div class="actions">
             ${this.whatsapp
-              ? `<button class="btn btn--wa btn--lg" data-action="whatsapp" type="button">${WA_SVG} Message us on WhatsApp</button>`
-              : `<a class="btn btn--primary btn--lg" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+              ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Message us on WhatsApp</button>`
+              : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                     data-action="cta-contact">Talk to us ${ARROW}</a>`}
-            <button class="btn btn--ghost" data-action="back-to-steps" type="button">${BACK_ARROW} Back</button>
+            <button class="btn btn--text" data-action="back-to-steps" type="button">${BACK_ARROW} Back</button>
             <button class="btn btn--text" data-action="restart" type="button">Start over</button>
           </div>
         </div>
@@ -675,7 +730,7 @@ class HomegymBundleQuiz extends HTMLElement {
       // chip reads the same way every time.
       this.state.answers.functions = FUNCTION_OPTIONS.map((o) => o.tag).filter((tag) => set.has(tag));
       t.closest('.option')?.classList.toggle('is-selected', t.checked);
-      if (this.state.answers.functions.length) this._clearError();
+      if (this.state.answers.functions.length) this._refreshGate();
       this._save();
     }
     if (t.name === 'level') {
@@ -683,7 +738,7 @@ class HomegymBundleQuiz extends HTMLElement {
       this.shadowRoot.querySelectorAll('.option--radio').forEach((el) => {
         el.classList.toggle('is-selected', el.contains(t));
       });
-      this._clearError();
+      this._refreshGate();
       this._save();
     }
   }
@@ -693,23 +748,21 @@ class HomegymBundleQuiz extends HTMLElement {
 
     if (t.name === 'length' || t.name === 'depth') {
       let v = parseFloat(t.value);
-      if (!Number.isFinite(v)) return;               // mid-typing in the number box
-      v = Math.min(3, Math.max(1, Math.round(v * 2) / 2));
+      if (!Number.isFinite(v)) return;
+      // Round to the slider's own step so 2.7000000000000002 never reaches the
+      // drawing or the readout.
+      v = Math.min(DIM_MAX, Math.max(DIM_MIN, Math.round(v * 10) / 10));
       this.state.answers[t.name] = v;
 
-      // Patch in place, a full re-render here would drop slider focus mid-drag.
-      this.shadowRoot.querySelectorAll(`[name="${t.name}"]`).forEach((el) => {
-        if (el === t) return;
-        el.value = el.type === 'number' ? v.toFixed(1) : String(v);
-      });
-      const room = this.shadowRoot.querySelector('.room');
-      if (room) {
+      // Patch in place. A full re-render here would drop slider focus mid-drag.
+      const readout = this.shadowRoot.querySelector(`[data-dim-value="${t.name}"]`);
+      if (readout) readout.textContent = `${v.toFixed(1)} m`;
+      t.setAttribute('aria-valuetext', `${v.toFixed(1)} metres`);
+
+      const plan = this.shadowRoot.querySelector('.space__plan');
+      if (plan) {
         const { length, depth } = this.state.answers;
-        room.innerHTML = `${this.roomSvg(length, depth)}
-          <div class="room__caption">
-            <span>Drawn to scale against a 3 &times; 3 m reference</span>
-            <span class="room__area">${(length * depth).toFixed(2)} m&sup2;</span>
-          </div>`;
+        plan.innerHTML = this.roomPanel(length, depth);
       }
       this._save();
     }
@@ -745,11 +798,17 @@ class HomegymBundleQuiz extends HTMLElement {
     }
   }
 
-  _clearError() {
-    if (!this.state.error) return;
-    this.state.error = '';
-    const box = this.shadowRoot.querySelector('.validation');
-    if (box) box.textContent = '';
+  /** Keep the Continue button and its hint in step with the current answers. */
+  _refreshGate() {
+    const reason = this._blockedReason();
+    const btn = this.shadowRoot.querySelector('[data-action="next"]');
+    if (btn) {
+      btn.disabled = Boolean(reason);
+      if (reason) btn.setAttribute('aria-disabled', 'true');
+      else btn.removeAttribute('aria-disabled');
+    }
+    const hint = this.shadowRoot.querySelector('.validation');
+    if (hint) hint.textContent = reason;
   }
 
   _next() {

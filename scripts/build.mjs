@@ -21,13 +21,12 @@ export const PAGES = [
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
   { file: 'bundle-quiz.html', emoji: '🎯',
     desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.',
-    // homegym.sg's own typefaces: Open Sans for body, Oswald for nav and
-    // buttons. Loaded here so they are available inside the shadow root too:
-    // font loading is document-scoped, not tree-scoped. On homegym.sg itself
-    // both are already loaded and this costs nothing.
+    // Archivo 400/600/800, the Modernist system's only family. Loaded here so
+    // it is available inside the shadow root too: font loading is
+    // document-scoped, not tree-scoped.
     head: '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
           '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;500;600&display=swap">\n' },
+          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">\n' },
 ];
 
 // The dev-time module tag in src/bundle-quiz.html, swapped for the inlined

@@ -63,20 +63,31 @@ All styling lives inside a shadow root, so the component cannot be reached by th
 
 ### Design language
 
-The quiz is styled to homegym.sg, using tokens read off the live site on 30 Aug 2026 so it reads as a page of their shop rather than a bolt-on:
+The quiz follows the **Modernist design system**, per the design handoff of 30 Aug 2026 (`design_handoff_gym_builder_quiz`):
 
-| Token | Value | Where it came from |
-|---|---|---|
-| Ground | `#FFFFFF` | Site background |
-| Body text | `#333333` | Site body colour |
-| Body face | `"Open Sans", Helvetica, Arial` | 1,510 of 1,560 sampled elements |
-| Display face | `Oswald` | Their nav and `.action` buttons |
-| Primary CTA | `#FF6924`, **black** text, square | Their `.button` styling, unchanged |
-| Links | `#22B4FF` | Site link colour |
-| Sale red | `#F64127` | Site sale/price red |
-| Corner radius | `0px` | Their entire UI is square |
+| Token | Value |
+|---|---|
+| Ground | `#ffffff` (white, not the system ground `#f3f2f2`, since the quiz sits on the site content area) |
+| Text | `#201e1d` |
+| Accent | `#ec3013` |
+| Type | Archivo 400 / 600 / 800 throughout |
+| Corner radius | `0px` everywhere, non-negotiable in this system |
+| Rules | 2px at 40% ink, never softened to a hairline |
+| Alignment | Flush left, including labels inside wide buttons |
+| Photography | Grayscale, via the `.grayscale` wrapper |
 
-The standalone page carries the HomeGym logo, a slim header and a simple footer rather than a hand-copy of their Magento navigation, which would drift out of sync the moment they change a menu. Fonts load from Google Fonts in the page head; on homegym.sg itself both faces are already loaded, so embedding costs nothing extra.
+**Two deliberate deviations, both to hold WCAG AA.** Each steps one notch along the system own ramp, which is the mechanism the system prescribes for text on tinted fills:
+
+1. White on `--accent` is **4.20:1**, under the 4.5 needed for the option-card title at its small end (16px) and its 14px description. Surfaces that carry white text use `--accent-600` (`#dd2b0f`, 4.74:1). Chrome that carries no text, meaning the progress fill, section rules and plan outline, keeps the true accent.
+2. `--neutral-600` is **4.30:1** on white. Small text the handoff assigns to it uses `--neutral-700` (6.52:1).
+
+**Three further departures from the handoff, all decided with the client:**
+
+- The result keeps a **single WhatsApp CTA in brand green** rather than the handoff two buttons in accent and outline.
+- **No em dashes** anywhere in the copy, so the handoff option titles use colons.
+- **No "against RRP" line.** The acronym is not one a shopper should have to decode; the discount still shows on each product card as a struck-through price with a SALE tag.
+
+The standalone page carries the HomeGym logo, a masthead and a footer rather than a hand-copy of their Magento navigation, which would drift out of sync the moment they change a menu. Archivo loads from Google Fonts in the page head.
 
 **It never navigates the host page.** Product links and CTAs open in a new tab; the cart POST targets `_blank`.
 

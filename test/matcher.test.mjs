@@ -177,3 +177,24 @@ test('the matcher does not mutate the bundle data it is given', () => {
   run({ functions: ['cable'], length: 2, depth: 2, level: 'beginner', budget: 4000 });
   assert.equal(JSON.stringify(BUNDLES), snapshot);
 });
+
+// ── Stylesheet integrity ───────────────────────────────────────────────────
+
+test('the stylesheet parses as a module and is real CSS', async () => {
+  // styles.js is one big tagged template literal. A stray backtick inside a CSS
+  // comment terminates it and the rest of the sheet is parsed as JavaScript.
+  // That happened once and the bundler HID it: build-quiz.mjs strips
+  // line-leading block comments, so the built file was valid while the raw
+  // ES-module dev path threw. Importing the source here is what catches it.
+  const { STYLES } = await import('../src/quiz/styles.js');
+  assert.equal(typeof STYLES, 'string');
+  assert.ok(STYLES.length > 5000, 'stylesheet looks truncated');
+  assert.ok(!STYLES.includes('`'), 'a backtick in the sheet would end the template early');
+  assert.ok(STYLES.includes(':host'), 'no :host block, so nothing would be scoped');
+  assert.ok(STYLES.includes('.option'), 'option-card rules are missing');
+  assert.ok(STYLES.includes('.card__fallback[hidden]'), 'the fallback-plate guard is missing');
+  // Balanced braces: a truncated sheet silently drops every rule after the cut.
+  const open = (STYLES.match(/\{/g) || []).length;
+  const close = (STYLES.match(/\}/g) || []).length;
+  assert.equal(open, close, `unbalanced braces: ${open} open, ${close} close`);
+});
