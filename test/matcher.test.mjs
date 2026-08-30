@@ -1,6 +1,6 @@
 /**
  * Unit tests for the matching logic.  Run with:  npm test
- * Node's built-in test runner — no test framework dependency.
+ * Node's built-in test runner, no test framework dependency.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -88,7 +88,7 @@ test('catalogue has 15 products, each with a URL and an image', () => {
   }
 });
 
-test('product URLs and images are all distinct — no copy-paste collisions', () => {
+test('product URLs and images are all distinct, no copy-paste collisions', () => {
   const urls = Object.values(PRODUCTS).map((p) => p.url);
   const images = Object.values(PRODUCTS).map((p) => p.image);
   assert.equal(new Set(urls).size, urls.length, 'duplicate product URL');
@@ -118,7 +118,7 @@ test('fits() is orientation-agnostic', () => {
 test('functionScore rewards coverage and caps the capability bonus at +0.15', () => {
   assert.equal(functionScore(['cable'], ['cable']), 1);
   // Zero coverage still earns the capability bonus for the one function it does
-  // have — a machine that does something else is worth 0.05, not nothing.
+  // have, a machine that does something else is worth 0.05, not nothing.
   assert.equal(functionScore(['cable'], ['smith']), 0.05);
   assert.equal(functionScore([], ['smith']), 0, 'no selection means no score at all');
   // 1 of 2 covered, 0 extras
@@ -153,7 +153,7 @@ test('alternates never repeat the primary and never exceed two', () => {
 });
 
 test('the acceptance-criteria edge cases produce a result without throwing', () => {
-  // 1x1m — the tightest possible room
+  // 1x1m, the tightest possible room
   assert.doesNotThrow(() =>
     run({ functions: ['power_rack'], length: 1, depth: 1, level: 'beginner', budget: 2500 })
   );

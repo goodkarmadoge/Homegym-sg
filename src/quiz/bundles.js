@@ -1,5 +1,5 @@
 /**
- * Homegym.sg — Bundle Quiz data.
+ * Homegym.sg, Bundle Quiz data.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * THIS FILE IS THE SINGLE SOURCE OF TRUTH FOR ALL PRODUCTS, PRICES AND BUNDLES.
@@ -7,14 +7,14 @@
  * See README.md → "Editing the data".
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * KNOWN ISSUE 1 — PRICE SNAPSHOT.
+ * KNOWN ISSUE 1, PRICE SNAPSHOT.
  *   Every price below is a 30 Aug 2026 snapshot of homegym.sg SALE prices.
  *   Several are promotional and WILL drift: tinytitan, bodyx-cube, titan-x20,
  *   im2000, folding-rack, olympic-set, bar-22m, bar-18m (all carry a `was`).
  *   Re-verify before any campaign. A nightly job that reads the Magento product
- *   API and rewrites PRODUCTS is the durable fix — README → "Keeping prices honest".
+ *   API and rewrites PRODUCTS is the durable fix, README → "Keeping prices honest".
  *
- * KNOWN ISSUE 2 — IMAGE URLS ARE CLOUDFRONT CACHE PATHS.
+ * KNOWN ISSUE 2, IMAGE URLS ARE CLOUDFRONT CACHE PATHS.
  *   The `/cache/c0dcb29ef46d222f886111be6e10f76c/` segment is a Magento image-cache
  *   hash. It changes when the image cache is regenerated, silently 404ing every
  *   image at once. The result grid degrades to initial-letter tiles rather than
@@ -23,9 +23,9 @@
 
 /**
  * Product catalogue, keyed by id. Prices in SGD.
- *   price — current sale price. This is what the bundle total is built from.
- *   was   — pre-sale RRP, or null. Drives the struck-through price and SALE tag.
- *   note  — optional availability badge shown on the product card.
+ *   price, current sale price. This is what the bundle total is built from.
+ *   was    pre-sale price, or null. Drives the struck-through price and SALE tag.
+ *   note   optional availability badge shown on the product card.
  */
 export const PRODUCTS = {
   'tinytitan': {
@@ -111,13 +111,13 @@ export const PRODUCTS = {
     was: null,
     url: 'https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/vigor-b20-sliding-bench.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/b/2/b20-main.jpg',
-    // KNOWN ISSUE 3 — OUT OF STOCK at the 30 Aug 2026 snapshot, and the URL slug
+    // KNOWN ISSUE 3, OUT OF STOCK at the 30 Aug 2026 snapshot, and the URL slug
     // says `b20` while the product page title says `X20`. Confirm the correct SKU
     // with the client, then delete this `note` line to remove the badge.
     note: 'On backorder'
   },
   'olympic-set': {
-    name: 'Olympic Weight Set — 107.5kg rubber plates',
+    name: 'Olympic Weight Set, 107.5kg rubber plates',
     price: 450,
     was: 499,
     url: 'https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-weights/olympic-set.html',
@@ -142,24 +142,24 @@ export const PRODUCTS = {
 /**
  * The ten bundles.
  *
- * KNOWN ISSUE 4 — FOOTPRINTS ARE UNVERIFIED.
+ * KNOWN ISSUE 4, FOOTPRINTS ARE UNVERIFIED.
  *   These come from the client's source spreadsheet, not from measuring machines.
  *   They read as working-area figures that already include pull-out clearance.
  *   MUST be confirmed before go-live: a customer who buys on a wrong footprint
  *   is a returned 338kg machine.
  *
- * KNOWN ISSUE 5 — BUNDLES 1, 4, 7 AND 9 SHARE IDENTICAL FUNCTION TAGS
+ * KNOWN ISSUE 5, BUNDLES 1, 4, 7 AND 9 SHARE IDENTICAL FUNCTION TAGS
  *   (smith + power_rack + cable). They are separated only by space, level and
- *   price — which is exactly why the scorer weights space and budget so heavily.
+ *   price, which is exactly why the scorer weights space and budget so heavily.
  *   To differentiate them properly, add a distinguishing tag to each
  *   (e.g. `folding`, `self_spotting`, `connected`) and a matching quiz option.
  *
  * Fields:
- *   functions      — capability tags, matched against the user's Step 1 answers.
- *   footprint      — metres. Matched in EITHER orientation (see matcher.js).
- *   level          — beginner | intermediate | advanced.
- *   price          — MUST equal the sum of its products' prices (asserted in tests).
- *   budgetCeiling  — the client's guide ceiling. Not used by the matcher; the
+ *   functions      capability tags, matched against the user's Step 1 answers.
+ *   footprint      metres. Matched in EITHER orientation (see matcher.js).
+ *   level          beginner | intermediate | advanced.
+ *   price          MUST equal the sum of its products' prices (asserted in tests).
+ *   budgetCeiling  the client's guide ceiling. Not used by the matcher; the
  *                    matcher filters the user's own budget against `price`.
  */
 export const BUNDLES = [
@@ -199,7 +199,7 @@ export const BUNDLES = [
     price: 6567,
     budgetCeiling: 7000,
     products: ['titan-x20', 'x20-bench', 'olympic-set', 'bar-22m'],
-    pitch: 'Power rack, counterbalanced Smith, dual-stack functional trainer and a leg press in one integrated unit. This is the end of the road — you will not outgrow it.',
+    pitch: 'Power rack, counterbalanced Smith, dual-stack functional trainer and a leg press in one integrated unit. This is the end of the road. You will not outgrow it.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Leg press', 'Hack squat', 'Lat pulldown', 'Cable work', 'Hip abduction']
   },
   {
@@ -212,7 +212,7 @@ export const BUNDLES = [
     price: 3891,
     budgetCeiling: 4000,
     products: ['bf900-pro', 'mab-bench'],
-    pitch: 'The integrated stack means you load the Smith bar straight off the weight stack — no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.',
+    pitch: 'The integrated stack means you load the Smith bar straight off the weight stack: no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.',
     trains: ['Smith squat', 'Smith bench', 'Lat pulldown', 'Tricep pushdown', 'Chin-ups', 'Cable rows']
   },
   {
@@ -238,7 +238,7 @@ export const BUNDLES = [
     price: 3220,
     budgetCeiling: 3500,
     products: ['infinity-halfrack', 'mab-bench', 'olympic-set', 'bar-18m'],
-    pitch: 'Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path — Smith kit, dip station, landmine — for whenever you want more.',
+    pitch: 'Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path (Smith kit, dip station, landmine) for whenever you want more.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Lat pulldown', 'Low row', 'Chin-ups']
   },
   {
@@ -264,7 +264,7 @@ export const BUNDLES = [
     price: 5899,
     budgetCeiling: 6000,
     products: ['aeke-s1-pro'],
-    pitch: 'Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes — and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.',
+    pitch: 'Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.',
     trains: ['Chest press', 'Rows', 'Squats', 'Core work', 'Pilates', 'Rowing', '185 training angles']
   },
   {
@@ -297,9 +297,9 @@ export const BUNDLES = [
 
 /** Step 1 options. `tag` is the value stored in answers.functions. */
 export const FUNCTION_OPTIONS = [
-  { tag: 'power_rack', label: 'Barbell lifts — squat, bench, deadlift', help: 'Free-weight barbell work in a rack' },
+  { tag: 'power_rack', label: 'Barbell lifts: squat, bench, deadlift', help: 'Free-weight barbell work in a rack' },
   { tag: 'smith',      label: 'Guided pressing, safe to do solo',       help: 'Smith machine bar on fixed rails' },
-  { tag: 'cable',      label: 'Cable work — lat pulldown, rows, flys',  help: 'Dual weight-stack functional trainer' },
+  { tag: 'cable',      label: 'Cable work: lat pulldown, rows, flys',  help: 'Dual weight-stack functional trainer' },
   { tag: 'leg_press',  label: 'Leg press & hack squat',                 help: 'Dedicated leg press station' },
   { tag: 'multigym',   label: 'Simple pin-loaded machine circuit',      help: 'One station, seated, easy to learn' },
   { tag: 'smart',      label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }

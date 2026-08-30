@@ -14,7 +14,7 @@
  *   primary CTA   #FF6924 with BLACK text, square corners
  *   links         #22B4FF
  *   sale red      #F64127
- *   borders       0px radius everywhere — their whole UI is square
+ *   borders       0px radius everywhere, their whole UI is square
  *
  * Two deliberate departures from the live site, both accessibility fixes:
  *   1. Link blue #22B4FF scores 2.32:1 on white and fails WCAG AA badly. Text
@@ -27,7 +27,7 @@
  * The dark theme is kept behind theme="dark" for placements on a dark ground.
  */
 
-/** Identity tag — exists so editors syntax-highlight the block as CSS. */
+/** Identity tag, exists so editors syntax-highlight the block as CSS. */
 const css = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
 export const STYLES = css`
@@ -37,7 +37,7 @@ export const STYLES = css`
     display: block;
     contain: layout style;
 
-    /* Light — homegym.sg's own palette. This is the default. */
+    /* Light, homegym.sg's own palette. This is the default. */
     --bg: #FFFFFF;
     --surface: #F7F7F7;
     --surface-2: #F0F0F0;
@@ -50,7 +50,7 @@ export const STYLES = css`
     --on-accent: #000000;       /* their CTA buttons use black text */
     --link: #22B4FF;
     --link-ink: #0077B3;        /* AA-safe version of the link blue */
-    --sale: #F64127;            /* their brand red — background only, black text on it */
+    --sale: #F64127;            /* their brand red, background only, black text on it */
     --sale-ink: #C62D14;        /* AA-safe red for red TEXT on white */
     --tile: #FFFFFF;            /* product images always sit on white */
 
@@ -126,7 +126,7 @@ export const STYLES = css`
 
   /* Each view's heading takes focus on a step change so screen readers land in
      the right place. That focus is programmatic, not keyboard-initiated, so the
-     ring is suppressed for it — :focus-visible still draws one if a keyboard
+     ring is suppressed for it, :focus-visible still draws one if a keyboard
      user ever reaches the heading themselves. */
   [data-focus]:focus { outline: none; }
   [data-focus]:focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 4px; }
@@ -190,7 +190,7 @@ export const STYLES = css`
   .option:hover { border-color: var(--line-strong); background: var(--surface); }
 
   /* The real control stays in the accessibility tree and keeps native keyboard
-     behaviour — it is only visually replaced by .option__mark. */
+     behaviour, it is only visually replaced by .option__mark. */
   .option input {
     position: absolute;
     width: 1px; height: 1px;
@@ -213,13 +213,13 @@ export const STYLES = css`
   .option--radio .option__mark { border-radius: 50%; }
   .option__mark svg { width: 13px; height: 13px; opacity: 0; transition: opacity var(--step) var(--ease); }
 
-  /* These are spans inside a <label>, so they need an explicit block display —
+  /* These are spans inside a <label>, so they need an explicit block display:
      as inline elements the helper text runs on from the label. */
   .option__body { min-width: 0; display: block; }
   .option__label { display: block; font-weight: 700; line-height: 1.35; }
   .option__help { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3px; }
 
-  /* Selected state is a filled accent block, not a border tint — it has to be
+  /* Selected state is a filled accent block, not a border tint, it has to be
      unmistakable on a phone screen in daylight.
 
      Written twice on purpose: .is-selected is toggled by JS and works
@@ -294,9 +294,9 @@ export const STYLES = css`
     margin-bottom: 22px;
   }
   /* The plan is a reference, not the hero of the step, so it is capped rather
-     than allowed to fill the column — unconstrained it rendered around 700px
+     than allowed to fill the column, unconstrained it rendered around 700px
      square on desktop. At 340px it is roughly half that and the SVG's own type
-     lands at a normal 13–14px instead of being scaled up to 30px. On a narrow
+     lands at a normal 13-14px instead of being scaled up to 30px. On a narrow
      phone the cap never binds, so nothing shrinks below what it was. */
   .room svg {
     display: block;
@@ -535,8 +535,6 @@ export const STYLES = css`
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
-  .pricebox__save { color: var(--muted); font-size: 15px; }
-  .pricebox__save b { color: var(--sale-ink); font-weight: 700; }
 
   .pitch { font-size: 16px; line-height: 1.65; margin-bottom: 20px; max-width: 64ch; }
 
@@ -562,7 +560,7 @@ export const STYLES = css`
     font-size: 14px;
   }
 
-  /* Product grid — 1 col, 2 up at 640, 3 up at 1024 */
+  /* Product grid, 1 col, 2 up at 640, 3 up at 1024 */
   .grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -724,7 +722,7 @@ export const STYLES = css`
     line-height: 1.6;
   }
 
-  /* "Let's talk" card — fallback tier 4 */
+  /* "Let's talk" card, fallback tier 4 */
   .talk {
     text-align: center;
     padding: 48px 24px;

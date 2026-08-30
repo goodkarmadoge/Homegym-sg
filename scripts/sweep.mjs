@@ -1,14 +1,14 @@
 /**
- * Reachability sweep — Section 9 acceptance criterion.
+ * Reachability sweep, Section 9 acceptance criterion.
  *
  * Sweeps the whole realistic input space and asserts every bundle is reachable
  * as a primary match. Prints the distribution so it can be diffed against the
  * regression baseline in the spec.
  *
- *   Function subsets of size 1–3 from 6 tags : 6 + 15 + 20 = 41
+ *   Function subsets of size 1-3 from 6 tags : 6 + 15 + 20 = 41
  *   Space combos (5 lengths x 5 depths)      : 25
  *   Levels                                   : 3
- *   Budget steps ($2,500–$7,500 by $250)     : 21
+ *   Budget steps ($2,500-$7,500 by $250)     : 21
  *   ---------------------------------------------------
  *   Total                                    : 64,575
  *
@@ -114,10 +114,10 @@ const lpad = (s, w) => String(s).padStart(w);
 console.log(`${pad('Bundle', 22)}${lpad('Matches', 9)}${lpad('Share', 8)}${lpad('Baseline', 10)}${lpad('Delta', 8)}`);
 console.log('-'.repeat(57));
 for (const r of rows) {
-  const delta = r.baseline === null ? '—' : `${(r.share - r.baseline >= 0 ? '+' : '')}${(r.share - r.baseline).toFixed(1)}`;
+  const delta = r.baseline === null ? 'n/a' : `${(r.share - r.baseline >= 0 ? '+' : '')}${(r.share - r.baseline).toFixed(1)}`;
   console.log(
     pad(r.name, 22) + lpad(r.n.toLocaleString(), 9) + lpad(`${r.share.toFixed(1)}%`, 8) +
-    lpad(r.baseline === null ? '—' : `${r.baseline.toFixed(1)}%`, 10) + lpad(delta, 8)
+    lpad(r.baseline === null ? 'n/a' : `${r.baseline.toFixed(1)}%`, 10) + lpad(delta, 8)
   );
 }
 
@@ -130,12 +130,12 @@ const unreachable = rows.filter((r) => r.n === 0);
 
 console.log('');
 if (errors.length) {
-  console.error(`FAIL — ${errors.length} combination(s) threw. First:`);
+  console.error(`FAIL, ${errors.length} combination(s) threw. First:`);
   console.error(JSON.stringify(errors[0], null, 2));
   process.exit(1);
 }
 if (unreachable.length) {
-  console.error(`FAIL — unreachable bundle(s): ${unreachable.map((r) => r.name).join(', ')}`);
+  console.error(`FAIL, unreachable bundle(s): ${unreachable.map((r) => r.name).join(', ')}`);
   process.exit(1);
 }
-console.log('PASS — all 10 bundles are reachable and no combination threw.');
+console.log('PASS, all 10 bundles are reachable and no combination threw.');

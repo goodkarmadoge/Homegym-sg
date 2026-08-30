@@ -1,5 +1,5 @@
 /**
- * Homegym.sg — Bundle matching logic.
+ * Homegym.sg, Bundle matching logic.
  *
  * PURE MODULE. No DOM access, no imports from the component, no side effects.
  * Everything here is deterministic: same answers in, same bundle out, on every
@@ -18,17 +18,17 @@ export const WEIGHTS = { fn: 40, budget: 25, space: 20, level: 15 };
 /** Fallback tiers, in the order the ladder relaxes constraints. */
 export const FALLBACK = {
   NONE: null,
-  BUDGET: 'budget',   // tier 1 — budget relaxed 10%
-  SPACE: 'space',     // tier 2 — shorter dimension relaxed 0.5m
-  SMALLEST: 'space-only', // tier 3 — space fit only, budget ignored
-  CONTACT: 'contact'  // tier 4 — nothing fits at all
+  BUDGET: 'budget',   // tier 1, budget relaxed 10%
+  SPACE: 'space',     // tier 2, shorter dimension relaxed 0.5m
+  SMALLEST: 'space-only', // tier 3, space fit only, budget ignored
+  CONTACT: 'contact'  // tier 4, nothing fits at all
 };
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
 /**
  * Does the bundle fit the user's floor space in EITHER orientation?
- * A 1.5 x 2.5 machine fits a 2.5 x 1.5 room — you just turn it round.
+ * A 1.5 x 2.5 machine fits a 2.5 x 1.5 room, you just turn it round.
  */
 export function fits(bundle, userLength, userDepth) {
   const { length: bL, depth: bD } = bundle.footprint;
@@ -83,7 +83,7 @@ export function levelScore(userLevel, bundleLevel) {
   return distance === 0 ? 1.0 : distance === 1 ? 0.6 : 0.2;
 }
 
-/** Full 0–100 score plus the component breakdown, for the debug payload. */
+/** Full 0-100 score plus the component breakdown, for the debug payload. */
 export function scoreBundle(bundle, answers) {
   const fn = functionScore(answers.functions, bundle.functions);
   const budget = budgetScore(bundle.price, answers.budget);
@@ -100,7 +100,7 @@ export function scoreBundle(bundle, answers) {
     bundle,
     score,
     parts: { fn, budget, space, level },
-    // Raw coverage without the capability bonus — tie-break (a) uses this, so a
+    // Raw coverage without the capability bonus, tie-break (a) uses this, so a
     // bundle that genuinely covers more of what you asked for wins over one that
     // merely does more things in general.
     coverage: answers.functions && answers.functions.length
@@ -126,7 +126,7 @@ function compare(a, b) {
 /**
  * Insertion sort, deliberately.
  *
- * `compare` is intentionally NOT transitive — "within 2 points" creates chains
+ * `compare` is intentionally NOT transitive, "within 2 points" creates chains
  * where A ties B, B ties C, but A beats C outright. Array.prototype.sort is
  * allowed to produce engine-dependent output for such a comparator. Insertion
  * sort over 10 items is both trivially cheap and deterministic everywhere,

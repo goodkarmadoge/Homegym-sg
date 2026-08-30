@@ -36,7 +36,7 @@ for (const p of PAGES) {
       .split(',')
       .some(s => s.trim() === '.rise');        // bare .rise, not html.reveal .rise
     if (hidesUnscoped && /opacity\s*:\s*0(?![.\d])/.test(decls)) {
-      fail(`${p.file}: unguarded ".rise{opacity:0}" — scope the hidden state to a JS-applied class, or the page renders blank whenever IntersectionObserver never fires`);
+      fail(`${p.file}: unguarded ".rise{opacity:0}", scope the hidden state to a JS-applied class, or the page renders blank whenever IntersectionObserver never fires`);
     }
   }
 
@@ -52,7 +52,7 @@ for (const p of PAGES) {
 // This exists because they once were not: build.mjs inlined the bundle with a
 // replacement STRING, and `$'` inside `'S$' + value` is a special replacement
 // pattern meaning "everything after the match". It ate the closing quote, and
-// the page shipped with a script that would not parse — while the standalone
+// the page shipped with a script that would not parse, while the standalone
 // file was perfectly fine. Comparing the two catches any repeat instantly.
 const embedPath = join(OUT, 'homegym-bundle-quiz.min.js');
 const quizPage = join(OUT, 'bundle-quiz.html');
@@ -67,7 +67,7 @@ if (!existsSync(embedPath)) {
   else if (inline !== standalone) {
     fail(
       'bundle-quiz.html: the inlined bundle does not match dist/homegym-bundle-quiz.min.js ' +
-      `(${inline.length} vs ${standalone.length} chars) — something mangled it during inlining`
+      `(${inline.length} vs ${standalone.length} chars), something mangled it during inlining`
     );
   }
   if (!/customElements\.define/.test(inline)) fail('bundle-quiz.html: inlined bundle never defines the element');
