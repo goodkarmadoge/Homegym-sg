@@ -39,8 +39,8 @@ The same code ships twice from one source:
 <script src="/assets/homegym-bundle-quiz.min.js" defer></script>
 
 <homegym-bundle-quiz
-  theme="dark"
-  accent="#FF5A1F"
+  theme="light"
+  accent="#FF6924"
   currency="SGD"
   contact-url="https://homegym.sg/contact"
   whatsapp="6580423952"
@@ -51,7 +51,7 @@ Every attribute is optional; the values above are the defaults.
 
 | Attribute | Purpose |
 |---|---|
-| `theme` | `dark` (default) or `light` |
+| `theme` | `light` (default, homegym.sg's own white ground) or `dark` |
 | `accent` | Any CSS colour. Hex values are contrast-corrected — see below |
 | `currency` | Currency code. `SGD` renders as `S$2,241`; anything else goes through `Intl.NumberFormat` |
 | `cart-endpoint` | If set, the primary CTA becomes **Add all to cart** and POSTs the product list here. If unset, it becomes **Enquire about this bundle** |
@@ -60,6 +60,23 @@ Every attribute is optional; the values above are the defaults.
 | `start-step` | Deep-link straight to a step, 1–4 |
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
+
+### Design language
+
+The quiz is styled to homegym.sg, using tokens read off the live site on 30 Aug 2026 so it reads as a page of their shop rather than a bolt-on:
+
+| Token | Value | Where it came from |
+|---|---|---|
+| Ground | `#FFFFFF` | Site background |
+| Body text | `#333333` | Site body colour |
+| Body face | `"Open Sans", Helvetica, Arial` | 1,510 of 1,560 sampled elements |
+| Display face | `Oswald` | Their nav and `.action` buttons |
+| Primary CTA | `#FF6924`, **black** text, square | Their `.button` styling, unchanged |
+| Links | `#22B4FF` | Site link colour |
+| Sale red | `#F64127` | Site sale/price red |
+| Corner radius | `0px` | Their entire UI is square |
+
+The standalone page carries the HomeGym logo, a slim header and a simple footer rather than a hand-copy of their Magento navigation, which would drift out of sync the moment they change a menu. Fonts load from Google Fonts in the page head; on homegym.sg itself both faces are already loaded, so embedding costs nothing extra.
 
 **It never navigates the host page.** Product links and CTAs open in a new tab; the cart POST targets `_blank`.
 
@@ -152,15 +169,19 @@ If genuinely automatic sending is wanted later, the shape is: the component POST
 
 Fully keyboard navigable end to end, with visible focus rings throughout. Selection state is a filled accent block rather than a border tint, so it survives a phone screen in daylight, and every touch target clears 44 × 44 px.
 
-Hex accents are contrast-corrected at runtime: `--accent-ink` is darkened or lightened until text clears 4.5:1 against the background, so a client-supplied accent cannot quietly break WCAG AA. On the light theme the default orange becomes `#cc4819`; a yellow accent becomes `#8c7500`. Measured ratios:
+Hex accents are contrast-corrected at runtime: `--accent-ink` is darkened or lightened until text clears 4.5:1 against the background, so a client-supplied accent cannot quietly break WCAG AA. HomeGym's `#FF6924` scores only 2.88:1 as text on white, so accent-coloured text renders as `#BF4F1B` (4.83:1) while buttons keep the exact brand orange.
 
 | Pair | Ratio |
 |---|---|
-| Body text on background | 17.67:1 |
-| Muted helper text | 5.61:1 |
-| Accent text (dark theme) | 6.18:1 |
-| Text on the accent button | 6.18:1 |
-| Accent text (light theme) | 4.66:1 |
+| Body text `#333` on white | 12.63:1 |
+| Muted helper `#666` | 5.74:1 |
+| Links `#0077B3` | 4.90:1 |
+| Accent text (auto-darkened) | 4.83:1 |
+| Black on the `#FF6924` CTA | 7.30:1 |
+| Black on the `#F64127` SALE tag | 5.70:1 |
+| Sale text `#C62D14` | 5.55:1 |
+
+**Three of HomeGym's own colours fail AA and were adjusted for text use only.** Their link blue `#22B4FF` is 2.32:1 on white, the CTA orange is 2.88:1 as text, and the sale red is 3.68:1. Backgrounds keep the exact brand colours — the SALE tag is still `#F64127`, just with black text instead of white. **Worth raising with them: the same blue fails on their live site too, on every product link.**
 
 **Limitation:** named CSS colours and `oklch()`/`rgb()` accents are passed through untouched, because the correction needs to parse the value and only hex is parsed. Use a hex accent if you change it.
 
@@ -176,6 +197,7 @@ Seven things need a decision from HomeGym. They are flagged in code at the exact
 4. **Footprints are unverified.** They came from the source spreadsheet, not from measuring machines, and they read as working areas including clearance. A customer who buys on a wrong footprint is a returned 338 kg machine. **This is the highest-risk item on the list.**
 5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, level and price. Adding a distinguishing tag to each — `folding`, `self_spotting`, `connected` — plus a matching quiz option would sharpen them.
 6. **`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed. Check it resolves before launch.
+6b. **Their link blue `#22B4FF` fails WCAG AA at 2.32:1 on white** — here and on the live site, on every product link. The quiz uses a darkened `#0077B3` for text. Worth fixing site-wide.
 7. **The budget slider starts at S$2,500** while the cheapest bundle is S$2,241, so every bundle clears its floor. Dropping the minimum to S$2,000 would capture sub-S$2,500 traffic but needs a lighter bundle to answer it with.
 
 One correction to the source brief: it gives The Barbell Purist's saving as S$208. The catalogue data gives **S$200** (Folding Rack S$151 + Olympic set S$49). The page shows the computed figure, not the quoted one.

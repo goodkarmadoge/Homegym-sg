@@ -20,7 +20,14 @@ export const PAGES = [
   { file: 'prototype.html', emoji: '🏋️',
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
   { file: 'bundle-quiz.html', emoji: '🎯',
-    desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.' },
+    desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.',
+    // homegym.sg's own typefaces: Open Sans for body, Oswald for nav and
+    // buttons. Loaded here so they are available inside the shadow root too —
+    // font loading is document-scoped, not tree-scoped. On homegym.sg itself
+    // both are already loaded and this costs nothing.
+    head: '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;500;600&display=swap">\n' },
 ];
 
 // The dev-time module tag in src/bundle-quiz.html, swapped for the inlined
@@ -33,7 +40,7 @@ const RESET = `*,*::before,*::after{box-sizing:border-box}html{-moz-text-size-ad
 const favicon = e =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${e}</text></svg>`)}`;
 
-export function buildPage({ title, style, body, desc, emoji }) {
+export function buildPage({ title, style, body, desc, emoji, head = '' }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -47,7 +54,7 @@ export function buildPage({ title, style, body, desc, emoji }) {
 <meta property="og:description" content="${desc}">
 <meta property="og:type" content="article">
 <link rel="icon" href="${favicon(emoji)}">
-<style>${RESET}</style>
+${head}<style>${RESET}</style>
 ${style}
 </head>
 <body>
@@ -93,7 +100,7 @@ function main() {
       body = body.replace(QUIZ_SCRIPT_TAG, () => `<script>\n${quizBundle}\n</script>`);
     }
 
-    writeFileSync(join(OUT, p.file), buildPage({ title, style, body, desc: p.desc, emoji: p.emoji }));
+    writeFileSync(join(OUT, p.file), buildPage({ title, style, body, desc: p.desc, emoji: p.emoji, head: p.head }));
     console.log(`built dist/${p.file.padEnd(18)} ${(Buffer.byteLength(body) / 1024).toFixed(0)} KB  "${title}"`);
   }
 
