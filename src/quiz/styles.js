@@ -677,8 +677,12 @@ export const STYLES = css`
     place-items: center;
     overflow: hidden;
   }
-  /* Every content photograph prints black and white in this system. */
-  .grayscale { filter: grayscale(1) contrast(1.08); width: 100%; height: 100%; }
+  /* The Modernist system prints photography black and white. That is dropped
+     here on the client's instruction: greyed-out product shots read as broken
+     or unavailable stock rather than as a design choice, which is exactly how
+     they were reported. The wrapper stays so the rule can be restored in one
+     line if that judgement changes. */
+  .grayscale { width: 100%; height: 100%; }
   .card__media img {
     width: 100%; height: 100%;
     object-fit: contain;
@@ -841,6 +845,66 @@ export const STYLES = css`
     color: var(--n700);
     font-variant-numeric: tabular-nums;
   }
+
+  /* Hero shot: the anchor machine installed, above the product grid. */
+  .hero-shot {
+    position: relative;
+    margin: 0 0 16px;
+    border: 1px solid var(--n300);
+    background: var(--n100);
+  }
+  .hero-shot img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+  .hero-shot figcaption {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--n700);
+    padding: 9px 12px;
+    border-top: 1px solid var(--n300);
+  }
+
+  /* Rooms strip. Same hairline-as-gap trick as the product grid. */
+  .rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--n300);
+    border: 1px solid var(--n300);
+    margin-top: 16px;
+  }
+  .room-shot {
+    position: relative;
+    margin: 0;
+    aspect-ratio: 1 / 1;
+    background: var(--n100);
+    overflow: hidden;
+  }
+  .room-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Thumbnail on an alternate bundle row. */
+  .alt__media {
+    position: relative;
+    flex: 0 0 96px;
+    width: 96px;
+    height: 96px;
+    background: var(--n100);
+    overflow: hidden;
+  }
+  .alt__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* The closing no-obligation block is boxed so it reads as an offer rather
+     than another paragraph. */
+  .advice {
+    border: 2px solid var(--text);
+    padding: clamp(20px, 3vw, 28px);
+  }
+  .advice .section__title { margin-top: 0; }
 
   .fineprint {
     margin-top: 18px;

@@ -19,7 +19,7 @@
  * the cart CTA POSTs to cart-endpoint when one is configured, and every
  * meaningful action also fires a bubbling, composed CustomEvent for GTM.
  */
-import { BUNDLES, PRODUCTS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT } from './bundles.js';
+import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT } from './bundles.js';
 import { match, FALLBACK } from './matcher.js';
 import { STYLES } from './styles.js';
 
@@ -311,7 +311,8 @@ class HomegymBundleQuiz extends HTMLElement {
     // Product images: swap in an initial-letter tile if the CloudFront path 404s.
     this.shadowRoot.querySelectorAll('img[data-fallback]').forEach((img) => {
       img.addEventListener('error', () => {
-        const tile = img.parentElement?.querySelector('.card__fallback');
+        const holder = img.closest('.card__media, .hero-shot, .room-shot, .alt__media') || img.parentElement;
+        const tile = holder?.querySelector('.card__fallback');
         if (tile) {
           tile.hidden = false;
           img.style.display = 'none';
@@ -634,22 +635,18 @@ class HomegymBundleQuiz extends HTMLElement {
 
     const bundle = BUNDLES.find((b) => b.id === this.state.shownBundleId) || res.primary;
     const a = this.state.answers;
-
     const matched = a.functions.filter((f) => bundle.functions.includes(f));
 
-    // Deliberately no "S$X under budget" chip. Coming in under budget is a
-    // guarantee of the matcher, not a feature of this bundle, naming the
-    // leftover only invites the question of why we did not spend it. When a
-    // bundle genuinely is over budget the fallback banner says so instead.
+    // No "S$X under budget" chip. Coming in under budget is a guarantee of the
+    // matcher, not a feature of this bundle. When one genuinely is over, the
+    // fallback banner says so instead.
     const chips = [
       `Fits ${bundle.footprint.length.toFixed(1)} &times; ${bundle.footprint.depth.toFixed(1)} m`,
       matched.length
         ? `${matched.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`
         : `${bundle.functions.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`,
-      // The level is only a REASON when it agrees with what they told us. When
-      // it does not, an advanced lifter matched to an intermediate bundle on
-      // space and budget, saying "Intermediate level" argues against the match
-      // rather than for it, so fall back to another fact that is always true.
+      // The level is only a REASON when it agrees with the answer given. Telling
+      // an advanced lifter their match is "intermediate" argues against it.
       bundle.level === a.level
         ? `Built for ${bundle.level}`
         : `${bundle.trains.length} movements covered`
@@ -678,57 +675,12 @@ class HomegymBundleQuiz extends HTMLElement {
 
         <p class="pitch">${esc(bundle.pitch)}</p>
 
-        <div class="actions actions--result">
-          ${this.whatsapp
-            ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send my bundle on WhatsApp</button>`
-            /* No WhatsApp number configured, fall back to the contact page so a
-               host embedding this can never end up with a result and no way to act. */
-            : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
-                  data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
-          ${/* Only when a host has actually wired a cart. With none configured
-                (the case today) WhatsApp is the single call to action. */
-            this.cartEndpoint
-              ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>`
-              : ''}
-        </div>
-        <p class="note cta-note">
-          Want to try before you buy? Send it over and we'll book you a time to come
-          down to the showroom and put your hands on everything in this bundle.
-        </p>
-
-        <section class="section">
-          <h2 class="section__title">What you'll train</h2>
-          <div class="pills">${bundle.trains.map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>
-        </section>
-
-        <section class="section">
-          <h2 class="section__title">What's in the bundle</h2>
-          <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
-          <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
-          <p class="fineprint">
-            Prices are current sale prices as at 30 August 2026 and exclude delivery and installation,
-            which are quoted separately. These units run from 90&nbsp;kg to over 300&nbsp;kg.
-          </p>
-        </section>
-
-        ${alternates.length ? `
-        <section class="section">
-          <h2 class="section__title">Also worth a look</h2>
-          <div class="alts">
-            ${alternates.map((alt) => `
-              <button class="alt" type="button" data-action="alternate" data-bundle="${alt.id}">
-                <span class="alt__main">
-                  <span class="alt__name">${esc(alt.name)}</span>
-                  <span class="alt__tagline">${esc(alt.tagline)}</span>
-                </span>
-                <span class="alt__meta">
-                  <span>${alt.footprint.length.toFixed(1)} &times; ${alt.footprint.depth.toFixed(1)} m</span>
-                  <span class="alt__price">${this.money(alt.price)}</span>
-                </span>
-                <span class="alt__cta">See this bundle ${ARROW}</span>
-              </button>`).join('')}
-          </div>
-        </section>` : ''}
+        ${this.sectionProducts(bundle)}
+        ${this.sectionTrain(bundle)}
+        ${this.sectionSpecialist(bundle)}
+        ${this.sectionAlternates(alternates)}
+        ${this.sectionRooms()}
+        ${this.sectionAdvice()}
 
         <div class="hr"></div>
         <div class="retake">
@@ -736,9 +688,132 @@ class HomegymBundleQuiz extends HTMLElement {
           <button class="btn btn--text" data-action="adjust" type="button">Adjust my answers</button>
           <button class="btn btn--text" data-action="restart" type="button">Start again</button>
         </div>
-        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.level || "any level")} &middot; ${this.budgetLabel(a.budget)} budget</p>
+        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.level || 'any level')} &middot; ${this.budgetLabel(a.budget)} budget</p>
         </div>
       </div>`;
+  }
+
+  /* ── 1. What is in the bundle ─────────────────────────────────────────── */
+
+  sectionProducts(bundle) {
+    return `
+      <section class="section">
+        <h2 class="section__title">What's in the bundle</h2>
+        ${bundle.hero ? `
+          <figure class="hero-shot">
+            <img src="${esc(bundle.hero)}" alt="${esc(bundle.name)} installed" loading="lazy" decoding="async" data-fallback>
+            <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
+            <figcaption>${bundle.heroSource === 'instagram' ? 'A real install, from our Instagram' : 'The anchor machine in this build'}</figcaption>
+          </figure>` : ''}
+        <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
+        <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
+        <p class="fineprint">
+          Prices are current sale prices as at 30 August 2026 and exclude delivery and
+          installation, which are quoted separately. These units run from 90&nbsp;kg to
+          over 300&nbsp;kg.
+        </p>
+      </section>`;
+  }
+
+  /* ── 2. What you will train ───────────────────────────────────────────── */
+
+  sectionTrain(bundle) {
+    return `
+      <section class="section">
+        <h2 class="section__title">What you'll train</h2>
+        <div class="pills">${bundle.trains.map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>
+      </section>`;
+  }
+
+  /* ── 3. Send this to a specialist ─────────────────────────────────────── */
+
+  sectionSpecialist(bundle) {
+    return `
+      <section class="section">
+        <h2 class="section__title">Send this to a specialist</h2>
+        <p class="pitch">
+          We will come back with availability, delivery and installation for this exact
+          build, and answer anything the quiz could not.
+        </p>
+        <div class="actions actions--result">
+          ${this.whatsapp
+            ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send this to a specialist ${ARROW}</button>`
+            : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+                  data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
+          <button class="btn btn--outline" data-action="showroom" type="button">Book a showroom visit ${ARROW}</button>
+          ${this.cartEndpoint ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>` : ''}
+        </div>
+        <p class="note cta-note">
+          Send it over and we will book you a time to come down to the showroom and put
+          your hands on everything in this bundle.
+        </p>
+      </section>`;
+  }
+
+  /* ── 4. Other bundles ─────────────────────────────────────────────────── */
+
+  sectionAlternates(alternates) {
+    if (!alternates.length) return '';
+    return `
+      <section class="section">
+        <h2 class="section__title">Other bundles</h2>
+        <div class="alts">
+          ${alternates.map((alt) => `
+            <button class="alt" type="button" data-action="alternate" data-bundle="${alt.id}">
+              ${alt.hero ? `
+                <span class="alt__media">
+                  <img src="${esc(alt.hero)}" alt="" loading="lazy" decoding="async" data-fallback>
+                  <span class="card__fallback" hidden aria-hidden="true">Photo to follow</span>
+                </span>` : ''}
+              <span class="alt__main">
+                <span class="alt__name">${esc(alt.name)}</span>
+                <span class="alt__tagline">${esc(alt.tagline)}</span>
+              </span>
+              <span class="alt__meta">
+                <span>${alt.footprint.length.toFixed(1)} &times; ${alt.footprint.depth.toFixed(1)} m</span>
+                <span class="alt__price">${this.money(alt.price)}</span>
+              </span>
+              <span class="alt__cta">See this bundle ${ARROW}</span>
+            </button>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  /* ── 5. Rooms we have already built ───────────────────────────────────── */
+
+  sectionRooms() {
+    if (!ROOMS || !ROOMS.length) return '';
+    return `
+      <section class="section">
+        <h2 class="section__title">Rooms we've already built</h2>
+        <p class="pitch">Real installs in Singapore homes, not showroom mock-ups.</p>
+        <div class="rooms">
+          ${ROOMS.map((r) => `
+            <figure class="room-shot">
+              <img src="${esc(r.image)}" alt="A home gym we installed" loading="lazy" decoding="async" data-fallback>
+              <span class="card__fallback" hidden aria-hidden="true">Photo to follow</span>
+            </figure>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  /* ── 6. No-obligation advice ──────────────────────────────────────────── */
+
+  sectionAdvice() {
+    return `
+      <section class="section advice">
+        <h2 class="section__title">Not sure yet?</h2>
+        <p class="pitch">
+          Tell us the room and what you want to train and we will tell you what we would
+          put in it, whether or not you buy from us. No obligation, no sales pitch.
+        </p>
+        <div class="actions actions--result">
+          ${this.whatsapp
+            ? `<button class="btn btn--wa" data-action="advice" type="button">${WA_SVG} Ask us for advice ${ARROW}</button>`
+            : `<a class="btn btn--outline" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
+                  data-action="cta-contact">Ask us for advice ${ARROW}</a>`}
+        </div>
+      </section>`;
   }
 
   /** Honest banner for each rung of the fallback ladder. */
@@ -880,7 +955,9 @@ class HomegymBundleQuiz extends HTMLElement {
       case 'adjust':    e.preventDefault(); this._adjust(); break;
       case 'alternate': e.preventDefault(); this._showAlternate(parseInt(el.dataset.bundle, 10)); break;
       case 'cta':       e.preventDefault(); this._cta(); break;
-      case 'whatsapp':  e.preventDefault(); this._whatsapp(); break;
+      case 'whatsapp':  e.preventDefault(); this._whatsapp('bundle'); break;
+      case 'showroom':  e.preventDefault(); this._whatsapp('showroom'); break;
+      case 'advice':    e.preventDefault(); this._whatsapp('advice'); break;
       case 'product':   this._productClick(el); break;   // let the link open naturally
       default: break;
     }
@@ -1102,7 +1179,7 @@ class HomegymBundleQuiz extends HTMLElement {
    * Cloud API called from a server that holds the access token; that token can
    * never live in this file. See README → "The WhatsApp CTA".
    */
-  _whatsapp() {
+  _whatsapp(intent = 'bundle') {
     const bundle = this._currentBundle();
     const a = this.state.answers;
     const lines = [];
@@ -1133,7 +1210,11 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('');
       lines.push(`Total: ${this.money(bundle.price)}`);
       lines.push('');
-      lines.push('Could you confirm availability, delivery and installation, and when I could come down to the showroom to try these?');
+      lines.push(intent === 'showroom'
+        ? 'Could I book a time at the showroom to try this build before I decide?'
+        : intent === 'advice'
+          ? 'Before I commit, could you tell me what you would actually put in this room?'
+          : 'Could you confirm availability, delivery and installation, and when I could come down to the showroom to try these?');
     } else {
       lines.push('');
       lines.push('Could you advise what would work in this space, and when I could come down to the showroom?');
@@ -1143,7 +1224,7 @@ class HomegymBundleQuiz extends HTMLElement {
       bundleId: bundle ? bundle.id : null,
       bundleName: bundle ? bundle.name : null,
       price: bundle ? bundle.price : null,
-      action: 'whatsapp'
+      action: intent === 'bundle' ? 'whatsapp' : intent
     });
 
     const url = `https://wa.me/${this.whatsapp}?text=${encodeURIComponent(lines.join('\n'))}`;

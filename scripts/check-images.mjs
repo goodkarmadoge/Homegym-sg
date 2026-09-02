@@ -32,6 +32,16 @@ const { SHOP, C } = new Function(`${src.slice(a, b)}\nreturn {SHOP, C};`)();
 SHOP.forEach(s => { if (s.img) urls.set(s.img, 'SHOP grid'); });
 Object.entries(C).forEach(([k, v]) => { if (v.img) urls.set(v.img, `catalogue.${k}`); });
 
+// 3. The bundle quiz's imagery. These live as data in src/quiz/bundles.js, not
+// as src="" attributes, so the HTML scan above never sees them. The Instagram
+// mirrors are the most rot-prone of the lot: /ox_instagram/ filenames are
+// Instagram media ids and the store's extension prunes that cache as the feed
+// moves on, so they can disappear while every catalogue path stays fine.
+const { PRODUCTS, BUNDLES, ROOMS } = await import('../src/quiz/bundles.js');
+Object.entries(PRODUCTS).forEach(([k, p]) => { if (p.image) urls.set(p.image, `quiz product ${k}`); });
+BUNDLES.forEach(b => { if (b.hero) urls.set(b.hero, `quiz hero, ${b.name}`); });
+(ROOMS || []).forEach((r, i) => { if (r.image) urls.set(r.image, `quiz room ${i + 1}`); });
+
 const list = [...urls.keys()];
 console.log(`checking ${list.length} hotlinked images\n`);
 

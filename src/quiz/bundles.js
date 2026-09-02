@@ -173,6 +173,8 @@ export const BUNDLES = [
     price: 2942,
     budgetCeiling: 3000,
     products: ['tinytitan', 'mab-bench', 'olympic-set'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/522969686_18519237319005504_7228295298475325837_n.jpg',
+    heroSource: 'instagram',
     pitch: "Smith, rack and cable in a single frame, plus the bench and plates to make it a real gym on day one. If you've got a spare room and you're starting from nothing, start here.",
     trains: ['Squat', 'Bench press', 'Deadlift', 'Lat pulldown', 'Cable rows', 'Overhead press']
   },
@@ -186,6 +188,8 @@ export const BUNDLES = [
     price: 3812,
     budgetCeiling: 4000,
     products: ['bodyx-cube', 'mab-bench'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg',
+    heroSource: 'instagram',
     pitch: "Full commercial-grade Smith and functional trainer that collapses from 120cm to 60cm deep when you're done. Built for the guy whose gym has to disappear.",
     trains: ['Smith squat', 'Smith bench', 'Lat pulldown', 'Low row', 'Chin-ups', 'Cable flys']
   },
@@ -199,6 +203,8 @@ export const BUNDLES = [
     price: 6567,
     budgetCeiling: 7000,
     products: ['titan-x20', 'x20-bench', 'olympic-set', 'bar-22m'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/720486969_18595990591005504_7491168024045430756_n.jpg',
+    heroSource: 'instagram',
     pitch: 'Power rack, counterbalanced Smith, dual-stack functional trainer and a leg press in one integrated unit. This is the end of the road. You will not outgrow it.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Leg press', 'Hack squat', 'Lat pulldown', 'Cable work', 'Hip abduction']
   },
@@ -212,6 +218,8 @@ export const BUNDLES = [
     price: 3891,
     budgetCeiling: 4000,
     products: ['bf900-pro', 'mab-bench'],
+    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/b/f/bf900.jpg',
+    heroSource: 'gallery',
     pitch: 'The integrated stack means you load the Smith bar straight off the weight stack: no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.',
     trains: ['Smith squat', 'Smith bench', 'Lat pulldown', 'Tricep pushdown', 'Chin-ups', 'Cable rows']
   },
@@ -225,6 +233,8 @@ export const BUNDLES = [
     price: 2350,
     budgetCeiling: 2500,
     products: ['xpress-pro'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg',
+    heroSource: 'instagram',
     pitch: '90kg stack, 12 training angles, nothing to learn and nothing to load. The lowest-friction way to actually train four times a week.',
     trains: ['Chest press', 'Lat pulldown', 'Seated row', 'Leg curl', 'Functional cable work']
   },
@@ -238,6 +248,8 @@ export const BUNDLES = [
     price: 3220,
     budgetCeiling: 3500,
     products: ['infinity-halfrack', 'mab-bench', 'olympic-set', 'bar-18m'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg',
+    heroSource: 'instagram',
     pitch: 'Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path (Smith kit, dip station, landmine) for whenever you want more.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Lat pulldown', 'Low row', 'Chin-ups']
   },
@@ -251,6 +263,8 @@ export const BUNDLES = [
     price: 3820,
     budgetCeiling: 4000,
     products: ['infinity-aio', 'mab-bench', 'olympic-set', 'bar-18m'],
+    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/i/n/infinity-31in1_1.jpg',
+    heroSource: 'gallery',
     pitch: 'Half rack for free weights, 1.8m Smith bar for solo pressing, dual stacks for everything else. The most complete setup at this price.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Smith press', 'Lat pulldown', 'Low row', 'Chin-ups', 'Dips']
   },
@@ -264,6 +278,8 @@ export const BUNDLES = [
     price: 5899,
     budgetCeiling: 6000,
     products: ['aeke-s1-pro'],
+    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/s/1/s1pro-114.jpg',
+    heroSource: 'gallery',
     pitch: 'Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.',
     trains: ['Chest press', 'Rows', 'Squats', 'Core work', 'Pilates', 'Rowing', '185 training angles']
   },
@@ -277,6 +293,8 @@ export const BUNDLES = [
     price: 2741,
     budgetCeiling: 3000,
     products: ['im2000', 'mab-bench', 'olympic-set'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/627627547_18407289532131119_4104113445378468616_n.jpg',
+    heroSource: 'instagram',
     pitch: 'Rated to 1,000lb with lockout holes down the full travel, so a failed rep is a non-event. The safest way to push heavy when there is nobody to spot you.',
     trains: ['Smith bench', 'Smith squat', 'Lat pulldown', 'Low row', 'Calf raises']
   },
@@ -290,6 +308,8 @@ export const BUNDLES = [
     price: 2241,
     budgetCeiling: 2500,
     products: ['folding-rack', 'mab-bench', 'olympic-set'],
+    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg',
+    heroSource: 'instagram',
     pitch: 'A real power rack with high and low pulleys that folds to a third of its depth. 50+ exercise variations, lifetime frame warranty, and your floor back when you are done.',
     trains: ['Squat', 'Bench press', 'Deadlift', 'Chin-ups', 'Dips', 'Lat pulldown', 'Landmine']
   }
@@ -321,3 +341,27 @@ export const FUNCTION_SHORT = {
   multigym: 'Machine circuit',
   smart: 'Smart resistance'
 };
+
+/**
+ * Rooms already built, for the result page strip.
+ *
+ * HomeGym's own Instagram posts, mirrored onto their CloudFront CDN by the
+ * store's Instagram extension. Nothing is scraped from Instagram and nothing of
+ * theirs is redistributed: it is their photography served from their own
+ * origin, exactly as the product shots already are. Each was checked by eye for
+ * showing a finished room rather than a studio cut-out.
+ *
+ * KNOWN ISSUE 6, IMAGE ROT. The /ox_instagram/ filenames are Instagram media
+ * ids and the extension prunes its cache as the feed moves on, so these can 404
+ * in time exactly as the catalogue cache paths can. Cards fall back to a
+ * "photo to follow" plate rather than breaking the strip, and
+ * `npm run check:images` reports any that have gone.
+ */
+export const ROOMS = [
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/526209345_18520440175005504_9147665945938720146_n.jpg' },
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/702119213_18589419337005504_2796203445602589252_n.jpg' },
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/670629594_18579725329005504_7675040595692490561_n.jpg' },
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/719598557_18595988128005504_8448550947109249164_n.jpg' },
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/760242206_18611550190005504_3346270900337644903_n.jpg' },
+  { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg' }
+];
