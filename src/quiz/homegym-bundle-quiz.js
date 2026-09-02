@@ -677,6 +677,7 @@ class HomegymBundleQuiz extends HTMLElement {
 
         ${this.sectionProducts(bundle)}
         ${this.sectionTrain(bundle)}
+        ${this.sectionHero(bundle)}
         ${this.sectionSpecialist(bundle)}
         ${this.sectionAlternates(alternates)}
         ${this.sectionRooms()}
@@ -699,12 +700,6 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <section class="section">
         <h2 class="section__title">What's in the bundle</h2>
-        ${bundle.hero ? `
-          <figure class="hero-shot">
-            <img src="${esc(bundle.hero)}" alt="${esc(bundle.name)} installed" loading="lazy" decoding="async" data-fallback>
-            <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
-            <figcaption>${bundle.heroSource === 'instagram' ? 'A real install, from our Instagram' : 'The anchor machine in this build'}</figcaption>
-          </figure>` : ''}
         <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
         <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
         <p class="fineprint">
@@ -725,7 +720,23 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 3. Send this to a specialist ─────────────────────────────────────── */
+  /* ── 3. The build, installed ──────────────────────────────────────────── */
+
+  sectionHero(bundle) {
+    if (!bundle.hero) return '';
+    const fromInstagram = bundle.heroSource === 'instagram';
+    return `
+      <section class="section">
+        <h2 class="section__title">${fromInstagram ? 'In a real room' : 'The anchor machine'}</h2>
+        <figure class="hero-shot">
+          <img src="${esc(bundle.hero)}" alt="${esc(bundle.name)} installed" loading="lazy" decoding="async" data-fallback>
+          <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
+          ${fromInstagram ? '<figcaption>From our Instagram</figcaption>' : ''}
+        </figure>
+      </section>`;
+  }
+
+  /* ── 4. Send this to a specialist ─────────────────────────────────────── */
 
   sectionSpecialist(bundle) {
     return `
@@ -750,7 +761,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 4. Other bundles ─────────────────────────────────────────────────── */
+  /* ── 5. Other bundles ─────────────────────────────────────────────────── */
 
   sectionAlternates(alternates) {
     if (!alternates.length) return '';
@@ -779,7 +790,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 5. Rooms we have already built ───────────────────────────────────── */
+  /* ── 6. Rooms we have already built ───────────────────────────────────── */
 
   sectionRooms() {
     if (!ROOMS || !ROOMS.length) return '';
@@ -797,7 +808,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 6. No-obligation advice ──────────────────────────────────────────── */
+  /* ── 7. No-obligation advice ──────────────────────────────────────────── */
 
   sectionAdvice() {
     return `
