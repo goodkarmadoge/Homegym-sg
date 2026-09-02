@@ -32,6 +32,22 @@ const TOTAL_STEPS = 4;
 const BUDGET_MIN = 2500;
 const BUDGET_MAX = 7500;
 
+/**
+ * The reference kit drawn inside the floor plan, in metres.
+ *
+ * HomeGym does not publish per-machine dimensions, so these are TYPICAL sizes
+ * for the category, not measurements of any specific product they sell. The
+ * panel says so in as many words, because a customer who buys on a footprint
+ * that turns out to be wrong is a returned 300kg machine. Replace these with
+ * real figures per machine the moment they exist.
+ */
+const KIT = {
+  rack:  { w: 1.2,  d: 1.4,  label: 'Power rack' },
+  bench: { w: 0.6,  d: 1.3,  label: 'Bench' },
+  bar:   { w: 2.2,           label: 'Olympic bar' },
+  clearance: 0.5   // pull-out space in front of the rack, per the helper copy
+};
+
 /* Floor sliders. 0.1 m steps let the plan drawing actually track the room;
    0.5 m made it jump a whole half-metre at a time. */
 const DIM_MIN = 1;
@@ -369,6 +385,13 @@ class HomegymBundleQuiz extends HTMLElement {
       </div>`;
   }
 
+  /** "2 of 6 selected", so the multi-select nature is visible not just implied. */
+  _countLabel() {
+    const n = this.state.answers.functions.length;
+    const total = FUNCTION_OPTIONS.length;
+    return n === 0 ? `None chosen yet, pick as many as you like` : `${n} of ${total} selected`;
+  }
+
   /** Why Continue is unavailable on this step, or '' when it is available. */
   _blockedReason() {
     if (this.state.step === 1 && this.state.answers.functions.length === 0) {
@@ -385,6 +408,10 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <h1 class="headline" tabindex="-1" data-focus>What do you actually want to train?</h1>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
+      <div class="multi">
+        <span class="multi__badge">Select all that apply</span>
+        <span class="multi__count" data-fn-count aria-live="polite">${this._countLabel()}</span>
+      </div>
       <fieldset class="options">
         <legend class="visually-hidden">Training functions, choose at least one</legend>
         ${FUNCTION_OPTIONS.map((o) => `
@@ -430,8 +457,16 @@ class HomegymBundleQuiz extends HTMLElement {
       </div>`;
   }
 
-  /** The plan panel: reference label, live area readout, drawing, caption. */
+  /** The plan panel: reference label, live area readout, drawing, legend, caption. */
   roomPanel(length, depth) {
+    const fit = this.kitFit(length, depth);
+    const legend = [
+      ['rack', `${KIT.rack.label} ${KIT.rack.w} &times; ${KIT.rack.d} m`, fit.rack],
+      ['bar', `${KIT.bar.label} ${KIT.bar.w} m`, fit.bar],
+      ['bench', `${KIT.bench.label} ${KIT.bench.w} &times; ${KIT.bench.d} m`, fit.bench],
+      ['clear', `Pull-out space ${KIT.clearance} m`, fit.clearance]
+    ];
+
     return `
       <div class="room">
         <div class="room__head">
@@ -439,8 +474,29 @@ class HomegymBundleQuiz extends HTMLElement {
           <span class="room__area" data-room-area>${(length * depth).toFixed(2)} m&sup2;</span>
         </div>
         ${this.roomSvg(length, depth)}
-        <p class="room__caption">Drawn to scale. The dashed square is 3 &times; 3 m, the largest room we plan for as standard.</p>
+        <ul class="legend">
+          ${legend.map(([k, text, ok]) => `
+            <li class="legend__item${ok ? '' : ' is-tight'}">
+              <span class="legend__key legend__key--${k}"></span>
+              <span>${text}${ok ? '' : ' <b>does not fit</b>'}</span>
+            </li>`).join('')}
+        </ul>
+        <p class="room__caption">
+          Indicative only. These are typical sizes for each category, not the
+          dimensions of a specific machine. We confirm exact measurements before
+          anything is ordered.
+        </p>
       </div>`;
+  }
+
+  /** Which pieces of the reference kit fit the stated floor. */
+  kitFit(length, depth) {
+    return {
+      rack: length >= KIT.rack.w && depth >= KIT.rack.d,
+      bar: length >= KIT.bar.w,
+      bench: depth >= KIT.bench.d,
+      clearance: depth >= KIT.rack.d + KIT.clearance
+    };
   }
 
   /**
@@ -464,17 +520,49 @@ class HomegymBundleQuiz extends HTMLElement {
       grid.push(`<line x1="${O}" y1="${p}" x2="${O + SIZE}" y2="${p}" stroke="var(--n300)" stroke-width="1"/>`);
     }
 
-    const hx = O + w / 2;
-    const hy = O + h - 40;
+    // ── The reference kit, laid out the way a real room gets used ───────────
+    // Rack against the back wall, bar racked across it, bench inside it, and
+    // the pull-out clearance in front. The group is centred on the room so the
+    // bar has somewhere to go; when the room is too narrow the bar visibly
+    // overhangs the wall, which is the honest way to show it does not fit.
+    const m = (v) => v * U;
+    const groupW = Math.max(KIT.bar.w, KIT.rack.w);
+    const gx = O + Math.max(0, (length - groupW) / 2) * U;   // group left edge
+    const rackX = gx + m((groupW - KIT.rack.w) / 2);
+    const rackY = O + m(0.05);
+    const barY = rackY + m(0.4);
+    const benchX = rackX + m((KIT.rack.w - KIT.bench.w) / 2);
+    const benchY = rackY + m(0.05);
+    const clearY = rackY + m(KIT.rack.d);
+
+    const fit = this.kitFit(length, depth);
+    // Anything that does not fit is drawn dashed and faded rather than hidden:
+    // seeing the bar hang past the wall is the point.
+    const ghost = (ok) => (ok ? '' : ' stroke-dasharray="6 5" opacity="0.45"');
+
+    const kit = `
+      <rect x="${rackX}" y="${clearY}" width="${m(KIT.rack.w)}" height="${m(KIT.clearance)}"
+            fill="none" stroke="var(--n500)" stroke-width="1.5" stroke-dasharray="4 4"${fit.clearance ? '' : ' opacity="0.45"'}/>
+      <rect x="${rackX}" y="${rackY}" width="${m(KIT.rack.w)}" height="${m(KIT.rack.d)}"
+            fill="#FFFFFF" fill-opacity="0.9" stroke="var(--text)" stroke-width="3"${ghost(fit.rack)}/>
+      <rect x="${benchX}" y="${benchY}" width="${m(KIT.bench.w)}" height="${m(KIT.bench.d)}"
+            fill="var(--n400)" stroke="var(--n800)" stroke-width="1.5"${ghost(fit.bench)}/>
+      <line x1="${gx}" y1="${barY}" x2="${gx + m(KIT.bar.w)}" y2="${barY}"
+            stroke="var(--n800)" stroke-width="5" stroke-linecap="round"${ghost(fit.bar)}/>`;
+
+    // The human sits in the clearance zone, which is where a person stands.
+    const hx = rackX + m(KIT.rack.w / 2);
+    const hy = Math.min(O + h - m(0.25), clearY + m(KIT.clearance / 2));
 
     return `
       <svg viewBox="0 0 340 340" role="img"
-           aria-label="Floor plan: ${length.toFixed(1)} metres by ${depth.toFixed(1)} metres, ${(length * depth).toFixed(2)} square metres">
+           aria-label="Floor plan: ${length.toFixed(1)} metres by ${depth.toFixed(1)} metres, ${(length * depth).toFixed(2)} square metres, with a typical rack, bar and bench drawn to scale">
         ${grid.join('')}
         <rect x="${O}" y="${O}" width="${SIZE}" height="${SIZE}"
               fill="none" stroke="var(--n400)" stroke-width="2" stroke-dasharray="7 6"/>
         <rect x="${O}" y="${O}" width="${w}" height="${h}"
               fill="var(--accent-100)" stroke="var(--accent)" stroke-width="4"/>
+        ${kit}
         <ellipse cx="${hx}" cy="${hy}" rx="26" ry="13" fill="var(--n500)"/>
         <circle cx="${hx}" cy="${hy}" r="9" fill="var(--n800)"/>
         <text x="${O + w / 2}" y="14" fill="var(--accent-700)" font-size="17" font-weight="800"
@@ -809,6 +897,8 @@ class HomegymBundleQuiz extends HTMLElement {
     }
     const hint = this.shadowRoot.querySelector('.validation');
     if (hint) hint.textContent = reason;
+    const count = this.shadowRoot.querySelector('[data-fn-count]');
+    if (count) count.textContent = this._countLabel();
   }
 
   _next() {

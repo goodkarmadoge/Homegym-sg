@@ -186,6 +186,36 @@ export const STYLES = css`
     margin: 22px 0;
   }
 
+  /* Step one is the only multi-select, and a column of square boxes was not
+     saying so loudly enough. The badge states the rule and the count proves it
+     the moment a second option goes in. */
+  .multi {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .multi__badge {
+    display: inline-block;
+    background: var(--accent-100);
+    border: 2px solid var(--accent);
+    color: var(--accent-700);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+  }
+  .multi__count {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--n700);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ── Option cards ───────────────────────────────────────────────────────── */
 
   .options {
@@ -327,6 +357,35 @@ export const STYLES = css`
     white-space: nowrap;
   }
   .room svg { display: block; width: 100%; height: auto; }
+  /* Legend for the reference kit. Anything that does not fit the stated floor
+     is called out here as well as drawn dashed in the plan. */
+  .legend {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .legend__item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12.5px;
+    color: var(--n700);
+    line-height: 1.35;
+  }
+  .legend__item.is-tight { color: var(--accent-700); }
+  .legend__item b { font-weight: 800; }
+  .legend__key {
+    flex: 0 0 16px;
+    width: 16px; height: 12px;
+    border: 2px solid var(--text);
+    background: #FFFFFF;
+  }
+  .legend__key--bench { background: var(--n400); border-color: var(--n800); border-width: 1px; }
+  .legend__key--bar { height: 5px; background: var(--n800); border: 0; }
+  .legend__key--clear { background: none; border: 1.5px dashed var(--n500); }
+
   .room__caption {
     margin-top: 10px;
     font-size: 13px;
