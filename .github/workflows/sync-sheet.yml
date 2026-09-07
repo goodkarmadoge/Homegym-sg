@@ -1,0 +1,69 @@
+name: Sync bundle data from the Google Sheet
+
+# Keeps src/quiz/sheet-data.js in step with the spreadsheet that owns the bundle
+# data, so adding a bundle is a spreadsheet edit rather than a code change.
+#
+# The commit this pushes to main triggers ci.yml, which is what actually
+# deploys. Nothing reaches the live quiz without passing the test suite and the
+# 64,575-combination sweep first: that is the whole reason the data is committed
+# rather than fetched in the browser on every page load.
+#
+# REQUIRES the sheet to be readable without signing in:
+#   open it, Share, "Anyone with the link" as Viewer.
+# Until then this job fails with a message saying exactly that, and the quiz
+# keeps serving the last good committed data.
+
+on:
+  schedule:
+    # Hourly, on the hour. Frequent enough that a bundle added in the morning is
+    # live before lunch, rare enough to stay far inside the free tier.
+    - cron: '0 * * * *'
+  workflow_dispatch:       # "Run workflow" in the Actions tab, for an instant sync
+
+permissions:
+  contents: write
+
+# Never let two syncs race each other into the same branch.
+concurrency:
+  group: sync-sheet
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Pull the sheet and commit any change
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pull the sheet
+        run: npm run sync
+
+      - name: Stop unless something actually changed
+        id: diff
+        run: |
+          if git diff --quiet -- src/quiz/sheet-data.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "The sheet matches what is committed. Nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- src/quiz/sheet-data.js
+          fi
+
+      # The gate. A sheet edit that breaks the quiz stops here, on a bot branch,
+      # rather than on a customer's screen.
+      - name: Test, sweep, build and verify the new data
+        if: steps.diff.outputs.changed == 'true'
+        run: npm run check
+
+      - name: Commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/quiz/sheet-data.js
+          git commit -m "Sync bundle data from the Google Sheet"
+          git push

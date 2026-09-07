@@ -21,6 +21,8 @@
  *   breaking, but the real fix is resolving images from the product API.
  */
 
+import { SHEET_BUNDLES } from './sheet-data.js';
+
 /**
  * Product catalogue, keyed by id. Prices in SGD.
  *   price, current sale price. This is what the bundle total is built from.
@@ -140,180 +142,202 @@ export const PRODUCTS = {
 };
 
 /**
- * The ten bundles.
+ * Per-bundle copy and imagery, keyed by the bundle number in the sheet.
  *
- * KNOWN ISSUE 4, FOOTPRINTS ARE UNVERIFIED.
- *   These come from the client's source spreadsheet, not from measuring machines.
- *   They read as working-area figures that already include pull-out clearance.
- *   MUST be confirmed before go-live: a customer who buys on a wrong footprint
- *   is a returned 338kg machine.
+ * WHAT THE SHEET OWNS vs WHAT THIS FILE OWNS
+ *   The sheet decides which bundles exist and how a customer is matched to one:
+ *   functions, footprint, level, budget ceiling and the list of products. It
+ *   holds no prices, no sales copy and no photographs, so those stay here and
+ *   are joined on by bundle number in composeBundles() below.
  *
- * KNOWN ISSUE 5, BUNDLES 1, 4, 7 AND 9 SHARE IDENTICAL FUNCTION TAGS
- *   (smith + power_rack + cable). They are separated only by space, level and
- *   price, which is exactly why the scorer weights space and budget so heavily.
- *   To differentiate them properly, add a distinguishing tag to each
- *   (e.g. `folding`, `self_spotting`, `connected`) and a matching quiz option.
- *
- * Fields:
- *   functions      capability tags, matched against the user's Step 1 answers.
- *   footprint      metres. Matched in EITHER orientation (see matcher.js).
- *   level          beginner | intermediate | advanced.
- *   price          MUST equal the sum of its products' prices (asserted in tests).
- *   budgetCeiling  the client's guide ceiling. Not used by the matcher; the
- *                    matcher filters the user's own budget against `price`.
+ *   A bundle added to the sheet with no entry here still works. It gets its
+ *   name from the sheet's "Bundle Name" column and a plain generated tagline
+ *   and pitch, and it renders without a photograph. That is the point: adding a
+ *   bundle is a spreadsheet edit, and writing the copy for it is a separate,
+ *   optional improvement rather than a blocker.
  */
-export const BUNDLES = [
-  {
-    id: 1,
-    name: 'The Apartment Titan',
-    tagline: 'One machine, three disciplines, a spare bedroom.',
-    functions: ['smith', 'power_rack', 'cable'],
-    footprint: { length: 2.0, depth: 3.0 },
-    level: 'beginner',
-    price: 2942,
-    budgetCeiling: 3000,
-    products: ['tinytitan', 'mab-bench', 'olympic-set'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/522969686_18519237319005504_7228295298475325837_n.jpg',
-    heroSource: 'instagram',
+export const BUNDLE_COPY = {
+  1: {
+    name: "The Apartment Titan",
+    tagline: "One machine, three disciplines, a spare bedroom.",
     pitch: "Smith, rack and cable in a single frame, plus the bench and plates to make it a real gym on day one. If you've got a spare room and you're starting from nothing, start here.",
-    trains: ['Squat', 'Bench press', 'Deadlift', 'Lat pulldown', 'Cable rows', 'Overhead press']
+    trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Cable rows", "Overhead press"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/522969686_18519237319005504_7228295298475325837_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 2,
-    name: 'The Foldaway Beast',
-    tagline: '338kg of machine that folds to 60cm in 30 seconds.',
-    functions: ['smith', 'cable'],
-    footprint: { length: 1.5, depth: 2.0 },
-    level: 'intermediate',
-    price: 3812,
-    budgetCeiling: 4000,
-    products: ['bodyx-cube', 'mab-bench'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg',
-    heroSource: 'instagram',
+
+  2: {
+    name: "The Foldaway Beast",
+    tagline: "338kg of machine that folds to 60cm in 30 seconds.",
     pitch: "Full commercial-grade Smith and functional trainer that collapses from 120cm to 60cm deep when you're done. Built for the guy whose gym has to disappear.",
-    trains: ['Smith squat', 'Smith bench', 'Lat pulldown', 'Low row', 'Chin-ups', 'Cable flys']
+    trains: ["Smith squat", "Smith bench", "Lat pulldown", "Low row", "Chin-ups", "Cable flys"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 3,
-    name: 'The Iron Fortress',
-    tagline: '100+ exercises. Dual 90kg stacks. No compromises.',
-    functions: ['smith', 'power_rack', 'cable', 'leg_press'],
-    footprint: { length: 3.0, depth: 3.0 },
-    level: 'advanced',
-    price: 6567,
-    budgetCeiling: 7000,
-    products: ['titan-x20', 'x20-bench', 'olympic-set', 'bar-22m'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/720486969_18595990591005504_7491168024045430756_n.jpg',
-    heroSource: 'instagram',
-    pitch: 'Power rack, counterbalanced Smith, dual-stack functional trainer and a leg press in one integrated unit. This is the end of the road. You will not outgrow it.',
-    trains: ['Squat', 'Bench press', 'Deadlift', 'Leg press', 'Hack squat', 'Lat pulldown', 'Cable work', 'Hip abduction']
+
+  3: {
+    name: "The Iron Fortress",
+    tagline: "100+ exercises. Dual 90kg stacks. No compromises.",
+    pitch: "Power rack, counterbalanced Smith, dual-stack functional trainer and a leg press in one integrated unit. This is the end of the road. You will not outgrow it.",
+    trains: ["Squat", "Bench press", "Deadlift", "Leg press", "Hack squat", "Lat pulldown", "Cable work", "Hip abduction"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/720486969_18595990591005504_7491168024045430756_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 4,
-    name: 'The Smart Smith',
-    tagline: 'Dual 90kg stacks, no loose plates, half the footprint.',
-    functions: ['smith', 'power_rack', 'cable'],
-    footprint: { length: 1.5, depth: 2.5 },
-    level: 'intermediate',
-    price: 3891,
-    budgetCeiling: 4000,
-    products: ['bf900-pro', 'mab-bench'],
-    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/b/f/bf900.jpg',
-    heroSource: 'gallery',
-    pitch: 'The integrated stack means you load the Smith bar straight off the weight stack: no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.',
-    trains: ['Smith squat', 'Smith bench', 'Lat pulldown', 'Tricep pushdown', 'Chin-ups', 'Cable rows']
+
+  4: {
+    name: "The Smart Smith",
+    tagline: "Dual 90kg stacks, no loose plates, half the footprint.",
+    pitch: "The integrated stack means you load the Smith bar straight off the weight stack: no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.",
+    trains: ["Smith squat", "Smith bench", "Lat pulldown", "Tricep pushdown", "Chin-ups", "Cable rows"],
+    hero: "https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/b/f/bf900.jpg",
+    heroSource: "gallery"
   },
-  {
-    id: 5,
-    name: 'The Fast Track',
-    tagline: 'Sit down, pin the weight, go.',
-    functions: ['multigym'],
-    footprint: { length: 1.5, depth: 2.0 },
-    level: 'beginner',
-    price: 2350,
-    budgetCeiling: 2500,
-    products: ['xpress-pro'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg',
-    heroSource: 'instagram',
-    pitch: '90kg stack, 12 training angles, nothing to learn and nothing to load. The lowest-friction way to actually train four times a week.',
-    trains: ['Chest press', 'Lat pulldown', 'Seated row', 'Leg curl', 'Functional cable work']
+
+  5: {
+    name: "The Fast Track",
+    tagline: "Sit down, pin the weight, go.",
+    pitch: "90kg stack, 12 training angles, nothing to learn and nothing to load. The lowest-friction way to actually train four times a week.",
+    trains: ["Chest press", "Lat pulldown", "Seated row", "Leg curl", "Functional cable work"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 6,
-    name: 'The Level Up',
-    tagline: 'Half rack plus 2 × 75kg cable stacks, room to grow.',
-    functions: ['power_rack', 'cable'],
-    footprint: { length: 2.0, depth: 3.0 },
-    level: 'intermediate',
-    price: 3220,
-    budgetCeiling: 3500,
-    products: ['infinity-halfrack', 'mab-bench', 'olympic-set', 'bar-18m'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg',
-    heroSource: 'instagram',
-    pitch: 'Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path (Smith kit, dip station, landmine) for whenever you want more.',
-    trains: ['Squat', 'Bench press', 'Deadlift', 'Lat pulldown', 'Low row', 'Chin-ups']
+
+  6: {
+    name: "The Level Up",
+    tagline: "Half rack plus 2 × 75kg cable stacks, room to grow.",
+    pitch: "Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path (Smith kit, dip station, landmine) for whenever you want more.",
+    trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Low row", "Chin-ups"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 7,
-    name: 'The All-Rounder',
-    tagline: '31 stations. Barbell, Smith and cable in one rack.',
-    functions: ['smith', 'power_rack', 'cable'],
-    footprint: { length: 2.5, depth: 3.0 },
-    level: 'intermediate',
-    price: 3820,
-    budgetCeiling: 4000,
-    products: ['infinity-aio', 'mab-bench', 'olympic-set', 'bar-18m'],
-    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/i/n/infinity-31in1_1.jpg',
-    heroSource: 'gallery',
-    pitch: 'Half rack for free weights, 1.8m Smith bar for solo pressing, dual stacks for everything else. The most complete setup at this price.',
-    trains: ['Squat', 'Bench press', 'Deadlift', 'Smith press', 'Lat pulldown', 'Low row', 'Chin-ups', 'Dips']
+
+  7: {
+    name: "The All-Rounder",
+    tagline: "31 stations. Barbell, Smith and cable in one rack.",
+    pitch: "Half rack for free weights, 1.8m Smith bar for solo pressing, dual stacks for everything else. The most complete setup at this price.",
+    trains: ["Squat", "Bench press", "Deadlift", "Smith press", "Lat pulldown", "Low row", "Chin-ups", "Dips"],
+    hero: "https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/i/n/infinity-31in1_1.jpg",
+    heroSource: "gallery"
   },
-  {
-    id: 8,
-    name: 'The Silent Operator',
-    tagline: '350+ movements from a machine the size of a bookshelf.',
-    functions: ['cable', 'smart'],
-    footprint: { length: 1.0, depth: 2.0 },
-    level: 'beginner',
-    price: 5899,
-    budgetCeiling: 6000,
-    products: ['aeke-s1-pro'],
-    hero: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/s/1/s1pro-114.jpg',
-    heroSource: 'gallery',
-    pitch: 'Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.',
-    trains: ['Chest press', 'Rows', 'Squats', 'Core work', 'Pilates', 'Rowing', '185 training angles']
+
+  8: {
+    name: "The Silent Operator",
+    tagline: "350+ movements from a machine the size of a bookshelf.",
+    pitch: "Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.",
+    trains: ["Chest press", "Rows", "Squats", "Core work", "Pilates", "Rowing", "185 training angles"],
+    hero: "https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/s/1/s1pro-114.jpg",
+    heroSource: "gallery"
   },
-  {
-    id: 9,
-    name: 'The Solo Lifter',
-    tagline: 'Patented self-spotting bar. Train heavy, train alone.',
-    functions: ['smith', 'power_rack', 'cable'],
-    footprint: { length: 2.0, depth: 2.0 },
-    level: 'beginner',
-    price: 2741,
-    budgetCeiling: 3000,
-    products: ['im2000', 'mab-bench', 'olympic-set'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/627627547_18407289532131119_4104113445378468616_n.jpg',
-    heroSource: 'instagram',
-    pitch: 'Rated to 1,000lb with lockout holes down the full travel, so a failed rep is a non-event. The safest way to push heavy when there is nobody to spot you.',
-    trains: ['Smith bench', 'Smith squat', 'Lat pulldown', 'Low row', 'Calf raises']
+
+  9: {
+    name: "The Solo Lifter",
+    tagline: "Patented self-spotting bar. Train heavy, train alone.",
+    pitch: "Rated to 1,000lb with lockout holes down the full travel, so a failed rep is a non-event. The safest way to push heavy when there is nobody to spot you.",
+    trains: ["Smith bench", "Smith squat", "Lat pulldown", "Low row", "Calf raises"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/627627547_18407289532131119_4104113445378468616_n.jpg",
+    heroSource: "instagram"
   },
-  {
-    id: 10,
-    name: 'The Barbell Purist',
-    tagline: 'Squat, bench, deadlift. Folds flat against the wall.',
-    functions: ['power_rack', 'cable'],
-    footprint: { length: 2.5, depth: 3.0 },
-    level: 'intermediate',
-    price: 2241,
-    budgetCeiling: 2500,
-    products: ['folding-rack', 'mab-bench', 'olympic-set'],
-    hero: 'https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg',
-    heroSource: 'instagram',
-    pitch: 'A real power rack with high and low pulleys that folds to a third of its depth. 50+ exercise variations, lifetime frame warranty, and your floor back when you are done.',
-    trains: ['Squat', 'Bench press', 'Deadlift', 'Chin-ups', 'Dips', 'Lat pulldown', 'Landmine']
+
+  10: {
+    name: "The Barbell Purist",
+    tagline: "Squat, bench, deadlift. Folds flat against the wall.",
+    pitch: "A real power rack with high and low pulleys that folds to a third of its depth. 50+ exercise variations, lifetime frame warranty, and your floor back when you are done.",
+    trains: ["Squat", "Bench press", "Deadlift", "Chin-ups", "Dips", "Lat pulldown", "Landmine"],
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
+    heroSource: "instagram"
   }
-];
+};
+
+/**
+ * Products indexed by their homegym.sg URL.
+ *
+ * The sheet lists the contents of each bundle as product URLs, because a URL is
+ * the one identifier a non-technical editor can copy straight from the shop.
+ * This is how those URLs become catalogue entries with a price and an image.
+ */
+export const PRODUCTS_BY_URL = Object.fromEntries(
+  Object.entries(PRODUCTS).map(([id, p]) => [p.url, { id, ...p }])
+);
+
+/**
+ * Join the sheet's rules to this file's catalogue and copy.
+ *
+ * The bundle price is the SUM OF ITS PRODUCTS, never a typed-in figure. That is
+ * what lets a new sheet row price itself, and it means a price can never drift
+ * out of step with the items listed beside it.
+ *
+ * Unresolvable product URLs are handled differently by caller:
+ *   strict (build, tests)  throw, so a bad sheet fails CI rather than shipping
+ *   lenient (live fetch)   drop just that bundle, so one bad row cannot take
+ *                          the whole quiz down on a customer's screen
+ */
+export function composeBundles(sheetBundles, { strict = true } = {}) {
+  const bundles = [];
+  const problems = [];
+
+  for (const s of sheetBundles) {
+    const products = [];
+    let broken = false;
+
+    for (const url of s.productUrls) {
+      const p = PRODUCTS_BY_URL[url];
+      if (!p) {
+        problems.push(
+          `bundle ${s.id}: no product in the catalogue matches ${url}. ` +
+          'Add it to PRODUCTS in src/quiz/bundles.js, with its price and image.'
+        );
+        broken = true;
+        continue;
+      }
+      products.push(p.id);
+    }
+
+    if (broken) continue;
+
+    const c = BUNDLE_COPY[s.id] || {};
+    const price = products.reduce((total, id) => total + PRODUCTS[id].price, 0);
+
+    bundles.push({
+      id: s.id,
+      // The sheet's name column wins when it is filled in, so the client can
+      // rename a bundle without a code change. It reads "TBD" for every row
+      // today, which the parser turns into null, so the curated names below
+      // are what actually show.
+      name: s.name || c.name || `Bundle ${s.id}`,
+      tagline: c.tagline || autoTagline(s, products),
+      functions: s.functions,
+      footprint: s.footprint,
+      level: s.level,
+      price,
+      budgetCeiling: s.budgetCeiling,
+      products,
+      hero: c.hero || PRODUCTS[products[0]]?.image || null,
+      heroSource: c.hero ? c.heroSource : 'gallery',
+      pitch: c.pitch || autoPitch(products),
+      trains: c.trains || []
+    });
+  }
+
+  if (problems.length && strict) {
+    throw new Error('bundle data does not compose:\n  ' + problems.join('\n  '));
+  }
+  return { bundles, problems };
+}
+
+/** Plain, honest tagline for a bundle nobody has written copy for yet. */
+function autoTagline(s, products) {
+  const what = s.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ');
+  return `${what} in ${s.footprint.length} x ${s.footprint.depth} m.`;
+}
+
+/** Same, for the pitch: list what is in the box rather than invent a claim. */
+function autoPitch(products) {
+  const names = products.map((id) => PRODUCTS[id].name);
+  const last = names.pop();
+  return names.length
+    ? `${names.join(', ')} and ${last}, priced and linked below.`
+    : `${last}, priced and linked below.`;
+}
 
 /** Step 1 options. `tag` is the value stored in answers.functions. */
 export const FUNCTION_OPTIONS = [
@@ -365,3 +389,13 @@ export const ROOMS = [
   { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/760242206_18611550190005504_3346270900337644903_n.jpg' },
   { image: 'https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg' }
 ];
+
+/**
+ * The bundles the quiz shows.
+ *
+ * Deliberately a mutable array rather than a fresh one: when the component is
+ * given a sheet-src and pulls live data, it replaces the CONTENTS of this array
+ * in place. Every module that imported it keeps working without a re-import,
+ * and there is exactly one list of bundles in the program at any moment.
+ */
+export const BUNDLES = composeBundles(SHEET_BUNDLES).bundles;

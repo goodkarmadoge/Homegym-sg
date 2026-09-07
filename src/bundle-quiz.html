@@ -1,184 +1,75 @@
 <title>Build Your Bundle | HomeGym.sg</title>
 
 <style>
-/* Page chrome only. Everything inside <homegym-bundle-quiz> is styled in the
-   shadow root by src/quiz/styles.js and cannot be reached from here.
+/* EMBED PAGE. Deliberately bare.
+   ─────────────────────────────────────────────────────────────────────────
+   This page is the quiz and nothing else: no masthead, no hero band, no
+   footer. Its job is to be dropped into the existing homegym.sg site, either
+   in an iframe or by copying the component tag onto a Magento page, so every
+   piece of surrounding chrome is the host page's to supply. A logo and a
+   footer here would either duplicate the site's own or, worse, contradict them
+   the next time the site's navigation changes.
 
-   Modernist design system, per the handoff of 30 Aug 2026: Archivo throughout,
-   #201e1d ink, a single #ec3013 accent, zero corner radius, strong 2px rules,
-   everything flush left. The ground is white rather than the system's own
-   #f3f2f2 because the quiz sits on the site's white content area.
+   Everything inside <homegym-bundle-quiz> is styled in the shadow root by
+   src/quiz/styles.js and cannot be reached from here, so what is left below is
+   only what a host page cannot be relied on to set.
 
-   The page is deliberately standalone: a masthead and a footer rather than a
-   hand-copy of the Magento navigation, which would drift out of sync the moment
-   they change a menu. */
-:root{
-  --text:      #201e1d;
-  --n100:      #f8f4f4;
-  --n300:      #d7d3d3;
-  --n700:      #605d5d;
-  --accent:    #ec3013;
-  --accent-700:#ae1800;
-  --divider:   rgba(32,30,29,.4);
+   TO EMBED WITHOUT AN IFRAME, load dist/homegym-bundle-quiz.min.js on any page
+   and drop in the <homegym-bundle-quiz> tag below. The component registers
+   itself and carries its own styles, so it needs nothing else. README.md,
+   "Embedding the quiz", has the copy-paste snippet.
 
-  --f: Archivo, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --gut: clamp(16px, 4vw, 40px);
-}
+   Note for anyone editing this file: do not put a closing script tag inside
+   this comment. scripts/verify.mjs finds the inlined bundle by looking for the
+   first script element on the page, and a stray one here would send it looking
+   at a CSS comment instead. */
+
+/* Transparent, not white: in an iframe or a content slot the host page's own
+   background should show through, whatever it is. */
+html, body { background: transparent; }
 
 body{
-  background:#fff;color:var(--text);
-  font-family:var(--f);font-size:16px;line-height:1.5;
+  margin:0;
+  color:#201e1d;
+  /* Archivo is loaded by the page shell. The stack behind it matters more than
+     usual here: an embed can land on a site that blocks Google Fonts. */
+  font-family:Archivo, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size:16px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
 
-.wrap{max-width:1180px;margin:0 auto;padding-inline:var(--gut)}
-a{color:inherit}
-h1{margin:0}
-p{margin:0}
-
-.skip{
-  position:absolute;left:-9999px;top:0;z-index:99;
-  background:var(--accent);color:#fff;padding:14px 22px;text-decoration:none;
-  font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:15px;
-}
-.skip:focus{left:0}
-
-/* ── Masthead ───────────────────────────────────────────────────────────── */
-
-header .wrap{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:16px;min-height:58px;flex-wrap:wrap;
-}
-.logo{display:flex;align-items:center;text-decoration:none}
-/* The logo is colour artwork; the system prints photography black and white but
-   a brand mark is not photography, so it is left alone. */
-.logo img{display:block;height:28px;width:auto}
-.masthead-note{
-  font-size:13px;font-weight:800;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--n700);
+/* The only page-level layout left. The quiz sets its own internal rhythm; this
+   just stops it running edge to edge on a wide screen or touching the sides on
+   a phone. A host page that already constrains its content can override it. */
+.quiz-mount{
+  max-width:1180px;
+  margin:0 auto;
+  padding:clamp(16px,3vw,32px) clamp(16px,4vw,40px);
 }
 
-/* The system's 2px rule, not a hairline. */
-.rule{height:2px;background:var(--text)}
-
-/* ── Hero ───────────────────────────────────────────────────────────────── */
-
-/* One horizontal band rather than a stack. The headline sits left, the
-   supporting copy and the counts run beside it, so the hero uses the full
-   column width instead of a narrow ribbon down the left with the whole right
-   half empty. Whole band is roughly 150px tall, which leaves the fold for the
-   quiz itself. */
-.hero{padding:clamp(14px,2vw,22px) 0 clamp(12px,1.4vw,16px);border-bottom:2px solid var(--divider)}
-.hero .wrap{
-  display:flex;align-items:flex-end;justify-content:space-between;
-  gap:clamp(20px,4vw,56px);flex-wrap:wrap;
-}
-/* The lead takes the width its headline needs so BUILD YOUR BUNDLE sets on
-   one line on a laptop; the aside takes what is left. */
-.hero__lead{flex:1 1 560px;min-width:min(100%,300px)}
-.hero__aside{flex:0 1 420px;min-width:min(100%,300px)}
-
-.hero .kicker{
-  font-size:13px;font-weight:800;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--accent-700);
-}
-.hero h1{
-  margin:10px 0 0;
-  font-weight:800;text-transform:uppercase;
-  /* No max-width: at this size "BUILD YOUR BUNDLE" sets on one line on a
-     laptop, which is what stops the band being three deep. */
-  font-size:clamp(32px,4.6vw,56px);line-height:.95;letter-spacing:-.03em;
-}
-.hero p{
-  margin:0;color:var(--n700);
-  font-size:clamp(15px,1.3vw,16px);line-height:1.5;
-}
-
-/* The three counts as one line of small caps rather than three stat blocks,
-   and a single rule under the band instead of a rule above and below. */
-.facts{
-  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px clamp(16px,2vw,28px);
-  margin-top:12px;
-  font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--n700);
-}
-.fact .n{
-  font-size:15px;color:var(--text);letter-spacing:0;
-  font-variant-numeric:tabular-nums;margin-right:6px;
-}
-
-/* ── Quiz mount ─────────────────────────────────────────────────────────── */
-
-.quiz-section{padding:0 0 clamp(40px,7vw,72px)}
-
-/* Reserve roughly the height the quiz occupies so the page does not jump as the
-   custom element upgrades, then release it so short views are not padded out. */
+/* Reserve roughly the height the quiz occupies so an iframe does not jump as
+   the custom element upgrades, then release it so short views are not padded. */
 homegym-bundle-quiz{display:block}
 homegym-bundle-quiz:not(:defined){min-height:620px}
 
-.noscript{padding:48px var(--gut);color:var(--n700);max-width:60ch}
-.noscript a{color:var(--accent-700)}
-
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-
-footer{border-top:2px solid var(--divider);padding:24px 0 40px;color:var(--n700)}
-footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
-footer a{color:var(--accent-700)}
+.noscript{color:#605d5d;max-width:60ch}
+.noscript a{color:#ae1800}
 </style>
 
-<a class="skip" href="#quiz">Skip to the quiz</a>
-
-<header>
-  <div class="wrap">
-    <a class="logo" href="https://homegym.sg/" target="_blank" rel="noopener">
-      <img src="https://d101vd00cis701.cloudfront.net/athlete2/default/HG_logo_1.jpg"
-           width="552" height="119" alt="HomeGym.sg: Fitness Within Reach">
-    </a>
-    <span class="masthead-note">Build your bundle</span>
-  </div>
-</header>
-<div class="rule"></div>
-
-<main>
-  <section class="hero">
-    <div class="wrap">
-      <div class="hero__lead">
-        <p class="kicker">Four questions</p>
-        <h1>Build your bundle</h1>
-      </div>
-      <div class="hero__aside">
-        <p>What you want to train, your floor, your level, your budget. We match one complete setup, every item priced and linked.</p>
-        <p class="facts">
-          <span class="fact"><span class="n">10</span>Bundles</span>
-          <span class="fact"><span class="n">4</span>Questions</span>
-          <span class="fact"><span class="n">60s</span>To an answer</span>
-        </p>
-      </div>
+<div class="quiz-mount">
+  <homegym-bundle-quiz
+    currency="SGD"
+    contact-url="https://homegym.sg/contact"
+    whatsapp="6580423952"
+  ></homegym-bundle-quiz>
+  <noscript>
+    <div class="noscript">
+      <p>The quiz needs JavaScript. Browse the range at
+        <a href="https://homegym.sg/strength.html" target="_blank" rel="noopener">homegym.sg</a>,
+        or message us on WhatsApp and we will size a build for you.</p>
     </div>
-  </section>
-
-  <section class="quiz-section" id="quiz">
-    <homegym-bundle-quiz
-      currency="SGD"
-      contact-url="https://homegym.sg/contact"
-      whatsapp="6580423952"
-    ></homegym-bundle-quiz>
-    <noscript>
-      <div class="noscript wrap">
-        <p>The quiz needs JavaScript. Browse the range at
-          <a href="https://homegym.sg/strength.html" target="_blank" rel="noopener">homegym.sg</a>,
-          or message us on WhatsApp and we will size a build for you.</p>
-      </div>
-    </noscript>
-  </section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <span>Prices as at 30 Aug 2026. Excludes delivery and installation.</span>
-    <span><a href="https://homegym.sg/" target="_blank" rel="noopener">homegym.sg</a></span>
-  </div>
-</footer>
+  </noscript>
+</div>
 
 <!-- Dev loads the ES modules straight from src/quiz/. scripts/build.mjs swaps
      this exact tag for the inlined single-file bundle when building dist/. -->

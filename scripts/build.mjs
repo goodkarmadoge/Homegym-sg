@@ -20,7 +20,7 @@ export const PAGES = [
   { file: 'prototype.html', emoji: '🏋️',
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
   { file: 'bundle-quiz.html', emoji: '🎯',
-    desc: 'Four questions about function, floor space, level and budget, matched to one of ten priced home gym bundles.',
+    desc: 'Four questions about function, floor space, level and budget, matched to a complete priced home gym bundle.',
     // Archivo 400/600/800, the Modernist system's only family. Loaded here so
     // it is available inside the shadow root too: font loading is
     // document-scoped, not tree-scoped.

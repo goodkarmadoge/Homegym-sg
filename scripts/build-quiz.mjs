@@ -1,9 +1,9 @@
-// Bundles the four quiz ES modules into one self-registering IIFE for the embed.
+// Bundles the quiz ES modules into one self-registering IIFE for the embed.
 //
 // WHY NOT ESBUILD: this repo installs nothing. vercel.json sets
 // installCommand "echo 'no dependencies'" and .github/workflows/ci.yml never
 // runs npm ci, so any devDependency in the build path fails CI on the first
-// push. The module graph here is four files deep with no external imports, so
+// push. The module graph is a handful of files deep with no external imports, so
 // a resolver is overkill, concatenating in dependency order is enough.
 //
 // This strips comments and blank lines; it does NOT rename identifiers the way
@@ -18,8 +18,16 @@ const QUIZ = join(ROOT, 'src/quiz');
 
 export const SIZE_LIMIT = 150 * 1024;
 
-// Dependency order. bundles and matcher are leaves; the element imports all three.
-const MODULES = ['bundles.js', 'matcher.js', 'styles.js', 'homegym-bundle-quiz.js'];
+// Dependency order, leaves first. sheet-parse imports nothing at all, and
+// sheet-data is generated from the Google Sheet and feeds bundles.js.
+const MODULES = [
+  'sheet-parse.js',
+  'sheet-data.js',
+  'bundles.js',
+  'matcher.js',
+  'styles.js',
+  'homegym-bundle-quiz.js'
+];
 
 /**
  * Turn one ES module into a bare script body.

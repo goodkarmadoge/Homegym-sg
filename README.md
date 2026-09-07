@@ -12,7 +12,7 @@ A pro bono site and business review of [homegym.sg](https://homegym.sg), a Singa
 | [`teardown.html`](teardown.html) | Twelve evidenced problems with the site and the operation, written for the business owner rather than a developer. Includes a prioritised order of work and seven automation projects. |
 | [`messaging.html`](messaging.html) | Positioning and messaging brief: the gym-cost wedge, four value pillars, eight messaging lines graded, five objections with responses, and house-brand strategy. |
 | [`prototype.html`](prototype.html) | A working concept homepage with a six-question quiz that sizes a gym build to the visitor's floor area, ceiling height and budget. |
-| [`bundle-quiz.html`](bundle-quiz.html) | A standalone four-question quiz matching the visitor to one of ten priced bundles built from real catalogue products. Also ships as an embeddable web component. |
+| [`bundle-quiz.html`](bundle-quiz.html) | A four-question quiz matching the visitor to a complete priced bundle built from real catalogue products. Bundle data comes from a Google Sheet. Ships bare, for embedding into homegym.sg. |
 
 ## About the prototype
 
@@ -34,6 +34,11 @@ The same code ships twice from one source:
 2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 66 KB file that registers `<homegym-bundle-quiz>` on any page.
 
 ## Embedding it
+
+This is the quiz's main use. `bundle-quiz.html` is deliberately bare: no
+masthead, no hero, no footer, transparent background. It is the quiz and
+nothing else, so the host page supplies all surrounding chrome. Drop it in an
+iframe, or skip the page entirely and use the component directly:
 
 ```html
 <script src="/assets/homegym-bundle-quiz.min.js" defer></script>
@@ -58,6 +63,8 @@ Every attribute is optional; the values above are the defaults.
 | `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
 | `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
 | `start-step` | Deep-link straight to a step, 1 to 4 |
+| `sheet-live` | Present, no value. Re-read the Google Sheet after first paint so sheet edits appear without a redeploy. Needs the tab gids in `config/sheet.json`. Falls back silently to the built-in data on any failure |
+| `sheet-id` | Override which spreadsheet `sheet-live` reads. Defaults to the one baked in at sync time |
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
 
@@ -111,17 +118,102 @@ document.addEventListener('quiz:complete', e => {
 });
 ```
 
-## Editing the data
+## Where the data comes from
 
-**`src/quiz/bundles.js` is the only file you need to touch.** Nothing else reads prices, product names, URLs or images.
+The bundles live in a **Google Sheet**, not in the code:
 
-- **Change a price.** Edit `price` in `PRODUCTS`, then update the `price` on every bundle containing it. The tests assert `sum(products) === bundle.price` and will fail loudly if you miss one.
-- **Put a product on sale.** Set `was` to the old price. The card shows it struck through with a `SALE` tag automatically.
-- **Flag stock.** Add `note: 'On backorder'` to a product; it renders as a badge on the card.
-- **Swap a product in a bundle.** Change the id in that bundle's `products` array and correct its `price`.
-- **Change the copy.** `tagline`, `pitch` and `trains` are per-bundle and used verbatim.
+<https://docs.google.com/spreadsheets/d/1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU>
 
-Run `npm test` after any edit. It checks the totals reconcile, that all 15 products have valid URLs and images, that nothing is duplicated, and that all ten bundles are still priced under their ceilings.
+That sheet is the source of truth for **which bundles exist and how a customer
+is matched to one**. Adding a bundle is a spreadsheet edit, not a code change.
+
+| Tab | Owns |
+|---|---|
+| Bundle rules | One row per bundle: functions, size, style, budget ceiling, number, name |
+| Product matrix | One column per bundle, product URLs down the rows. Row A is the anchor machine and stays first in the result grid |
+| Personas | Four customer types. Read and versioned, but not yet used, see below |
+
+The sheet holds no prices, no sales copy and no photographs, so those stay in
+`src/quiz/bundles.js` and are joined on by bundle number.
+
+| Lives in the sheet | Lives in `src/quiz/bundles.js` |
+|---|---|
+| Which bundles exist | Product catalogue: name, price, `was`, stock note, image |
+| Functions, footprint, level, budget ceiling | Per-bundle `tagline`, `pitch`, `trains`, `hero` |
+| Which products are in each bundle, by URL | The `ROOMS` strip |
+
+**A bundle price is always the sum of its products.** It is never typed in
+anywhere, which is what lets a new sheet row price itself and means a price can
+never drift out of step with the items listed beside it.
+
+### Adding a bundle
+
+1. Add a row to the rules tab and a column to the product matrix.
+2. If it uses a product the catalogue has never seen, add it to `PRODUCTS` in
+   `src/quiz/bundles.js` with its price and image. `npm run sync` names the
+   missing URL if you forget.
+3. Wait for the hourly sync, or run `npm run sync` and commit.
+
+That is enough to make it real. The bundle takes its name from the sheet's
+**Bundle Name** column, prices itself, and renders with a generated tagline and
+a product photo. Writing it a proper `tagline`, `pitch` and `trains` list in
+`BUNDLE_COPY` is a separate improvement, not a blocker: until then the
+"What you'll train" section is simply omitted rather than shown empty.
+
+### Editing prices, copy and imagery
+
+Still `src/quiz/bundles.js`:
+
+- **Change a price.** Edit `price` in `PRODUCTS`. Bundle totals recompute; there is no second number to keep in step.
+- **Put a product on sale.** Set `was` to the old price. The card shows it struck through with a `SALE` tag.
+- **Flag stock.** Add `note: 'On backorder'`; it renders as a badge on the card.
+- **Change the copy.** `tagline`, `pitch` and `trains` in `BUNDLE_COPY`, keyed by bundle number, used verbatim.
+
+Run `npm test` after any edit. It checks that totals reconcile, that every
+product has a valid URL and image, that nothing is duplicated, and that every
+bundle is priced under its ceiling.
+
+### Syncing
+
+```bash
+npm run sync           # pull the sheet, rewrite src/quiz/sheet-data.js
+npm run sync:check     # fail if the committed data is out of date, for CI
+npm run sync -- --csv-dir ./dir   # sync from exported CSVs instead of the network
+```
+
+`src/quiz/sheet-data.js` is **generated**. Editing it by hand is pointless; the
+next sync overwrites it.
+
+The sheet must be readable without signing in: open it, **Share**, **Anyone with
+the link** as **Viewer**. That exposes only this sheet. Until that is done the
+sync fails with a message saying so, and the quiz keeps serving the last good
+committed data.
+
+`.github/workflows/sync-sheet.yml` runs the sync hourly and on demand. It
+commits only when something actually changed, and only after `npm run check`
+passes, so a sheet edit that breaks the quiz stops in CI rather than on a
+customer's screen.
+
+### Why the data is committed rather than fetched live
+
+The quiz ships as one static file with no runtime dependencies, and the
+64,575-combination sweep only means anything if the data it swept is the data
+that ships. Committing the sheet's contents keeps both properties.
+
+If you want sheet edits to appear without waiting for the hourly sync, add
+`sheet-live` to the tag and fill in the tab gids in `config/sheet.json`. The
+component then re-reads the sheet after first paint. It **fails silently by
+design**: a private sheet, an offline visitor, a blocked request or a
+half-edited row all leave the committed data in place, so what a customer sees
+is never worse than the snapshot that shipped. Outcomes surface on the
+`quiz:sheet` event and in the console.
+
+### The personas tab
+
+Parsed, versioned and exported as `PERSONAS`, but nothing reads it yet. The
+sheet has no column linking a persona to a bundle, so using them in results
+would mean inventing that mapping. Add a **Persona** column to the rules tab and
+they can be wired up without another data migration.
 
 ## How the matching works
 
@@ -236,9 +328,10 @@ dist/        generated site (gitignored, produced by the build)
 ## Commands
 
 ```bash
+npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
-npm test         # prototype engine (3,072 combinations) + bundle matcher unit tests
-npm run sweep    # assert all 10 bundles are reachable across 64,575 combinations
+npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
+npm run sweep    # assert every bundle is reachable across 64,575 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -247,7 +340,7 @@ npm run check:images   # confirm every hotlinked HomeGym image still resolves
 
 No dependencies; Node 20+ only.
 
-The quiz is bundled by `scripts/build-quiz.mjs`, a ~60-line concatenator, rather than esbuild. That is deliberate: Vercel's `installCommand` is `echo 'no dependencies'` and CI never runs `npm ci`, so a devDependency in the build path would fail the first push. The module graph is four files with no external imports, so a real resolver buys nothing.
+The quiz is bundled by `scripts/build-quiz.mjs`, a ~60-line concatenator, rather than esbuild. That is deliberate: Vercel's `installCommand` is `echo 'no dependencies'` and CI never runs `npm ci`, so a devDependency in the build path would fail the first push. The module graph is a handful of files with no external imports, so a real resolver buys nothing.
 
 In development the page loads `src/quiz/*.js` as plain ES modules with no build step; `npm run build` swaps that script tag for the inlined bundle.
 
@@ -266,7 +359,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any of the ten bundles becomes unreachable, or the matcher throws on any of 64,575 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 64,575 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output

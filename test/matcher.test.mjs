@@ -95,10 +95,15 @@ test('product URLs and images are all distinct, no copy-paste collisions', () =>
   assert.equal(new Set(images).size, images.length, 'duplicate image URL');
 });
 
-test('there are 10 bundles with unique ids and names, priced under their ceilings', () => {
-  assert.equal(BUNDLES.length, 10);
-  assert.equal(new Set(BUNDLES.map((b) => b.id)).size, 10);
-  assert.equal(new Set(BUNDLES.map((b) => b.name)).size, 10);
+// Deliberately not pinned to a count. The Google Sheet decides how many
+// bundles exist, so asserting "there are exactly ten" would make adding one
+// fail the build, which is the opposite of what the sheet is for. What must
+// hold at any size is that ids and names are unique and nothing is over its
+// stated ceiling.
+test('every bundle has a unique id and name and is priced under its ceiling', () => {
+  assert.ok(BUNDLES.length >= 1, 'the sheet produced no bundles at all');
+  assert.equal(new Set(BUNDLES.map((b) => b.id)).size, BUNDLES.length, 'duplicate bundle id');
+  assert.equal(new Set(BUNDLES.map((b) => b.name)).size, BUNDLES.length, 'duplicate bundle name');
   for (const b of BUNDLES) {
     assert.ok(b.price <= b.budgetCeiling, `${b.name} is over its ceiling`);
     assert.ok(b.trains.length > 0, `${b.name} has no trains list`);

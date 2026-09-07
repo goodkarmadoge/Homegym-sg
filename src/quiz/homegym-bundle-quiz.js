@@ -1,7 +1,7 @@
 /**
  * <homegym-bundle-quiz>, Homegym.sg personalised bundle quiz.
  *
- * A framework-agnostic custom element. Four questions, ten bundles, one match.
+ * A framework-agnostic custom element. Four questions, one matched bundle.
  * Everything renders inside an open shadow root, so it drops into any page
  * (Bootstrap, Tailwind, raw Magento) with no style bleed in either direction.
  *
@@ -19,7 +19,9 @@
  * the cart CTA POSTs to cart-endpoint when one is configured, and every
  * meaningful action also fires a bubbling, composed CustomEvent for GTM.
  */
-import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT } from './bundles.js';
+import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
+import { buildSheetBundles } from './sheet-parse.js';
+import { SHEET_ID, SHEET_TABS } from './sheet-data.js';
 import { match, FALLBACK } from './matcher.js';
 import { STYLES } from './styles.js';
 
@@ -141,7 +143,8 @@ function inkOn(accent) {
 
 class HomegymBundleQuiz extends HTMLElement {
   static get observedAttributes() {
-    return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step'];
+    return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step',
+            'sheet-live', 'sheet-id'];
   }
 
   constructor() {
@@ -182,6 +185,13 @@ class HomegymBundleQuiz extends HTMLElement {
   get cartEndpoint() { return this.getAttribute('cart-endpoint') || ''; }
   get contactUrl() { return this.getAttribute('contact-url') || '/contact'; }
   get whatsapp() { return (this.getAttribute('whatsapp') || '').replace(/[^\d]/g, ''); }
+
+  /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
+     mount, so a bundle added to the spreadsheet appears without a redeploy.
+     Without it the quiz uses the committed snapshot, which is the data that
+     every test and the 64,575-combination sweep actually checked. */
+  get sheetLive() { return this.hasAttribute('sheet-live'); }
+  get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
 
   /** Format a number as SGD. Falls back to Intl for any other currency code. */
   money(n) {
@@ -226,6 +236,76 @@ class HomegymBundleQuiz extends HTMLElement {
       this._started = true;
       this.emit('quiz:start', {});
     }
+
+    // After the first paint, never before it: the committed data is already
+    // correct, so there is no reason to make anyone wait on a round trip to
+    // Google before they can answer question one.
+    if (this.sheetLive) this._refreshFromSheet();
+  }
+
+  /**
+   * Re-read the Google Sheet and swap in whatever it says.
+   *
+   * FAILS SILENTLY BY DESIGN. Every outcome short of a clean parse leaves the
+   * committed data in place: a private sheet, an offline customer, a blocked
+   * request, a half-edited row. What a customer sees is never worse than the
+   * snapshot that shipped, which is what makes it safe to turn this on.
+   * Problems surface on the quiz:sheet event and in the console, for whoever
+   * is watching, rather than as an error on a customer screen.
+   */
+  async _refreshFromSheet() {
+    const id = this.sheetId;
+    const gids = SHEET_TABS || {};
+    if (!id || gids.rules == null || gids.products == null) {
+      this._sheetProblem('sheet-live is set but config/sheet.json has no tab gids');
+      return;
+    }
+
+    const url = (gid) =>
+      `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+    try {
+      const [rules, products] = await Promise.all(
+        [gids.rules, gids.products].map(async (gid) => {
+          const res = await fetch(url(gid), { credentials: 'omit' });
+          if (!res.ok) throw new Error(`HTTP ${res.status} reading tab ${gid}`);
+          const text = await res.text();
+          // An unshared sheet answers with a sign-in page, not an error status.
+          if (/^\s*<!DOCTYPE/i.test(text)) throw new Error('the sheet is not shared publicly');
+          return text;
+        })
+      );
+
+      // Lenient: one unresolvable product URL drops that single bundle rather
+      // than throwing away every bundle in the sheet.
+      const { bundles, problems } = composeBundles(buildSheetBundles(rules, products), { strict: false });
+      if (!bundles.length) throw new Error('the sheet produced no usable bundles');
+
+      // Replace the CONTENTS of the shared array. Reassigning the import would
+      // leave every other module still pointing at the old list.
+      BUNDLES.length = 0;
+      BUNDLES.push(...bundles);
+
+      // A result on screen was matched against the old data, so score it
+      // again. Deliberately not _submit(): that would re-emit quiz:complete
+      // and replay the building animation over a result already being read.
+      if (this.state.view === 'result' && this.state.result) {
+        const res = match(this._answersOut(), BUNDLES);
+        this.state.result = res;
+        this.state.shownBundleId = res.primary ? res.primary.id : null;
+      }
+      this.render();
+
+      for (const p of problems) console.warn('[homegym-bundle-quiz] ' + p);
+      this.emit('quiz:sheet', { ok: true, bundles: bundles.length, problems });
+    } catch (err) {
+      this._sheetProblem(err.message);
+    }
+  }
+
+  _sheetProblem(message) {
+    console.warn('[homegym-bundle-quiz] live sheet not used, keeping the built-in data: ' + message);
+    this.emit('quiz:sheet', { ok: false, bundles: BUNDLES.length, problems: [message] });
   }
 
   disconnectedCallback() {
@@ -713,6 +793,9 @@ class HomegymBundleQuiz extends HTMLElement {
   /* ── 2. What you will train ───────────────────────────────────────────── */
 
   sectionTrain(bundle) {
+    // A bundle added to the sheet before anyone writes its copy has no
+    // movement list. Drop the section rather than print an empty heading.
+    if (!bundle.trains || !bundle.trains.length) return '';
     return `
       <section class="section">
         <h2 class="section__title">What you'll train</h2>

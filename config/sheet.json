@@ -1,0 +1,15 @@
+{
+  "_comment": [
+    "Where the bundle data comes from. See README.md, 'Editing the data'.",
+    "sheetId is the long id in the Google Sheets URL, between /d/ and /edit.",
+    "Each tab's gid is the number after '#gid=' in the URL when that tab is open.",
+    "Set a gid to null and scripts/sync-sheet.mjs will tell you where to find it",
+    "rather than guessing and silently syncing the wrong tab."
+  ],
+  "sheetId": "1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU",
+  "tabs": {
+    "rules": 0,
+    "products": null,
+    "personas": null
+  }
+}

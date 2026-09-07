@@ -138,4 +138,4 @@ if (unreachable.length) {
   console.error(`FAIL, unreachable bundle(s): ${unreachable.map((r) => r.name).join(', ')}`);
   process.exit(1);
 }
-console.log('PASS, all 10 bundles are reachable and no combination threw.');
+console.log(`PASS, all ${rows.length} bundles are reachable and no combination threw.`);
