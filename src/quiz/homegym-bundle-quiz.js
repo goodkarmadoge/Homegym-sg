@@ -261,8 +261,12 @@ class HomegymBundleQuiz extends HTMLElement {
       return;
     }
 
+    // /export, never /gviz/tq. The gviz endpoint infers a header row and
+    // silently drops columns whose only value falls in it, which cost two
+    // bundles all of their products with no error of any kind. See the note in
+    // scripts/sync-sheet.mjs.
     const url = (gid) =>
-      `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+      `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
 
     try {
       const [rules, products] = await Promise.all(
@@ -889,16 +893,16 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 5. Straight from our Instagram ───────────────────────────────────── */
+  /* ── 5. Rooms we have built ───────────────────────────────────────────── */
 
   sectionRooms() {
     if (!ROOMS || !ROOMS.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Straight from our Instagram</h2>
+        <h2 class="section__title">Rooms we've built</h2>
         <p class="pitch">
-          The last twenty things we posted: installs, deliveries and kit going into
-          real Singapore homes. Every one links to what is in the picture.
+          Real installs from our Instagram, not showroom mock-ups. Every one links
+          to the machine in the picture.
         </p>
         <div class="rooms">
           ${ROOMS.map((r) => `

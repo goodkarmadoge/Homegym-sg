@@ -185,9 +185,19 @@ npm run sync -- --csv-dir ./dir   # sync from exported CSVs instead of the netwo
 next sync overwrites it.
 
 The sheet must be readable without signing in: open it, **Share**, **Anyone with
-the link** as **Viewer**. That exposes only this sheet. Until that is done the
-sync fails with a message saying so, and the quiz keeps serving the last good
-committed data.
+the link** as **Viewer**. That exposes only this sheet. It is shared, and the
+tab gids are filled into `config/sheet.json`, so `npm run sync` works today. If
+sharing is ever turned off the sync fails with a message saying so, and the quiz
+keeps serving the last good committed data.
+
+> **Do not switch the sync to `/gviz/tq?tqx=out:csv`.** It looks like the same
+> CSV and is the endpoint most examples reach for, but it runs a query engine
+> over the sheet and infers a header row. On this sheet that silently dropped
+> both columns whose only value sat in the row it treated as a header: bundles 5
+> and 8 came back with no products at all, with no error of any kind, while
+> every other column looked fine. `/export?format=csv` returns the sheet
+> verbatim, blank spacer rows and all. Both endpoints were compared on
+> 7 Sep 2026; the strict "defined but has no products" check is what caught it.
 
 `.github/workflows/sync-sheet.yml` runs the sync hourly and on demand. It
 commits only when something actually changed, and only after `npm run check`

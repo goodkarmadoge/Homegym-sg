@@ -7,7 +7,7 @@
  *
  *   npm run sync
  *
- * Source: local CSV, C:/Users/wongd/AppData/Local/Temp/claude/C--Users-wongd-Downloads-ruflo-main-ruflo-main/76612a55-a450-4a3f-bd92-46e118a1ed4f/scratchpad/sheet
+ * Source: https://docs.google.com/spreadsheets/d/1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU
  *
  * WHAT THIS FILE CARRIES: which bundles exist, the rules that match a customer
  * to one (functions, footprint, level, budget ceiling), and the products in
@@ -15,7 +15,7 @@
  * none. Those are joined on in src/quiz/bundles.js.
  */
 
-export const SHEET_SOURCE = "local CSV, C:/Users/wongd/AppData/Local/Temp/claude/C--Users-wongd-Downloads-ruflo-main-ruflo-main/76612a55-a450-4a3f-bd92-46e118a1ed4f/scratchpad/sheet";
+export const SHEET_SOURCE = "https://docs.google.com/spreadsheets/d/1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU";
 
 /**
  * Where the live-override path fetches from.
@@ -25,7 +25,7 @@ export const SHEET_SOURCE = "local CSV, C:/Users/wongd/AppData/Local/Temp/claude
  * config/sheet.json yet, and live mode reports that rather than guessing.
  */
 export const SHEET_ID = "1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU";
-export const SHEET_TABS = {"rules":0,"products":null,"personas":null};
+export const SHEET_TABS = {"rules":0,"products":460381699,"personas":1303527735};
 
 export const SHEET_BUNDLES = [
   {

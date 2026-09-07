@@ -367,23 +367,30 @@ export const FUNCTION_SHORT = {
 };
 
 /**
- * The Instagram strip on the result page.
+ * "Rooms we've built", the install strip on the result page.
  *
- * The 20 most recent posts from homegym.sg/instagram, in the order the site
- * lists them. HomeGym's own photography, served from their own CloudFront
- * origin by the store's Instagram extension: nothing is scraped from Instagram
- * and nothing of theirs is redistributed.
+ * Twenty posts from homegym.sg/instagram, in feed order. HomeGym's own
+ * photography, served from their own CloudFront origin by the store's Instagram
+ * extension: nothing is scraped from Instagram and nothing of theirs is
+ * redistributed.
+ *
+ * CURATED FOR ROOM-SCALE SETUPS, NOT PRODUCT SHOTS.
+ *   All 49 posts in the feed were looked at rather than skimmed by caption, and
+ *   the twenty here all show a machine standing in a finished room. Left out on
+ *   purpose: bare dumbbell and plate racks, rooms with nothing in them but new
+ *   matting, and single cardio machines against a blank wall. None of those
+ *   show a room anyone built.
  *
  * EVERY TILE LINKS SOMEWHERE, AND THE LINK IS ACCURATE.
- *   linkKind 'product'  the post names an item in the catalogue above, so the
- *                       tile links to that product page
- *   linkKind 'category' the post is cardio, matting or an accessory that this
- *                       quiz does not sell, so it links to the right category
- *                       rather than to a plausible-looking wrong product
- *   Nine of the twenty are products, eleven are categories. The mapping is
- *   written by hand in scripts, not inferred from the caption, because a fuzzy
- *   match that sent a treadmill photo to a power rack page would be worse than
- *   no link at all.
+ *   linkKind 'product'  the post shows an item in the catalogue above, so the
+ *                       tile links straight to that product page
+ *   linkKind 'category' the machine is real but not one this quiz sells (the
+ *                       Titan G9 and the Bodyx BK3058), so it links to the
+ *                       category rather than to a plausible-looking wrong
+ *                       product
+ *   The mapping is written out by hand for that reason: a fuzzy caption match
+ *   that sent a treadmill photo to a power rack page would be worse than no
+ *   link at all.
  *
  * KNOWN ISSUE 6, IMAGE ROT. The /ox_instagram/ filenames are Instagram media
  * ids and the extension prunes its cache as the feed moves on, so these can 404
@@ -394,64 +401,22 @@ export const FUNCTION_SHORT = {
 export const ROOMS = [
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
-    title: "AEKE S1 Pro smart home gym",
+    title: "AEKE S1 Pro in a living room",
     date: "4 Sep 2026",
     href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/791561042_18623257588005504_1614753796060253158_n.jpg",
-    title: "AEKE S1 Pro smart home gym",
-    date: "3 Sep 2026",
-    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
-    linkKind: "product"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760997588_18611552998005504_7750054961710959525_n.jpg",
-    title: "NordicTrack 1750 treadmill",
-    date: "27 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
-    title: "Bodyx Folding Cube Smith Pro",
+    title: "Bodyx Cube Smith Pro with bench",
     date: "25 Aug 2026",
     href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/762331045_18611552350005504_424308533058451107_n.jpg",
-    title: "NordicTrack Commercial LE treadmill",
-    date: "24 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759746025_18611551519005504_6103935701308398150_n.jpg",
-    title: "NordicTrack X24 bike",
-    date: "22 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg",
-    title: "Infinity half rack functional trainer",
+    title: "Infinity half rack with barbell set",
     date: "21 Aug 2026",
-    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/758427063_18611551354005504_6601735794518493730_n.jpg",
-    title: "Gym mat installation",
-    date: "20 Aug 2026",
-    href: "https://homegym.sg/accessories.html",
-    linkKind: "category"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759531291_18611551063005504_6634504801752897174_n.jpg",
-    title: "Infinity half rack with swing arms",
-    date: "19 Aug 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
     linkKind: "product"
   },
@@ -461,27 +426,6 @@ export const ROOMS = [
     date: "17 Aug 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
     linkKind: "product"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760610467_18611549731005504_8935234434467248426_n.jpg",
-    title: "Adidas T-23 treadmill",
-    date: "15 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761280261_18611547247005504_590421726682855848_n.jpg",
-    title: "Treadmill, bench and dumbbell setup",
-    date: "15 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760793011_18611547505005504_3076352002235654950_n.jpg",
-    title: "Gym mat installation",
-    date: "12 Aug 2026",
-    href: "https://homegym.sg/accessories.html",
-    linkKind: "category"
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/762107975_18611546767005504_6529779789667579583_n.jpg",
@@ -498,38 +442,101 @@ export const ROOMS = [
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760819431_18611546305005504_1901537159767380637_n.jpg",
-    title: "Infinity half rack dual cable combo",
-    date: "7 Aug 2026",
-    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
-  },
-  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760974318_18611553115005504_1009769436051274014_n.jpg",
-    title: "Vigor multi-adjustable bench",
+    title: "Bench, dumbbells and rack",
     date: "6 Aug 2026",
     href: "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760997895_18611546173005504_6953727857561743661_n.jpg",
-    title: "Gym mat setup for a BTO flat",
-    date: "5 Aug 2026",
-    href: "https://homegym.sg/accessories.html",
-    linkKind: "category"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761250274_18611545558005504_5299712094661586425_n.jpg",
-    title: "Adidas T-19i treadmill",
-    date: "3 Aug 2026",
-    href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
-  },
-  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760068554_18611544580005504_6537229001685739515_n.jpg",
-    title: "Vigor TinyTitan all-in-1 trainer",
+    title: "Vigor TinyTitan with bench and plates",
     date: "2 Aug 2026",
     href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/736448867_18602787841005504_7631076833331828894_n.jpg",
+    title: "Vigor Titan G9 all-in-1 setup",
+    date: "28 Jul 2026",
+    href: "https://homegym.sg/strength.html",
+    linkKind: "category"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/731158364_18602787226005504_3919957454936227618_n.jpg",
+    title: "Infinity dual cable half rack",
+    date: "24 Jul 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
+    title: "Vigor folding power rack with bench",
+    date: "18 Jul 2026",
+    href: "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
+    title: "Bodyx Cube Smith in a physio studio",
+    date: "15 Jul 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729364213_18600534748005504_7492638712585432183_n.jpg",
+    title: "Infinity Smith machine setup",
+    date: "13 Jul 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-all-in-1-trainer.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/731014406_18600533389005504_8914844780706475251_n.jpg",
+    title: "Infinity functional trainer half rack",
+    date: "10 Jul 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg",
+    title: "Vigor Xpress Pro home gym",
+    date: "2 Jul 2026",
+    href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729964639_18600529420005504_3034992830324318055_n.jpg",
+    title: "Vigor TinyTitan full gym setup",
+    date: "27 Jun 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/720486969_18595990591005504_7491168024045430756_n.jpg",
+    title: "Vigor Titan X20 all-in-1 trainer",
+    date: "19 Jun 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/720206740_18595990204005504_1555444394403186457_n.jpg",
+    title: "Bodyx BK3058 all-in-1 setup",
+    date: "17 Jun 2026",
+    href: "https://homegym.sg/strength.html",
+    linkKind: "category"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/720040277_18595989928005504_6317610763181088945_n.jpg",
+    title: "Vigor Titan X20 with bench",
+    date: "15 Jun 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product"
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/719598557_18595988128005504_8448550947109249164_n.jpg",
+    title: "Reebok SL8 with Vigor Xpress gym",
+    date: "14 Jun 2026",
+    href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
     linkKind: "product"
   }
 ];

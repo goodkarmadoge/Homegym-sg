@@ -32,9 +32,20 @@ const flag = (name) => {
 const CHECK_ONLY = args.includes('--check');
 const CSV_DIR = flag('--csv-dir');
 
-/** The CSV export endpoint. Works for any sheet the caller can read. */
+/**
+ * The CSV export endpoint. Works for any sheet the caller can read.
+ *
+ * NOT /gviz/tq?tqx=out:csv. That endpoint runs a query engine over the sheet
+ * and INFERS A HEADER ROW, and in doing so it silently dropped both of the
+ * columns whose only value sat in the row it had decided was a header. Bundles
+ * 5 and 8 came back with no products at all, while every other column was fine.
+ * Nothing errored; the data was just quietly missing.
+ *
+ * /export returns the sheet verbatim, blank spacer rows and all, which is what
+ * a source of truth has to do. Verified against both endpoints on 7 Sep 2026.
+ */
 const csvUrl = (sheetId, gid) =>
-  `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
 
 /**
  * Fetch one tab.
