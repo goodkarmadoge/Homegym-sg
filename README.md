@@ -152,7 +152,8 @@ never drift out of step with the items listed beside it.
 2. If it uses a product the catalogue has never seen, add it to `PRODUCTS` in
    `src/quiz/bundles.js` with its price and image. `npm run sync` names the
    missing URL if you forget.
-3. Wait for the hourly sync, or run `npm run sync` and commit.
+3. Wait for the nightly sync, or get it live now: **Actions → Sync bundle data
+   from the Google Sheet → Run workflow**. No code checkout needed.
 
 That is enough to make it real. The bundle takes its name from the sheet's
 **Bundle Name** column, prices itself, and renders with a generated tagline and
@@ -199,10 +200,31 @@ keeps serving the last good committed data.
 > verbatim, blank spacer rows and all. Both endpoints were compared on
 > 7 Sep 2026; the strict "defined but has no products" check is what caught it.
 
-`.github/workflows/sync-sheet.yml` runs the sync hourly and on demand. It
-commits only when something actually changed, and only after `npm run check`
-passes, so a sheet edit that breaks the quiz stops in CI rather than on a
-customer's screen.
+`.github/workflows/sync-sheet.yml` runs the sync **daily at 06:30 Singapore
+time**, and on demand from the Actions tab. It commits only when something
+actually changed, and only after `npm run check` passes, so a sheet edit that
+breaks the quiz stops in CI rather than on a customer's screen.
+
+The schedule is written `30 22 * * *` because **GitHub cron is always UTC** and
+has no timezone field: 06:30 SGT is 22:30 UTC the previous day. Singapore has
+not observed daylight saving since 1935, so that offset is fixed all year and
+the line never needs a seasonal correction. The job itself runs with
+`TZ=Asia/Singapore`, so every timestamp it logs reads in local time.
+
+**Timing:** the sheet is edited in Singapore office hours and the quiz is read
+by Singapore customers, who browse in the evening. Running before the working
+day puts yesterday's edits live before anyone arrives, and leaves a full
+business day to spot a problem before the evening peak. An end-of-day sync would
+instead push every change live at the exact hour traffic is highest.
+
+So an edit made on Monday afternoon goes live early Tuesday. If that is too slow
+for a particular change, **Run workflow** does it in about a minute.
+
+One failure mode worth knowing: **GitHub disables scheduled workflows after 60
+days of repository inactivity**, and emails only the repo owner. Sheet changes
+produce commits, which reset that clock, but a long quiet stretch can still trip
+it. If bundles stop tracking the sheet, check the Actions tab first; the fix is
+an "Enable workflow" button, not a code change.
 
 ### Why the data is committed rather than fetched live
 
@@ -210,7 +232,7 @@ The quiz ships as one static file with no runtime dependencies, and the
 64,575-combination sweep only means anything if the data it swept is the data
 that ships. Committing the sheet's contents keeps both properties.
 
-If you want sheet edits to appear without waiting for the hourly sync, add
+If you want sheet edits to appear without waiting for the nightly sync, add
 `sheet-live` to the tag and fill in the tab gids in `config/sheet.json`. The
 component then re-reads the sheet after first paint. It **fails silently by
 design**: a private sheet, an offline visitor, a blocked request or a

@@ -10,23 +10,54 @@ name: Sync bundle data from the Google Sheet
 #
 # REQUIRES the sheet to be readable without signing in:
 #   open it, Share, "Anyone with the link" as Viewer.
-# Until then this job fails with a message saying exactly that, and the quiz
-# keeps serving the last good committed data.
+# If that is ever turned off this job fails with a message saying exactly that,
+# and the quiz keeps serving the last good committed data.
+#
+# GITHUB DISABLES SCHEDULED WORKFLOWS AFTER 60 DAYS OF REPO INACTIVITY, and it
+# only emails the repo owner when it does. This job commits when the sheet
+# changes, which counts as activity and resets the clock, but a quiet stretch
+# with no sheet edits and no other commits can still trip it. If bundles stop
+# tracking the sheet, check the Actions tab first: the fix is one "Enable
+# workflow" button, not a code change.
 
 on:
   schedule:
-    # Hourly, on the hour. Frequent enough that a bundle added in the morning is
-    # live before lunch, rare enough to stay far inside the free tier.
-    - cron: '0 * * * *'
+    # Daily at 06:30 Singapore time.
+    #
+    # GITHUB CRON IS UTC ONLY. There is no timezone field, so the conversion has
+    # to live here: 06:30 SGT is 22:30 UTC THE PREVIOUS DAY, because Singapore
+    # is UTC+8. Singapore has not observed daylight saving since 1935, so that
+    # offset is fixed all year and this line never needs a seasonal correction.
+    # A UK or US schedule would drift by an hour twice a year; this one does not.
+    #
+    # WHY THIS TIME. The sheet is edited during Singapore office hours and the
+    # quiz is read by Singapore customers, who browse in the evening. Running
+    # before the working day means yesterday's edits are live before anyone
+    # arrives, and there is then a full business day to notice a problem before
+    # the evening is when it would actually be seen. Running at the end of the
+    # day instead would put every change live at the exact hour traffic peaks.
+    #
+    # 22:30 rather than 22:00 because scheduled jobs queue behind everyone
+    # else's on the hour; GitHub delays them under load and drops them entirely
+    # if the backlog is bad enough. Off-the-hour schedules start far closer to
+    # when they were asked to.
+    - cron: '30 22 * * *'
   workflow_dispatch:       # "Run workflow" in the Actions tab, for an instant sync
 
 permissions:
   contents: write
 
-# Never let two syncs race each other into the same branch.
+# Never let two syncs race each other into the same branch. A manual run fired
+# while the nightly one is mid-flight waits rather than pushing over it.
 concurrency:
   group: sync-sheet
   cancel-in-progress: false
+
+env:
+  # Runners are UTC. Everything this job prints is read by someone in Singapore,
+  # so every timestamp in the log and the run summary comes out in local time.
+  # This does NOT affect the cron above, which GitHub always reads as UTC.
+  TZ: Asia/Singapore
 
 jobs:
   sync:
@@ -40,7 +71,9 @@ jobs:
           node-version: 20
 
       - name: Pull the sheet
-        run: npm run sync
+        run: |
+          echo "Sync started $(date '+%a %d %b %Y, %H:%M') Singapore time"
+          npm run sync
 
       - name: Stop unless something actually changed
         id: diff
@@ -48,13 +81,16 @@ jobs:
           if git diff --quiet -- src/quiz/sheet-data.js; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "The sheet matches what is committed. Nothing to do."
+            echo "### No change" >> "$GITHUB_STEP_SUMMARY"
+            echo "The sheet matches the live quiz as at $(date '+%d %b %Y, %H:%M') SGT." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             git --no-pager diff --stat -- src/quiz/sheet-data.js
           fi
 
-      # The gate. A sheet edit that breaks the quiz stops here, on a bot branch,
-      # rather than on a customer's screen.
+      # The gate. A sheet edit that breaks the quiz stops here rather than on a
+      # customer's screen. On a daily schedule this matters more than it did
+      # hourly: a bad edit would otherwise sit live for a full day.
       - name: Test, sweep, build and verify the new data
         if: steps.diff.outputs.changed == 'true'
         run: npm run check
@@ -65,5 +101,18 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/quiz/sheet-data.js
-          git commit -m "Sync bundle data from the Google Sheet"
+          # Dated in Singapore time so the history reads in the editor's own
+          # clock rather than eight hours behind it.
+          git commit -m "Sync bundle data from the Google Sheet, $(date '+%d %b %Y')"
           git push
+
+          # Shown at the top of the run in the Actions tab, so someone who does
+          # not read diffs can still see what went live.
+          {
+            echo "### Bundle data updated"
+            echo "Synced $(date '+%a %d %b %Y, %H:%M') Singapore time."
+            echo ""
+            echo "Live bundles: $(grep -c '^    id:' src/quiz/sheet-data.js)"
+            echo ""
+            echo "The deploy runs automatically from this commit."
+          } >> "$GITHUB_STEP_SUMMARY"
