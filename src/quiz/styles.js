@@ -658,14 +658,73 @@ export const STYLES = css`
     font-weight: 600;
   }
 
-  /* Product grid. The 1px gap on a neutral-300 ground IS the hairline, so
-     cells share rules rather than doubling them up. */
+  /* Product grid.
+     FLEX, NOT GRID, and that is the whole fix for the empty tiles.
+
+     A grid reserves a cell whether or not anything lands in it, so a bundle of
+     three products in a two-column layout left a quarter of the block empty,
+     and the grey backdrop showing through it read as a broken fourth product.
+     In a wrapping flex row the odd card simply grows into the space instead, so
+     there is nothing left over to look broken at any product count.
+
+     Hairlines are drawn BY THE CARDS rather than by a grey background showing
+     through a 1px gap, for the same reason: a card that is not there draws
+     nothing at all. */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1px;
-    background: var(--n300);
-    border: 1px solid var(--n300);
+    display: flex;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--n300);
+    border-left: 1px solid var(--n300);
+  }
+  .grid > * {
+    flex: 1 1 220px;
+    min-width: 0;
+    border-right: 1px solid var(--n300);
+    border-bottom: 1px solid var(--n300);
+  }
+
+  /* The bundle and the room it lives in, side by side.
+     The photograph is not a separate section any more: it sits in the space the
+     product cards do not use, so the setup is visible while the contents are
+     being read rather than a scroll away. Below 820px it stacks and leads. */
+  .bundle-split { display: grid; grid-template-columns: 1fr; }
+  .bundle-split .grid { border-left: 0; }
+  @media (min-width: 820px) {
+    .bundle-split { grid-template-columns: 1.1fr 0.9fr; }
+    .bundle-split .grid { border-left: 1px solid var(--n300); }
+    .bundle-split .install { order: 2; }
+  }
+
+  .install {
+    position: relative;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--n100);
+    border-right: 1px solid var(--n300);
+    border-bottom: 1px solid var(--n300);
+    border-top: 1px solid var(--n300);
+    min-height: 260px;
+  }
+  @media (min-width: 820px) {
+    .install { border-top: 1px solid var(--n300); }
+  }
+  .install img {
+    display: block;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    object-fit: cover;
+  }
+  .install figcaption {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--n700);
+    padding: 9px 12px;
+    border-top: 1px solid var(--n300);
+    background: #fff;
   }
   .card { display: flex; flex-direction: column; background: var(--bg); }
   .card__media {
@@ -846,46 +905,57 @@ export const STYLES = css`
     font-variant-numeric: tabular-nums;
   }
 
-  /* Hero shot: the anchor machine installed, above the product grid. */
-  .hero-shot {
-    position: relative;
-    margin: 0 0 16px;
-    border: 1px solid var(--n300);
-    background: var(--n100);
-  }
-  .hero-shot img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-  }
-  .hero-shot figcaption {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--n700);
-    padding: 9px 12px;
-    border-top: 1px solid var(--n300);
-  }
-
   /* Rooms strip. Same hairline-as-gap trick as the product grid. */
+  /* Same hairline-by-the-tile rule as the product grid, for the same reason:
+     twenty tiles rarely divide evenly into however many columns fit, so the
+     last row is almost always short and would otherwise end in grey blocks. */
   .rooms {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1px;
-    background: var(--n300);
-    border: 1px solid var(--n300);
+    /* 150px rather than 190px so a 375px phone gets two tiles across. Twenty
+       posts in a single column is a very long scroll for a strip that is meant
+       to be skimmed. */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    border-top: 1px solid var(--n300);
+    border-left: 1px solid var(--n300);
     margin-top: 16px;
   }
-  .room-shot {
+  .room {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    background: #fff;
+    border-right: 1px solid var(--n300);
+    border-bottom: 1px solid var(--n300);
+  }
+  .room:hover .room__title, .room:focus-visible .room__title { color: var(--accent-700); }
+  .room:focus-visible { outline: 2px solid var(--accent-700); outline-offset: -2px; }
+
+  .room__media {
     position: relative;
-    margin: 0;
+    display: block;
     aspect-ratio: 1 / 1;
     background: var(--n100);
     overflow: hidden;
   }
-  .room-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .room__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .room__body { display: block; padding: 10px 12px 12px; }
+  .room__title {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+  .room__meta {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--n700);
+  }
 
   /* Thumbnail on an alternate bundle row. */
   .alt__media {

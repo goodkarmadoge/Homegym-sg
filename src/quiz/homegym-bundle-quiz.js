@@ -391,7 +391,7 @@ class HomegymBundleQuiz extends HTMLElement {
     // Product images: swap in an initial-letter tile if the CloudFront path 404s.
     this.shadowRoot.querySelectorAll('img[data-fallback]').forEach((img) => {
       img.addEventListener('error', () => {
-        const holder = img.closest('.card__media, .hero-shot, .room-shot, .alt__media') || img.parentElement;
+        const holder = img.closest('.card__media, .install, .room__media, .alt__media') || img.parentElement;
         const tile = holder?.querySelector('.card__fallback');
         if (tile) {
           tile.hidden = false;
@@ -757,7 +757,6 @@ class HomegymBundleQuiz extends HTMLElement {
 
         ${this.sectionProducts(bundle)}
         ${this.sectionTrain(bundle)}
-        ${this.sectionHero(bundle)}
         ${this.sectionSpecialist(bundle)}
         ${this.sectionAlternates(alternates)}
         ${this.sectionRooms()}
@@ -774,13 +773,16 @@ class HomegymBundleQuiz extends HTMLElement {
       </div>`;
   }
 
-  /* ── 1. What is in the bundle ─────────────────────────────────────────── */
+  /* ── 1. What is in the bundle, and what it looks like built ───────────── */
 
   sectionProducts(bundle) {
     return `
       <section class="section">
         <h2 class="section__title">What's in the bundle</h2>
-        <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
+        <div class="bundle-split">
+          <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
+          ${this.installShot(bundle)}
+        </div>
         <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
         <p class="fineprint">
           Prices are current sale prices as at 30 August 2026 and exclude delivery and
@@ -803,23 +805,37 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 3. The build, installed ──────────────────────────────────────────── */
+  /* ── The setup shot that sits inside section 1 ────────────────────────── */
 
-  sectionHero(bundle) {
+  /**
+   * The setup photograph, sitting beside the product cards.
+   *
+   * This used to be a section of its own further down the page. It lives here
+   * now for two reasons: the space to the right of the cards was empty on a
+   * wide screen, and a photograph of the built room is most useful at the exact
+   * moment someone is reading what is in the box, not a scroll later.
+   *
+   * The caption still tells the truth about where the picture came from. Seven
+   * bundles carry a real customer install from the Instagram feed; three carry
+   * a studio shot from the product gallery, because their feed is the generic
+   * cardio one. Captioning a white-background cut-out as a real install would
+   * be a small lie, so it is not captioned as one.
+   */
+  installShot(bundle) {
     if (!bundle.hero) return '';
     const fromInstagram = bundle.heroSource === 'instagram';
+    const alt = fromInstagram
+      ? `${bundle.name} installed in a customer's home`
+      : `${bundle.name}`;
     return `
-      <section class="section">
-        <h2 class="section__title">${fromInstagram ? 'In a real room' : 'The anchor machine'}</h2>
-        <figure class="hero-shot">
-          <img src="${esc(bundle.hero)}" alt="${esc(bundle.name)} installed" loading="lazy" decoding="async" data-fallback>
-          <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
-          ${fromInstagram ? '<figcaption>From our Instagram</figcaption>' : ''}
-        </figure>
-      </section>`;
+      <figure class="install">
+        <img src="${esc(bundle.hero)}" alt="${esc(alt)}" loading="lazy" decoding="async" data-fallback>
+        <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
+        <figcaption>${fromInstagram ? 'A real install, from our Instagram' : 'The anchor machine in this build'}</figcaption>
+      </figure>`;
   }
 
-  /* ── 4. Send this to a specialist ─────────────────────────────────────── */
+  /* ── 3. Send this to a specialist ─────────────────────────────────────── */
 
   sectionSpecialist(bundle) {
     return `
@@ -844,7 +860,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 5. Other bundles ─────────────────────────────────────────────────── */
+  /* ── 4. Other bundles ─────────────────────────────────────────────────── */
 
   sectionAlternates(alternates) {
     if (!alternates.length) return '';
@@ -873,25 +889,35 @@ class HomegymBundleQuiz extends HTMLElement {
       </section>`;
   }
 
-  /* ── 6. Rooms we have already built ───────────────────────────────────── */
+  /* ── 5. Straight from our Instagram ───────────────────────────────────── */
 
   sectionRooms() {
     if (!ROOMS || !ROOMS.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Rooms we've already built</h2>
-        <p class="pitch">Real installs in Singapore homes, not showroom mock-ups.</p>
+        <h2 class="section__title">Straight from our Instagram</h2>
+        <p class="pitch">
+          The last twenty things we posted: installs, deliveries and kit going into
+          real Singapore homes. Every one links to what is in the picture.
+        </p>
         <div class="rooms">
           ${ROOMS.map((r) => `
-            <figure class="room-shot">
-              <img src="${esc(r.image)}" alt="A home gym we installed" loading="lazy" decoding="async" data-fallback>
-              <span class="card__fallback" hidden aria-hidden="true">Photo to follow</span>
-            </figure>`).join('')}
+            <a class="room" href="${esc(r.href)}" target="_blank" rel="noopener"
+               data-action="cta-room" data-title="${esc(r.title)}">
+              <span class="room__media">
+                <img src="${esc(r.image)}" alt="${esc(r.title)}" loading="lazy" decoding="async" data-fallback>
+                <span class="card__fallback" hidden aria-hidden="true">Photo to follow</span>
+              </span>
+              <span class="room__body">
+                <span class="room__title">${esc(r.title)}</span>
+                <span class="room__meta">${esc(r.date)} &middot; ${r.linkKind === 'product' ? 'View product' : 'Browse range'}</span>
+              </span>
+            </a>`).join('')}
         </div>
       </section>`;
   }
 
-  /* ── 7. No-obligation advice ──────────────────────────────────────────── */
+  /* ── 6. No-obligation advice ──────────────────────────────────────────── */
 
   sectionAdvice() {
     return `
