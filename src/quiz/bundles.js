@@ -31,6 +31,10 @@ import { SHEET_BUNDLES, PERSONAS } from './sheet-data.js';
  */
 export const PRODUCTS = {
   'tinytitan': {
+    // Published machine footprint, metres, from the product page:
+    //   209 x 92 x 225cm (width x depth x height), Depth with safety arm: 115cm
+    // depth is the 115cm safety-arm figure, since the arms are down in use
+    footprint: { w: 2.09, d: 1.15 },
     name: 'Vigor TinyTitan All-in-1 Trainer',
     price: 2200,
     was: 2799,
@@ -38,6 +42,10 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/t/i/tinytitan11.jpg'
   },
   'bodyx-cube': {
+    // Published machine footprint, metres, from the product page:
+    //   120 x 137 x 216cm, Folded: 60 x 124 x 216cm (Depth x Width x Height)
+    // unfolded; the axis order is read from the folded triple, which is labelled
+    footprint: { w: 1.37, d: 1.2 },
     name: 'Bodyx Folding Cube Smith Machine Functional Trainer Combo',
     price: 3520,
     was: 3999,
@@ -45,6 +53,9 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/c/u/cube_2_35.jpg'
   },
   'titan-x20': {
+    // Published machine footprint, metres, from the product page:
+    //   206.8 x 178.8 x 224cm (Width x Depth x Height)
+    footprint: { w: 2.07, d: 1.79 },
     name: 'Vigor Titan X20 All-in-1 Trainer',
     price: 4899,
     was: 5899,
@@ -52,6 +63,9 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/x/2/x20-main2.jpg'
   },
   'bf900-pro': {
+    // Published machine footprint, metres, from the product page:
+    //   153 x 132 x 218cm (L x W x H)
+    footprint: { w: 1.53, d: 1.32 },
     name: 'Vigor BF900 Pro Connected All-in-1 System',
     price: 3599,
     was: null,
@@ -59,6 +73,9 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/b/f/bf900.jpg'
   },
   'xpress-pro': {
+    // Published machine footprint, metres, from the product page:
+    //   174.4 x 152.3 x 211 cm (L x W x H)
+    footprint: { w: 1.75, d: 1.53 },
     name: 'Vigor Xpress Pro Home Gym Station',
     price: 2350,
     was: null,
@@ -66,6 +83,8 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/h/g/hg8000.jpg'
   },
   'infinity-halfrack': {
+    // No dimensions published on the product page, checked 8 Sep 2026.
+    footprint: null,
     name: 'Infinity Half Rack Dual Cable Combo',
     price: 2299,
     was: null,
@@ -73,6 +92,8 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/img_4453.jpg'
   },
   'infinity-aio': {
+    // No dimensions published on the product page, checked 8 Sep 2026.
+    footprint: null,
     name: 'Infinity All-in-1 Trainer',
     price: 2899,
     was: null,
@@ -80,6 +101,10 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/n/infinity-31in1_1.jpg'
   },
   'aeke-s1-pro': {
+    // Published machine footprint, metres, from the product page:
+    //   Folded: 71.5 x 42.5 x 185cm, Unfold: 71.5 x 135.5 x 185cm (L x W x H)
+    // UNFOLDED. The folded 42.5cm depth is storage, not the footprint in use
+    footprint: { w: 0.72, d: 1.36 },
     name: 'AEKE S1 PRO Smart Home Gym',
     price: 5899,
     was: null,
@@ -87,6 +112,10 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/a/e/aeke_s1_pro_22.jpg'
   },
   'im2000': {
+    // Published machine footprint, metres, from the product page:
+    //   74"W x 48"D x 84.5"H
+    // converted from inches
+    footprint: { w: 1.88, d: 1.22 },
     name: 'Ironmaster IM2000 Self Spotting System',
     price: 1999,
     was: 2500,
@@ -94,6 +123,8 @@ export const PRODUCTS = {
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/im2000-1_512x512.jpg'
   },
   'folding-rack': {
+    // No dimensions published on the product page, checked 8 Sep 2026.
+    footprint: null,
     name: 'Vigor Folding Power Rack',
     price: 1499,
     was: 1650,
@@ -274,6 +305,7 @@ export const PRODUCTS_BY_URL = Object.fromEntries(
 export function composeBundles(sheetBundles, { strict = true } = {}) {
   const bundles = [];
   const problems = [];
+  const warnings = [];
 
   for (const s of sheetBundles) {
     const products = [];
@@ -299,11 +331,19 @@ export function composeBundles(sheetBundles, { strict = true } = {}) {
 
     bundles.push({
       id: s.id,
-      // The sheet's name column wins when it is filled in, so the client can
-      // rename a bundle without a code change. It reads "TBD" for every row
-      // today, which the parser turns into null, so the curated names below
-      // are what actually show.
-      name: s.name || c.name || `Bundle ${s.id}`,
+      // CURATED COPY WINS, AND THE SHEET DOES NOT OVERRIDE IT.
+      //
+      // Confirmed with the client on 8 Sep 2026: the sheet's Bundle Name column
+      // and the products tab's Name column are both INTERNAL. They hold stock
+      // shorthand ("Cube", "bf900", "Infinity 2in1"), which is how the business
+      // talks about a machine, not how it sells one. If the sheet won this,
+      // someone tidying that column would push warehouse shorthand onto the
+      // result page without realising it was customer-facing.
+      //
+      // Both are kept below as internal fields so they can still be used for
+      // reconciling against the sheet.
+      name: c.name || `Bundle ${s.id}`,
+      sheetName: s.name || null,
       // The short working name off the products tab ("Cube", "bf900", "X20").
       // Internal shorthand for talking about a bundle in the sheet, never shown
       // to a visitor: "The Foldaway Beast" sells, "Cube" does not.
@@ -322,10 +362,25 @@ export function composeBundles(sheetBundles, { strict = true } = {}) {
     });
   }
 
+  // Not fatal, on purpose. A bundle with no copy still prices itself and still
+  // renders, so blocking the sync on missing marketing text would break the one
+  // thing the sheet exists for: adding a bundle without touching code. But it
+  // WOULD reach a customer calling itself "Bundle 11", so it has to be said out
+  // loud where whoever added the row will see it.
+  for (const b of bundles) {
+    if (!BUNDLE_COPY[b.id] || !BUNDLE_COPY[b.id].name) {
+      warnings.push(
+        `bundle ${b.id} has no customer-facing name and would show as "${b.name}". ` +
+        'Add one to BUNDLE_COPY in src/quiz/bundles.js. The sheet\'s Bundle Name ' +
+        'column is internal and deliberately does not feed this.'
+      );
+    }
+  }
+
   if (problems.length && strict) {
     throw new Error('bundle data does not compose:\n  ' + problems.join('\n  '));
   }
-  return { bundles, problems };
+  return { bundles, problems, warnings };
 }
 
 /** Plain, honest tagline for a bundle nobody has written copy for yet. */

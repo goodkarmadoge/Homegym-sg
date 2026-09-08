@@ -68,6 +68,49 @@ Every attribute is optional; the values above are the defaults.
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
 
+### Or as an iframe
+
+Use this when you would rather not host a script on homegym.sg. The quiz page
+reports its own height to the parent, so the frame grows and shrinks with the
+content instead of scrolling inside a fixed box:
+
+```html
+<iframe id="homegym-quiz"
+        src="https://homegym-sg.vercel.app/bundle-quiz.html"
+        title="Build your bundle"
+        style="width:100%;border:0;display:block;height:900px"></iframe>
+
+<script>
+(function () {
+  var f = document.getElementById('homegym-quiz');
+  var origin = new URL(f.src).origin;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== origin) return;                     // only trust the quiz
+    if (!e.data || e.data.type !== 'homegym-quiz:height') return;
+    f.style.height = e.data.height + 'px';
+  });
+}());
+</script>
+```
+
+The `height` in the style attribute is only what shows before the first message
+arrives; pick something close to a first question so the page does not jump.
+
+**The message is one number and nothing else,** and the listener above checks
+`e.origin` before trusting it. Without that check any page in any other tab
+could post a height at yours.
+
+If you skip the script entirely the quiz still works, it just sits in a fixed
+box and scrolls internally.
+
+**A note on why it measures what it does.** The reporter measures the content
+element, not the document. `document.scrollHeight` can never report less than
+the iframe's own viewport, so once the parent has grown the frame to fit a
+result page, the document keeps reporting that height forever and returning to
+question one leaves a screen of empty space. Measured against the real page:
+growing worked, shrinking silently did not. Verified both ways, 978px at
+question one, 7,662px at a result, and back.
+
 ### Design language
 
 The quiz follows the **Modernist design system**, per the design handoff of 30 Aug 2026 (`design_handoff_gym_builder_quiz`):
@@ -351,7 +394,7 @@ Seven things need a decision from HomeGym. They are flagged in code at the exact
 3. **Image URLs are CloudFront cache paths.** The `/cache/c0dcb29ef.../` segment changes when Magento regenerates its image cache, which would 404 every image at once. The initial-letter fallback tile stops the grid breaking; resolving images from the product API is the real fix.
 4. **Footprints are unverified.** They came from the source spreadsheet, not from measuring machines, and they read as working areas including clearance. A customer who buys on a wrong footprint is a returned 338 kg machine. **This is the highest-risk item on the list.**
 5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, persona and price. Adding a distinguishing tag to each, `folding`, `self_spotting`, `connected`, plus a matching quiz option would sharpen them.
-6. **`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed. Check it resolves before launch.
+6. ~~**`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed.~~ Confirmed resolving (HTTP 200) on 8 Sep 2026. It is only ever used as a fallback when no `whatsapp` number is set, which is not the case in production.
 6b. **Their link blue `#22B4FF` fails WCAG AA at 2.32:1 on white**, here and on the live site, on every product link. The quiz uses a darkened `#0077B3` for text. Worth fixing site-wide.
 7. **The budget slider starts at S$2,500** while the cheapest bundle is S$2,241, so every bundle clears its floor. Dropping the minimum to S$2,000 would capture sub-S$2,500 traffic but needs a lighter bundle to answer it with.
 
