@@ -6,7 +6,11 @@
 //   npm run sync                    fetch the live sheet, rewrite sheet-data.js
 //   npm run sync -- --check         fail if the committed file is out of date
 //   npm run sync -- --csv-dir DIR   read rules.csv/products.csv/personas.csv
-//                                   from DIR instead of the network
+//                                   from DIR instead of the network. The tabs
+//                                   are named Filter, Bundle and Style in the
+//                                   spreadsheet; the file names here are the
+//                                   roles they play, which do not move when a
+//                                   tab is renamed.
 //
 // WHY A COMMITTED FILE RATHER THAN A LIVE FETCH ON EVERY PAGE LOAD.
 //   The quiz ships as one static script with no runtime dependencies, and the
@@ -85,8 +89,17 @@ function readLocal(dir, name) {
 async function loadTabs() {
   if (CSV_DIR) {
     console.log(`reading CSV from ${CSV_DIR}\n`);
+    // The recorded source is the SPREADSHEET, not this directory. Those CSVs
+    // are an export of it, so the data's origin is the same either way, and
+    // recording the path instead would make a --csv-dir sync write a file that
+    // the very next `npm run sync --check` in CI rejects as out of date.
+    let source = `local CSV, ${CSV_DIR}`;
+    try {
+      const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'));
+      if (cfg.sheetId) source = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`;
+    } catch { /* no config, fall back to naming the directory */ }
     return {
-      source: `local CSV, ${CSV_DIR}`,
+      source,
       rules: readLocal(CSV_DIR, 'rules'),
       products: readLocal(CSV_DIR, 'products'),
       personas: readLocal(CSV_DIR, 'personas')
@@ -127,9 +140,10 @@ function render(bundles, personas, source, sheetId, tabs) {
     '  {',
     `    id: ${b.id},`,
     `    name: ${j(b.name)},`,
+    `    sheetLabel: ${j(b.sheetLabel ?? null)},`,
     `    functions: ${j(b.functions)},`,
     `    footprint: { length: ${b.footprint.length}, depth: ${b.footprint.depth} },`,
-    `    level: ${j(b.level)},`,
+    `    styles: ${j(b.styles)},`,
     `    budgetCeiling: ${b.budgetCeiling},`,
     '    productUrls: [',
     ...b.productUrls.map((u) => `      ${j(u)},`),
@@ -140,6 +154,7 @@ function render(bundles, personas, source, sheetId, tabs) {
   const personaLines = personas.map((p) => [
     '  {',
     `    name: ${j(p.name)},`,
+    `    tag: ${j(p.tag)},`,
     `    quote: ${j(p.quote)},`,
     `    description: ${j(p.description)}`,
     '  }'
@@ -157,7 +172,7 @@ function render(bundles, personas, source, sheetId, tabs) {
  * Source: ${source}
  *
  * WHAT THIS FILE CARRIES: which bundles exist, the rules that match a customer
- * to one (functions, footprint, level, budget ceiling), and the products in
+ * to one (functions, footprint, style, budget ceiling), and the products in
  * each, by URL. It carries no prices, copy or imagery, because the sheet holds
  * none. Those are joined on in src/quiz/bundles.js.
  */
@@ -179,12 +194,12 @@ ${bundleLines}
 ];
 
 /**
- * Customer personas from the sheet's third tab.
+ * Customer styles from the sheet's third tab.
  *
- * Carried through the sync but not yet read by the quiz: the sheet has no
- * column linking a persona to a bundle, so using them in results would mean
- * inventing that mapping. Add a "Persona" column to the rules tab and they can
- * be wired up without another data migration.
+ * These are live now. The rules tab's Style column assigns them to bundles, so
+ * the quiz asks the customer which one they are, in the sheet's own wording,
+ * and the matcher scores that answer against the bundle. \`tag\` is the internal
+ * value; a style whose name has no tag is carried but never offered.
  */
 export const PERSONAS = [
 ${personaLines}
@@ -194,15 +209,15 @@ ${personaLines}
 
 /** One line per bundle describing what changed against the committed file. */
 function reportDiff(before, after) {
-  const key = (b) => JSON.stringify([b.functions, b.footprint, b.level, b.budgetCeiling, b.productUrls, b.name]);
+  const key = (b) => JSON.stringify([b.functions, b.footprint, b.styles, b.budgetCeiling, b.productUrls, b.name, b.sheetLabel]);
   const oldById = new Map(before.map((b) => [b.id, b]));
   const newById = new Map(after.map((b) => [b.id, b]));
   let changes = 0;
 
   for (const b of after) {
     const was = oldById.get(b.id);
-    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.productUrls.length} products, ${b.level}, ceiling ${b.budgetCeiling}`); changes++; }
-    else if (key(was) !== key(b)) { console.log(`  CHANGED  bundle ${b.id}`); changes++; }
+    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.sheetLabel || 'unnamed'}, ${b.productUrls.length} products, ${b.styles.join(' + ')}, ceiling ${b.budgetCeiling}`); changes++; }
+    else if (key(was) !== key(b)) { console.log(`  CHANGED  bundle ${b.id}  ${b.sheetLabel || ''}`.trimEnd()); changes++; }
   }
   for (const b of before) {
     if (!newById.has(b.id)) { console.log(`  REMOVED  bundle ${b.id}`); changes++; }

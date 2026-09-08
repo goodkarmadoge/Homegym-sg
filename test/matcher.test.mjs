@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUNDLES, PRODUCTS } from '../src/quiz/bundles.js';
-import { match, fits, functionScore, budgetScore, levelScore, FALLBACK } from '../src/quiz/matcher.js';
+import { match, fits, functionScore, budgetScore, styleScore, WEIGHTS, FALLBACK } from '../src/quiz/matcher.js';
 
 const run = (answers) => match(answers, BUNDLES);
 const nameOf = (answers) => run(answers).primary?.name ?? null;
@@ -14,41 +14,41 @@ const nameOf = (answers) => run(answers).primary?.name ?? null;
 
 test('smart + cable in a 1x2 room picks The Silent Operator', () => {
   assert.equal(
-    nameOf({ functions: ['smart', 'cable'], length: 1, depth: 2, level: 'beginner', budget: 6000 }),
+    nameOf({ functions: ['smart', 'cable'], length: 1, depth: 2, style: 'guided', budget: 6000 }),
     'The Silent Operator'
   );
 });
 
 test('barbell + cable on a $2,500 budget picks The Barbell Purist', () => {
   assert.equal(
-    nameOf({ functions: ['power_rack', 'cable'], length: 2.5, depth: 3, level: 'intermediate', budget: 2500 }),
+    nameOf({ functions: ['power_rack', 'cable'], length: 2.5, depth: 3, style: 'value', budget: 2500 }),
     'The Barbell Purist'
   );
 });
 
-test('everything, 3x3, advanced, $7,000 picks The Iron Fortress', () => {
+test('everything, 3x3, maximum function, $7,000 picks The Iron Fortress', () => {
   assert.equal(
-    nameOf({ functions: ['smith', 'power_rack', 'cable', 'leg_press'], length: 3, depth: 3, level: 'advanced', budget: 7000 }),
+    nameOf({ functions: ['smith', 'power_rack', 'cable', 'leg_press'], length: 3, depth: 3, style: 'max_function', budget: 7000 }),
     'The Iron Fortress'
   );
 });
 
-test('machine circuit, 1.5x2, beginner, $2,500 picks The Fast Track', () => {
+test('machine circuit, 1.5x2, convenience, $2,500 picks The Fast Track', () => {
   assert.equal(
-    nameOf({ functions: ['multigym'], length: 1.5, depth: 2, level: 'beginner', budget: 2500 }),
+    nameOf({ functions: ['multigym'], length: 1.5, depth: 2, style: 'convenience', budget: 2500 }),
     'The Fast Track'
   );
 });
 
-test('smith + cable, 1.5x2, intermediate, $4,000 picks The Foldaway Beast', () => {
+test('smith + cable, 1.5x2, convenience, $4,000 picks The Foldaway Beast', () => {
   assert.equal(
-    nameOf({ functions: ['smith', 'cable'], length: 1.5, depth: 2, level: 'intermediate', budget: 4000 }),
+    nameOf({ functions: ['smith', 'cable'], length: 1.5, depth: 2, style: 'convenience', budget: 4000 }),
     'The Foldaway Beast'
   );
 });
 
 test('a 1x1 room falls back gracefully and never throws', () => {
-  const result = run({ functions: ['power_rack'], length: 1, depth: 1, level: 'beginner', budget: 2500 });
+  const result = run({ functions: ['power_rack'], length: 1, depth: 1, style: 'value', budget: 2500 });
   assert.notEqual(result.fallback, FALLBACK.NONE, 'must report that it fell back');
   assert.ok(Array.isArray(result.alternates), 'alternates must always be an array');
   // Nothing on earth fits 1x1, so this must be the contact card, not a fabricated bundle.
@@ -57,7 +57,7 @@ test('a 1x1 room falls back gracefully and never throws', () => {
 });
 
 test('orientation swap gives an identical result', () => {
-  const base = { functions: ['smith', 'power_rack', 'cable'], level: 'intermediate', budget: 5000 };
+  const base = { functions: ['smith', 'power_rack', 'cable'], style: 'strength', budget: 5000 };
   const a = run({ ...base, length: 3, depth: 2 });
   const b = run({ ...base, length: 2, depth: 3 });
   assert.equal(a.primary.id, b.primary.id);
@@ -142,17 +142,37 @@ test('budgetScore steps down as the bundle leaves money on the table', () => {
   assert.equal(budgetScore(1000, 4000), 0.3);
 });
 
-test('levelScore is 1.0 / 0.6 / 0.2 by distance', () => {
-  assert.equal(levelScore('beginner', 'beginner'), 1.0);
-  assert.equal(levelScore('beginner', 'intermediate'), 0.6);
-  assert.equal(levelScore('beginner', 'advanced'), 0.2);
-  assert.equal(levelScore('advanced', 'beginner'), 0.2);
+test('styleScore is 1.0 exact, 0.6 for a near style, 0.25 otherwise', () => {
+  assert.equal(styleScore('value', ['value']), 1.0);
+  assert.equal(styleScore('value', ['convenience']), 0.6, 'convenience and value both want less machine');
+  assert.equal(styleScore('value', ['guided']), 0.25);
+  assert.equal(styleScore('guided', ['convenience']), 0.6, 'the pair table is symmetric');
+});
+
+// Bundle 3 is assigned two styles in the sheet. Averaging them would score it
+// worse for the strength trainer than a bundle assigned strength alone, which
+// is backwards: naming both styles is the sheet being precise, not hedging.
+test('a bundle assigned two styles is scored on its best one, not the average', () => {
+  assert.equal(styleScore('strength', ['max_function', 'strength']), 1.0);
+  assert.equal(styleScore('guided', ['max_function', 'strength']), 0.25);
+});
+
+test('an unknown or missing style scores zero rather than guessing', () => {
+  assert.equal(styleScore(null, ['value']), 0);
+  assert.equal(styleScore('value', []), 0);
+  assert.equal(styleScore('value', undefined), 0);
+});
+
+// Guards the weights table against a rename that silently drops a term.
+test('the scoring weights still total 100', () => {
+  const total = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
+  assert.equal(total, 100);
 });
 
 // ── Contract guarantees ────────────────────────────────────────────────────
 
 test('alternates never repeat the primary and never exceed two', () => {
-  const r = run({ functions: ['smith', 'power_rack', 'cable'], length: 3, depth: 3, level: 'intermediate', budget: 7500 });
+  const r = run({ functions: ['smith', 'power_rack', 'cable'], length: 3, depth: 3, style: 'strength', budget: 7500 });
   assert.ok(r.alternates.length <= 2);
   assert.ok(!r.alternates.some((alt) => alt.id === r.primary.id));
 });
@@ -160,12 +180,12 @@ test('alternates never repeat the primary and never exceed two', () => {
 test('the acceptance-criteria edge cases produce a result without throwing', () => {
   // 1x1m, the tightest possible room
   assert.doesNotThrow(() =>
-    run({ functions: ['power_rack'], length: 1, depth: 1, level: 'beginner', budget: 2500 })
+    run({ functions: ['power_rack'], length: 1, depth: 1, style: 'value', budget: 2500 })
   );
   // $2,500 budget, 3x3 space, every function selected
   const all = run({
     functions: ['power_rack', 'smith', 'cable', 'leg_press', 'multigym', 'smart'],
-    length: 3, depth: 3, level: 'advanced', budget: 2500
+    length: 3, depth: 3, style: 'max_function', budget: 2500
   });
   assert.ok(all.primary, 'a 3x3 room at $2,500 should still find a real bundle');
   assert.equal(all.fallback, FALLBACK.NONE, 'The Barbell Purist and The Fast Track both clear $2,500');
@@ -174,12 +194,12 @@ test('the acceptance-criteria edge cases produce a result without throwing', () 
 test('degenerate input does not throw', () => {
   assert.doesNotThrow(() => match({}, BUNDLES));
   assert.doesNotThrow(() => match(null, BUNDLES));
-  assert.doesNotThrow(() => match({ functions: [], length: 0, depth: 0, level: 'x', budget: 0 }, BUNDLES));
+  assert.doesNotThrow(() => match({ functions: [], length: 0, depth: 0, style: 'x', budget: 0 }, BUNDLES));
 });
 
 test('the matcher does not mutate the bundle data it is given', () => {
   const snapshot = JSON.stringify(BUNDLES);
-  run({ functions: ['cable'], length: 2, depth: 2, level: 'beginner', budget: 4000 });
+  run({ functions: ['cable'], length: 2, depth: 2, style: 'convenience', budget: 4000 });
   assert.equal(JSON.stringify(BUNDLES), snapshot);
 });
 

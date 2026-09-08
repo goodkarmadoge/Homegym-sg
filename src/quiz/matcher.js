@@ -9,11 +9,33 @@
  *   match(answers, bundles) -> { primary, alternates, fallback, debug }
  */
 
-/** Level ordering, used for the "steps away" distance in levelScore. */
-const LEVEL_ORDER = ['beginner', 'intermediate', 'advanced'];
+/**
+ * How close two customer styles are, for the styleScore term.
+ *
+ * Styles are NOT ORDINAL. Level used to be, so "one step away" was simply
+ * subtraction; there is no such line to walk between "I just want to work out"
+ * and "tell me what to do". So closeness is written out as pairs, and every
+ * pair not listed is distant.
+ *
+ * The pairs are read off the client's own persona sentences on the Style tab:
+ *   convenience + value        both want LESS machine, for different reasons
+ *   convenience + guided       both want the thinking done for them
+ *   value + strength           both build around a rack and a barbell
+ *   max_function + strength    both are buying capability and will use it
+ *
+ * The scores mirror the old level ramp, 1.0 / 0.6 / 0.25, so this term keeps
+ * roughly the influence it had inside its 15 points rather than quietly
+ * becoming a bigger or smaller lever than the weights table says.
+ */
+const STYLE_NEAR = [
+  ['convenience', 'value'],
+  ['convenience', 'guided'],
+  ['value', 'strength'],
+  ['max_function', 'strength']
+].map((pair) => pair.slice().sort().join('|'));
 
 /** Scoring weights. Must total 100. */
-export const WEIGHTS = { fn: 40, budget: 25, space: 20, level: 15 };
+export const WEIGHTS = { fn: 40, budget: 25, space: 20, style: 15 };
 
 /** Fallback tiers, in the order the ladder relaxes constraints. */
 export const FALLBACK = {
@@ -74,13 +96,28 @@ export function spaceScore(bundle, userLength, userDepth) {
   return clamp(bundleArea / userArea, 0, 1);
 }
 
-/** Exact match 1.0, one step away 0.6, two steps away 0.2. */
-export function levelScore(userLevel, bundleLevel) {
-  const a = LEVEL_ORDER.indexOf(userLevel);
-  const b = LEVEL_ORDER.indexOf(bundleLevel);
-  if (a === -1 || b === -1) return 0;
-  const distance = Math.abs(a - b);
-  return distance === 0 ? 1.0 : distance === 1 ? 0.6 : 0.2;
+/**
+ * How well the bundle suits the style the customer picked.
+ *
+ * A bundle can be built for more than one style: bundle 3 is assigned both
+ * "Maximum Function User" and "Serious Strength Trainer". The BEST of its
+ * styles wins rather than the average, because a bundle that serves either type
+ * genuinely serves both, and averaging would penalise the sheet for being
+ * precise about it.
+ *
+ * Exact 1.0, a near style 0.6, anything else 0.25. An unknown style on either
+ * side scores 0, which is the same thing the level version did: no claim to
+ * make, so no points to award.
+ */
+export function styleScore(userStyle, bundleStyles) {
+  if (!userStyle || !Array.isArray(bundleStyles) || !bundleStyles.length) return 0;
+  let best = 0;
+  for (const s of bundleStyles) {
+    if (s === userStyle) return 1.0;
+    const near = STYLE_NEAR.includes([userStyle, s].sort().join('|'));
+    best = Math.max(best, near ? 0.6 : 0.25);
+  }
+  return best;
 }
 
 /** Full 0-100 score plus the component breakdown, for the debug payload. */
@@ -88,18 +125,18 @@ export function scoreBundle(bundle, answers) {
   const fn = functionScore(answers.functions, bundle.functions);
   const budget = budgetScore(bundle.price, answers.budget);
   const space = spaceScore(bundle, answers.length, answers.depth);
-  const level = levelScore(answers.level, bundle.level);
+  const style = styleScore(answers.style, bundle.styles);
 
   const score =
     WEIGHTS.fn * fn +
     WEIGHTS.budget * budget +
     WEIGHTS.space * space +
-    WEIGHTS.level * level;
+    WEIGHTS.style * style;
 
   return {
     bundle,
     score,
-    parts: { fn, budget, space, level },
+    parts: { fn, budget, space, style },
     // Raw coverage without the capability bonus, tie-break (a) uses this, so a
     // bundle that genuinely covers more of what you asked for wins over one that
     // merely does more things in general.
@@ -154,7 +191,7 @@ function eligible(bundles, length, depth, budget) {
 /**
  * Match a set of answers to a bundle.
  *
- * @param {{functions: string[], length: number, depth: number, level: string, budget: number}} answers
+ * @param {{functions: string[], length: number, depth: number, style: string, budget: number}} answers
  * @param {Array} bundles
  * @returns {{primary: object|null, alternates: object[], fallback: string|null, debug: object}}
  */
@@ -163,7 +200,7 @@ export function match(answers, bundles) {
     functions: Array.isArray(answers?.functions) ? answers.functions.slice() : [],
     length: Number(answers?.length) || 0,
     depth: Number(answers?.depth) || 0,
-    level: answers?.level || 'beginner',
+    style: answers?.style || null,
     budget: Number(answers?.budget) || 0
   };
 

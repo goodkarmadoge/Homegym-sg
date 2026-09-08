@@ -12,13 +12,13 @@ import {
   buildSheetBundles, SheetError
 } from '../src/quiz/sheet-parse.js';
 import { SHEET_BUNDLES } from '../src/quiz/sheet-data.js';
-import { BUNDLES, PRODUCTS_BY_URL, composeBundles } from '../src/quiz/bundles.js';
+import { BUNDLES, PRODUCTS_BY_URL, STYLE_OPTIONS, composeBundles } from '../src/quiz/bundles.js';
 
 const RULES = [
   ',,,,,',
   'Functions,Size,Style,Budget,Bundle,Bundle Name',
-  'smith;power rack;cable,2 x 3,Beginner,3000,1,TBD',
-  'Cable;smart,1 x 2,Advance,6000,2,The Quiet One'
+  'smith;power rack;cable,2 x 3,Practical / Value Seeker,3000,1,TBD',
+  'Cable;smart,1 x 2,Guided / Accountability User,6000,2,The Quiet One'
 ].join('\n');
 
 /** assert.throws does not hand the error back, and these tests are about what
@@ -31,7 +31,15 @@ const caught = (fn) => {
 const A = 'https://homegym.sg/a.html';
 const B = 'https://homegym.sg/b.html';
 
+/** The layout the sheet holds today: one row per bundle, URLs running across. */
 const PRODUCTS_CSV = [
+  'Bundle no,Name,,,',
+  `1,Tinytitan,${A},${B}`,
+  `2,Cube,${B},`
+].join('\n');
+
+/** The original layout: one column per bundle, products running down. */
+const PRODUCTS_CSV_BY_COLUMN = [
   'Product #,1,2',
   `A,${A},${B}`,
   `B,${B},`
@@ -60,12 +68,31 @@ test('the rules tab parses into bundles, skipping the blank spacer row', () => {
   assert.equal(out.length, 2);
   assert.deepEqual(out[0].functions, ['smith', 'power_rack', 'cable']);
   assert.deepEqual(out[0].footprint, { length: 2, depth: 3 });
-  assert.equal(out[0].level, 'beginner');
+  assert.deepEqual(out[0].styles, ['value']);
   assert.equal(out[0].budgetCeiling, 3000);
 });
 
-test('"Advance" in the sheet means advanced in the quiz', () => {
-  assert.equal(parseRules(RULES)[1].level, 'advanced');
+// Two of the five style names contain a slash. Splitting on it would shred
+// "Practical / Value Seeker" into two unrecognised fragments, so the separators
+// are comma and semicolon only.
+test('a style name containing a slash survives intact', () => {
+  assert.deepEqual(parseRules(RULES)[1].styles, ['guided']);
+});
+
+test('a bundle can be assigned more than one style, comma separated', () => {
+  const csv = [
+    'Functions,Size,Style,Budget,Bundle',
+    'cable,2 x 2,"Maximum Function User,Serious Strength Trainer",3000,1'
+  ].join('\n');
+  assert.deepEqual(parseRules(csv)[0].styles, ['max_function', 'strength']);
+});
+
+test('an unrecognised style is refused, and the message names it', () => {
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Wizard,3000,1'].join('\n');
+  const err = caught(() => parseRules(csv));
+  assert.ok(err instanceof SheetError);
+  assert.match(err.problems[0], /Wizard/);
+  assert.match(err.problems[0], /convenience/);
 });
 
 test('"TBD" is not a name, but a real name is kept', () => {
@@ -79,7 +106,7 @@ test('"TBD" is not a name, but a real name is kept', () => {
 test('columns are found by name, so reordering them changes nothing', () => {
   const shuffled = [
     'Bundle,Budget,Bundle Name,Style,Size,Functions',
-    '1,3000,TBD,Beginner,2 x 3,smith;power rack;cable'
+    '1,3000,TBD,Practical / Value Seeker,2 x 3,smith;power rack;cable'
   ].join('\n');
   const [a] = parseRules(shuffled);
   const [b] = parseRules(RULES);
@@ -88,21 +115,23 @@ test('columns are found by name, so reordering them changes nothing', () => {
   assert.equal(a.budgetCeiling, b.budgetCeiling);
 });
 
-test('function and level wording is case and punctuation tolerant', () => {
+test('function and style wording is case and punctuation tolerant', () => {
   const csv = [
     'Functions,Size,Style,Budget,Bundle',
-    'POWER_RACK;Leg Press,2 x 2,INTERMEDIATE,3000,1'
+    'POWER_RACK;Leg Press,2 x 2,convenience seeker,3000,1'
   ].join('\n');
-  assert.deepEqual(parseRules(csv)[0].functions, ['power_rack', 'leg_press']);
+  const [b] = parseRules(csv);
+  assert.deepEqual(b.functions, ['power_rack', 'leg_press']);
+  assert.deepEqual(b.styles, ['convenience']);
 });
 
 test('a budget typed as $4,000 is still four thousand', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Beginner,"$4,000",1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Convenience Seeker,"$4,000",1'].join('\n');
   assert.equal(parseRules(csv)[0].budgetCeiling, 4000);
 });
 
 test('an unknown function is refused, and the message names the cell and the options', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'trampoline,2 x 2,Beginner,3000,1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'trampoline,2 x 2,Convenience Seeker,3000,1'].join('\n');
   const err = caught(() => parseRules(csv));
   assert.ok(err instanceof SheetError);
   assert.match(err.problems[0], /row 2/);
@@ -111,7 +140,7 @@ test('an unknown function is refused, and the message names the cell and the opt
 });
 
 test('a malformed size is refused rather than guessed at', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,about 2m,Beginner,3000,1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,about 2m,Convenience Seeker,3000,1'].join('\n');
   assert.throws(() => parseRules(csv), /not in "length x depth" form/);
 });
 
@@ -128,27 +157,48 @@ test('every problem is reported at once, not just the first', () => {
 test('a duplicated bundle number is refused', () => {
   const csv = [
     'Functions,Size,Style,Budget,Bundle',
-    'cable,2 x 2,Beginner,3000,1',
-    'smith,2 x 2,Beginner,3000,1'
+    'cable,2 x 2,Convenience Seeker,3000,1',
+    'smith,2 x 2,Convenience Seeker,3000,1'
   ].join('\n');
   assert.throws(() => parseRules(csv), /listed more than once/);
 });
 
 /* Products ----------------------------------------------------------------- */
 
-test('the product matrix reads down each bundle column, keeping row order', () => {
+test('the product matrix reads across each bundle row, keeping column order', () => {
   const out = parseProducts(PRODUCTS_CSV);
-  assert.deepEqual(out.get(1), [A, B], 'row A must stay first, it is the anchor machine');
-  assert.deepEqual(out.get(2), [B]);
+  assert.deepEqual(out.get(1).urls, [A, B], 'the first URL must stay first, it is the anchor machine');
+  assert.deepEqual(out.get(2).urls, [B]);
 });
 
-test('a product pasted twice into one column is counted once, not charged twice', () => {
-  const out = parseProducts(['Product #,1', `A,${A}`, `B,${A}`].join('\n'));
-  assert.deepEqual(out.get(1), [A]);
+// The client has used both layouts. Rearranging a tab is a spreadsheet
+// decision, so both must read the same, rather than one of them being a
+// migration that needs a code change to land.
+test('the original column-per-bundle layout still reads identically', () => {
+  const out = parseProducts(PRODUCTS_CSV_BY_COLUMN);
+  assert.deepEqual(out.get(1).urls, [A, B]);
+  assert.deepEqual(out.get(2).urls, [B]);
 });
 
-test('a non-URL in the product matrix is refused', () => {
+test('the products tab carries the internal label, which is not the shown name', () => {
+  const out = parseProducts(PRODUCTS_CSV);
+  assert.equal(out.get(1).label, 'Tinytitan');
+  assert.equal(parseProducts(PRODUCTS_CSV_BY_COLUMN).get(1).label, null);
+});
+
+test('a product pasted twice into one bundle is counted once, not charged twice', () => {
+  const out = parseProducts(['Bundle no,Name,,', `1,Twice,${A},${A}`].join('\n'));
+  assert.deepEqual(out.get(1).urls, [A]);
+});
+
+test('a non-URL in the product matrix is refused, in either layout', () => {
+  assert.throws(() => parseProducts(['Bundle no,Name,', '1,Nope,ask Derek'].join('\n')), /is not a URL/);
   assert.throws(() => parseProducts(['Product #,1', 'A,ask Derek'].join('\n')), /is not a URL/);
+});
+
+test('a duplicated bundle row in the product matrix is refused', () => {
+  const csv = ['Bundle no,Name,', `1,One,${A}`, `1,Again,${B}`].join('\n');
+  assert.throws(() => parseProducts(csv), /listed more than once/);
 });
 
 /* Assembly ----------------------------------------------------------------- */
@@ -158,23 +208,61 @@ test('rules and products are joined by bundle number', () => {
   assert.deepEqual(out.find((b) => b.id === 1).productUrls, [A, B]);
 });
 
+// "bf900" and "im2000" are how the client refers to these internally. Showing
+// one as the headline on a result page would be a regression in the copy, so
+// the label is carried for diagnostics and the shown name stays with the rules
+// tab's "Bundle Name" column and the curated names behind it.
+test('the products tab label is carried as a label, not promoted to the name', () => {
+  const [first] = buildSheetBundles(RULES, PRODUCTS_CSV);
+  assert.equal(first.sheetLabel, 'Tinytitan');
+  assert.equal(first.name, null, 'TBD in the rules tab must still mean "no name yet"');
+});
+
 test('a bundle with rules but no products fails loudly instead of shipping empty', () => {
-  assert.throws(() => buildSheetBundles(RULES, ['Product #,1', `A,${A}`].join('\n')),
+  assert.throws(() => buildSheetBundles(RULES, ['Bundle no,Name,', `1,Tinytitan,${A}`].join('\n')),
     /bundle 2 is defined on the rules tab but has no products/);
 });
 
-test('a product column with no rules row fails too', () => {
-  const rules = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Beginner,3000,1'].join('\n');
-  assert.throws(() => buildSheetBundles(rules, PRODUCTS_CSV), /column for bundle 2, but no rules row/);
+test('a product row with no rules row fails too', () => {
+  const rules = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Convenience Seeker,3000,1'].join('\n');
+  assert.throws(() => buildSheetBundles(rules, PRODUCTS_CSV), /row for bundle 2, but no rules row/);
 });
 
 /* Personas ----------------------------------------------------------------- */
 
-test('personas split into the quote and the explanation', () => {
+test('styles split into the quote and the explanation', () => {
   const [p] = parsePersonas('Convenience Seeker,"""I just want to work out."" Minimal setup"');
   assert.equal(p.name, 'Convenience Seeker');
   assert.equal(p.quote, 'I just want to work out.');
   assert.equal(p.description, 'Minimal setup');
+});
+
+// This is what wires the tab to the rules column: without a tag the style can
+// be read but never matched, so it must not be offered as an answer either.
+test('a style carries the tag the rules column assigns bundles by', () => {
+  const [p] = parsePersonas('Practical / Value Seeker,"""Enough."" Value for money"');
+  assert.equal(p.tag, 'value');
+});
+
+test('a style the matcher has no tag for is kept but left untagged', () => {
+  const [p] = parsePersonas('Weekend Warrior,"""Saturdays only."" Trains twice a week"');
+  assert.equal(p.name, 'Weekend Warrior');
+  assert.equal(p.tag, null);
+});
+
+// Every style offered as an answer has to be reachable, or the quiz promises a
+// match it cannot make.
+test('every style the quiz offers is assigned to at least one bundle', () => {
+  const assigned = new Set(SHEET_BUNDLES.flatMap((b) => b.styles));
+  for (const o of STYLE_OPTIONS) {
+    assert.ok(assigned.has(o.value), `no bundle in the sheet is built for "${o.label}"`);
+  }
+});
+
+test('every bundle in the sheet is assigned at least one style', () => {
+  for (const b of SHEET_BUNDLES) {
+    assert.ok(b.styles.length, `bundle ${b.id} (${b.sheetLabel}) has no style`);
+  }
 });
 
 /* Composition against the real catalogue ----------------------------------- */
@@ -205,7 +293,7 @@ test('a bundle added to the sheet with no copy written yet still composes', () =
     name: null,
     functions: ['cable'],
     footprint: { length: 2, depth: 2 },
-    level: 'beginner',
+    styles: ['value'],
     budgetCeiling: 9000,
     productUrls: [known.url]
   }]);
@@ -222,7 +310,7 @@ test('a bundle added to the sheet with no copy written yet still composes', () =
 test('a bundle naming a product not in the catalogue fails the build', () => {
   assert.throws(() => composeBundles([{
     id: 998, name: null, functions: ['cable'],
-    footprint: { length: 2, depth: 2 }, level: 'beginner', budgetCeiling: 9000,
+    footprint: { length: 2, depth: 2 }, styles: ['value'], budgetCeiling: 9000,
     productUrls: ['https://homegym.sg/does-not-exist.html']
   }]), /no product in the catalogue matches/);
 });
@@ -232,9 +320,9 @@ test('in lenient mode a broken bundle is dropped and the rest survive', () => {
   const known = Object.values(PRODUCTS_BY_URL)[0];
   const { bundles, problems } = composeBundles([
     { id: 1, name: null, functions: ['cable'], footprint: { length: 2, depth: 2 },
-      level: 'beginner', budgetCeiling: 9000, productUrls: ['https://homegym.sg/nope.html'] },
+      styles: ['value'], budgetCeiling: 9000, productUrls: ['https://homegym.sg/nope.html'] },
     { id: 2, name: null, functions: ['cable'], footprint: { length: 2, depth: 2 },
-      level: 'beginner', budgetCeiling: 9000, productUrls: [known.url] }
+      styles: ['value'], budgetCeiling: 9000, productUrls: [known.url] }
   ], { strict: false });
 
   assert.equal(bundles.length, 1, 'only the broken bundle should be dropped');

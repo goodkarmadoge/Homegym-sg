@@ -19,7 +19,7 @@
  * the cart CTA POSTs to cart-endpoint when one is configured, and every
  * meaningful action also fires a bubbling, composed CustomEvent for GTM.
  */
-import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
+import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, STYLE_OPTIONS, STYLE_SHORT, FUNCTION_SHORT, composeBundles } from './bundles.js';
 import { buildSheetBundles } from './sheet-parse.js';
 import { SHEET_ID, SHEET_TABS } from './sheet-data.js';
 import { match, FALLBACK } from './matcher.js';
@@ -60,7 +60,7 @@ const DEFAULT_ANSWERS = {
   functions: [],
   length: 2.5,
   depth: 3.0,
-  level: null,
+  style: null,
   budget: 5000
 };
 
@@ -347,10 +347,22 @@ class HomegymBundleQuiz extends HTMLElement {
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (saved && saved.answers) {
-        this.state.answers = { ...DEFAULT_ANSWERS, ...saved.answers };
+        // Take only the keys we know about. A session saved before step 3
+        // asked for a style still carries a `level`, and copying it wholesale
+        // would carry that dead answer into every quiz:* event.
+        this.state.answers = { ...DEFAULT_ANSWERS };
+        for (const key of Object.keys(DEFAULT_ANSWERS)) {
+          if (saved.answers[key] != null) this.state.answers[key] = saved.answers[key];
+        }
         if (!Array.isArray(this.state.answers.functions)) this.state.answers.functions = [];
+
         const step = parseInt(saved.step, 10);
         if (step >= 1 && step <= TOTAL_STEPS) this.state.step = step;
+
+        // Never restore past an unanswered step 3. Otherwise a session held
+        // over from the level question resumes at the budget slider with no
+        // style set, and submits an answer the customer was never asked for.
+        if (!this.state.answers.style && this.state.step > 3) this.state.step = 3;
       }
     } catch {
       /* Corrupt payload, start clean rather than crash. */
@@ -422,7 +434,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="progress">
         <div class="progress__meta">
           <span class="progress__step">Step ${this.state.step} of ${TOTAL_STEPS}</span>
-          <span class="progress__name">${['Function', 'Space', 'Level', 'Budget'][this.state.step - 1]}</span>
+          <span class="progress__name">${['Function', 'Space', 'Style', 'Budget'][this.state.step - 1]}</span>
         </div>
         <div class="progress__track" role="progressbar"
              aria-valuenow="${this.state.step}" aria-valuemin="1" aria-valuemax="${TOTAL_STEPS}"
@@ -482,7 +494,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (this.state.step === 1 && this.state.answers.functions.length === 0) {
       return 'Pick at least one thing you want to train.';
     }
-    if (this.state.step === 3 && !this.state.answers.level) {
+    if (this.state.step === 3 && !this.state.answers.style) {
       return 'Pick the option that describes you best.';
     }
     return '';
@@ -658,20 +670,29 @@ class HomegymBundleQuiz extends HTMLElement {
       </svg>`;
   }
 
+  /**
+   * Step 3, which kind of buyer you are.
+   *
+   * This question used to ask for a training level. The sheet's Style column
+   * now assigns each bundle a customer style instead, so the question asks the
+   * thing the data actually answers. The options, their names and the lines
+   * under them are the client's own, read from the Style tab through
+   * STYLE_OPTIONS; nothing here is hand-written copy.
+   */
   step3() {
-    const current = this.state.answers.level;
+    const current = this.state.answers.style;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>Where are you at right now?</h1>
-      <p class="subhead">This sets how much machine you'll actually use, not how hard you train.</p>
+      <h1 class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</h1>
+      <p class="subhead">This is about what you want out of the machine, not how strong you are.</p>
       <fieldset class="options options--single">
-        <legend class="visually-hidden">Fitness level</legend>
-        ${LEVEL_OPTIONS.map((o) => `
+        <legend class="visually-hidden">Training style</legend>
+        ${STYLE_OPTIONS.map((o) => `
           <label class="option option--radio${current === o.value ? ' is-selected' : ''}">
-            <input type="radio" name="level" value="${esc(o.value)}" ${current === o.value ? 'checked' : ''}>
+            <input type="radio" name="style" value="${esc(o.value)}" ${current === o.value ? 'checked' : ''}>
             <span class="option__mark">${CHECK_SVG}</span>
             <span class="option__body">
-              <span class="option__label">${esc(o.label)}</span>
-              <span class="option__help">${esc(o.help)}</span>
+              <span class="option__label">${o.quote ? esc('\u201C' + o.quote + '\u201D') : esc(o.label)}</span>
+              <span class="option__help">${esc(o.quote ? o.label + '. ' + o.help : o.help)}</span>
             </span>
           </label>`).join('')}
       </fieldset>`;
@@ -729,10 +750,11 @@ class HomegymBundleQuiz extends HTMLElement {
       matched.length
         ? `${matched.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`
         : `${bundle.functions.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`,
-      // The level is only a REASON when it agrees with the answer given. Telling
-      // an advanced lifter their match is "intermediate" argues against it.
-      bundle.level === a.level
-        ? `Built for ${bundle.level}`
+      // The style is only a REASON when it agrees with the answer given.
+      // Telling someone who asked for value that their match is "built for the
+      // Maximum Function User" argues against it.
+      bundle.styles && bundle.styles.includes(a.style)
+        ? `Built for the ${STYLE_SHORT[a.style] || a.style}`
         : `${bundle.trains.length} movements covered`
     ];
 
@@ -772,7 +794,7 @@ class HomegymBundleQuiz extends HTMLElement {
           <button class="btn btn--text" data-action="adjust" type="button">Adjust my answers</button>
           <button class="btn btn--text" data-action="restart" type="button">Start again</button>
         </div>
-        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.level || 'any level')} &middot; ${this.budgetLabel(a.budget)} budget</p>
+        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.style ? (STYLE_SHORT[a.style] || a.style) : 'any style')} &middot; ${this.budgetLabel(a.budget)} budget</p>
         </div>
       </div>`;
   }
@@ -1020,8 +1042,8 @@ class HomegymBundleQuiz extends HTMLElement {
       if (this.state.answers.functions.length) this._refreshGate();
       this._save();
     }
-    if (t.name === 'level') {
-      this.state.answers.level = t.value;
+    if (t.name === 'style') {
+      this.state.answers.style = t.value;
       this.shadowRoot.querySelectorAll('.option--radio').forEach((el) => {
         el.classList.toggle('is-selected', el.contains(t));
       });
@@ -1109,7 +1131,7 @@ class HomegymBundleQuiz extends HTMLElement {
       if (box) box.textContent = this.state.error;
       return;
     }
-    if (this.state.step === 3 && !this.state.answers.level) {
+    if (this.state.step === 3 && !this.state.answers.style) {
       this.state.error = 'Pick the option that describes you best.';
       const box = this.shadowRoot.querySelector('.validation');
       if (box) box.textContent = this.state.error;
@@ -1321,7 +1343,7 @@ class HomegymBundleQuiz extends HTMLElement {
     const fns = a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
     lines.push(`Training: ${fns}`);
     lines.push(`Space: ${a.length.toFixed(1)} x ${a.depth.toFixed(1)} m`);
-    lines.push(`Level: ${a.level ? a.level.charAt(0).toUpperCase() + a.level.slice(1) : 'Not specified'}`);
+    lines.push(`Style: ${a.style ? (STYLE_SHORT[a.style] || a.style) : 'Not specified'}`);
     lines.push(`Budget: ${this.money(a.budget)}`);
 
     if (bundle) {
@@ -1362,7 +1384,7 @@ class HomegymBundleQuiz extends HTMLElement {
       functions: a.functions.slice(),
       length: a.length,
       depth: a.depth,
-      level: a.level || 'beginner',
+      style: a.style || null,
       budget: a.budget
     };
   }

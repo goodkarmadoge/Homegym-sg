@@ -7,20 +7,24 @@
  *
  *   Function subsets of size 1-3 from 6 tags : 6 + 15 + 20 = 41
  *   Space combos (5 lengths x 5 depths)      : 25
- *   Levels                                   : 3
+ *   Customer styles                          : 5
  *   Budget steps ($2,500-$7,500 by $250)     : 21
  *   ---------------------------------------------------
- *   Total                                    : 64,575
+ *   Total                                    : 107,625
+ *
+ * The style count is read from the sheet rather than hard-coded, so adding a
+ * sixth style widens the sweep instead of leaving a sixth of the input space
+ * untested.
  *
  * Run with:  npm run sweep
  * Exits non-zero if any bundle is unreachable or any combination throws.
  */
-import { BUNDLES, FUNCTION_OPTIONS } from '../src/quiz/bundles.js';
+import { BUNDLES, FUNCTION_OPTIONS, STYLE_OPTIONS } from '../src/quiz/bundles.js';
 import { match, FALLBACK } from '../src/quiz/matcher.js';
 
 const TAGS = FUNCTION_OPTIONS.map((o) => o.tag);
 const DIMS = [1.0, 1.5, 2.0, 2.5, 3.0];
-const LEVELS = ['beginner', 'intermediate', 'advanced'];
+const STYLES = STYLE_OPTIONS.map((o) => o.value);
 const BUDGETS = Array.from({ length: 21 }, (_, i) => 2500 + i * 250);
 
 /** All subsets of TAGS with size 1..3. */
@@ -58,10 +62,10 @@ const errors = [];
 for (const functions of FUNCTION_SETS) {
   for (const length of DIMS) {
     for (const depth of DIMS) {
-      for (const level of LEVELS) {
+      for (const style of STYLES) {
         for (const budget of BUDGETS) {
           total++;
-          const answers = { functions, length, depth, level, budget };
+          const answers = { functions, length, depth, style, budget };
           let result;
           try {
             result = match(answers, BUNDLES);
@@ -90,6 +94,13 @@ for (const functions of FUNCTION_SETS) {
 const pct = (n, d) => (d ? ((n / d) * 100).toFixed(1) : '0.0');
 
 // The spec's stated regression baseline, for side-by-side comparison.
+//
+// STALE ON PURPOSE, AND KEPT. It was measured when the third question asked for
+// a training level, so every delta against it is expected to be large: the
+// question changed, so the distribution had to. It stays as the record of what
+// the level-based engine did, which is the only thing that makes the size of
+// that shift visible. Re-baseline it once the style question has been live long
+// enough to be worth freezing.
 const BASELINE = {
   4: 24.1, 8: 18.2, 5: 16.2, 9: 10.8, 7: 9.9,
   2: 7.2, 1: 6.6, 6: 3.5, 10: 2.4, 3: 1.0

@@ -21,7 +21,7 @@
  *   breaking, but the real fix is resolving images from the product API.
  */
 
-import { SHEET_BUNDLES } from './sheet-data.js';
+import { SHEET_BUNDLES, PERSONAS } from './sheet-data.js';
 
 /**
  * Product catalogue, keyed by id. Prices in SGD.
@@ -146,7 +146,7 @@ export const PRODUCTS = {
  *
  * WHAT THE SHEET OWNS vs WHAT THIS FILE OWNS
  *   The sheet decides which bundles exist and how a customer is matched to one:
- *   functions, footprint, level, budget ceiling and the list of products. It
+ *   functions, footprint, style, budget ceiling and the list of products. It
  *   holds no prices, no sales copy and no photographs, so those stay here and
  *   are joined on by bundle number in composeBundles() below.
  *
@@ -307,7 +307,7 @@ export function composeBundles(sheetBundles, { strict = true } = {}) {
       tagline: c.tagline || autoTagline(s, products),
       functions: s.functions,
       footprint: s.footprint,
-      level: s.level,
+      styles: s.styles,
       price,
       budgetCeiling: s.budgetCeiling,
       products,
@@ -349,12 +349,49 @@ export const FUNCTION_OPTIONS = [
   { tag: 'smart',      label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }
 ];
 
-/** Step 3 options. */
-export const LEVEL_OPTIONS = [
-  { value: 'beginner',     label: 'Beginner',     help: 'New to lifting, or coming back after a long break' },
-  { value: 'intermediate', label: 'Intermediate', help: 'Comfortable with the main lifts, training consistently' },
-  { value: 'advanced',     label: 'Advanced',     help: 'Years under the bar, chasing specific numbers' }
+/**
+ * Step 3 options, the customer styles.
+ *
+ * BUILT FROM THE SHEET, NOT TYPED OUT HERE. The Style tab holds the five names
+ * and the sentence under each, and the rules tab's Style column assigns them to
+ * bundles, so the question the shopper answers and the rule it is matched
+ * against come from the same place by construction. Rewrite a sentence in the
+ * sheet and the question rewrites itself on the next sync.
+ *
+ * Only styles a bundle can actually be matched on are offered: a row on the
+ * Style tab whose name has no tag in STYLE_ALIASES is carried through the sync
+ * but never shown, because offering it would promise a match the matcher cannot
+ * make. ORDER FOLLOWS THE SHEET, which reads lightest commitment first.
+ *
+ * The fallback list is what renders if the Style tab is ever empty or entirely
+ * unrecognised. It is deliberately the same five, so a broken sheet degrades to
+ * the current question rather than to no question at all.
+ */
+const STYLE_FALLBACK = [
+  { value: 'convenience',  label: 'Convenience Seeker',         help: 'Minimal setup, quick weight changes, easy start' },
+  { value: 'max_function', label: 'Maximum Function User',      help: 'Wants maximum exercise variety' },
+  { value: 'strength',     label: 'Serious Strength Trainer',   help: 'Cares about load, stability and equipment quality' },
+  { value: 'guided',       label: 'Guided / Accountability User', help: 'Wants programs, coaching, tracking and motivation' },
+  { value: 'value',        label: 'Practical / Value Seeker',   help: 'Enough to train the whole body, without paying for the rest' }
 ];
+
+export const STYLE_OPTIONS = (() => {
+  const seen = new Set();
+  const fromSheet = (PERSONAS || [])
+    .filter((p) => p.tag && !seen.has(p.tag) && seen.add(p.tag))
+    .map((p) => ({
+      value: p.tag,
+      label: p.name,
+      // The quote is the line the customer recognises themselves in, so it
+      // leads. The description explains it. Either can be missing.
+      quote: p.quote || null,
+      help: p.description || ''
+    }));
+  return fromSheet.length ? fromSheet : STYLE_FALLBACK;
+})();
+
+/** Short labels for the "why this one" chip and the WhatsApp summary. */
+export const STYLE_SHORT = Object.fromEntries(STYLE_OPTIONS.map((o) => [o.value, o.label]));
 
 /** Short human labels for the "why this one" chips on the result view. */
 export const FUNCTION_SHORT = {
