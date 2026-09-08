@@ -15,12 +15,14 @@
  * Run with:  npm run sweep
  * Exits non-zero if any bundle is unreachable or any combination throws.
  */
-import { BUNDLES, FUNCTION_OPTIONS } from '../src/quiz/bundles.js';
+import { BUNDLES, FUNCTION_OPTIONS, PERSONA_OPTIONS } from '../src/quiz/bundles.js';
 import { match, FALLBACK } from '../src/quiz/matcher.js';
 
 const TAGS = FUNCTION_OPTIONS.map((o) => o.tag);
 const DIMS = [1.0, 1.5, 2.0, 2.5, 3.0];
-const LEVELS = ['beginner', 'intermediate', 'advanced'];
+// Straight off the sheet's personas tab, so adding a persona widens the sweep
+// automatically rather than leaving the new option untested.
+const PERSONAS = PERSONA_OPTIONS.map((o) => o.value);
 const BUDGETS = Array.from({ length: 21 }, (_, i) => 2500 + i * 250);
 
 /** All subsets of TAGS with size 1..3. */
@@ -58,10 +60,10 @@ const errors = [];
 for (const functions of FUNCTION_SETS) {
   for (const length of DIMS) {
     for (const depth of DIMS) {
-      for (const level of LEVELS) {
+      for (const persona of PERSONAS) {
         for (const budget of BUDGETS) {
           total++;
-          const answers = { functions, length, depth, level, budget };
+          const answers = { functions, length, depth, persona, budget };
           let result;
           try {
             result = match(answers, BUNDLES);
@@ -89,7 +91,10 @@ for (const functions of FUNCTION_SETS) {
 
 const pct = (n, d) => (d ? ((n / d) * 100).toFixed(1) : '0.0');
 
-// The spec's stated regression baseline, for side-by-side comparison.
+// The spec's original baseline, captured when question three still asked for a
+// training level. Question three now asks which persona the customer is, which
+// redistributes the 15-point axis entirely, so these are kept for reference
+// rather than as a target. A large delta here is expected, not a regression.
 const BASELINE = {
   4: 24.1, 8: 18.2, 5: 16.2, 9: 10.8, 7: 9.9,
   2: 7.2, 1: 6.6, 6: 3.5, 10: 2.4, 3: 1.0

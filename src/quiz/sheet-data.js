@@ -10,9 +10,13 @@
  * Source: https://docs.google.com/spreadsheets/d/1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU
  *
  * WHAT THIS FILE CARRIES: which bundles exist, the rules that match a customer
- * to one (functions, footprint, level, budget ceiling), and the products in
+ * to one (functions, footprint, personas, budget ceiling), and the products in
  * each, by URL. It carries no prices, copy or imagery, because the sheet holds
  * none. Those are joined on in src/quiz/bundles.js.
+ *
+ * "label" is the short working name from the products tab ("Cube", "bf900").
+ * It is an internal handle for talking about a bundle, NOT customer-facing
+ * copy, and nothing rendered to a visitor uses it.
  */
 
 export const SHEET_SOURCE = "https://docs.google.com/spreadsheets/d/1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU";
@@ -25,15 +29,16 @@ export const SHEET_SOURCE = "https://docs.google.com/spreadsheets/d/1ntgik1NX9Ij
  * config/sheet.json yet, and live mode reports that rather than guessing.
  */
 export const SHEET_ID = "1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU";
-export const SHEET_TABS = {"rules":0,"products":460381699,"personas":1303527735};
+export const SHEET_TABS = {"rules":0,"products":1201616033,"personas":1303527735};
 
 export const SHEET_BUNDLES = [
   {
     id: 1,
     name: null,
+    label: "Tinytitan",
     functions: ["smith","power_rack","cable"],
     footprint: { length: 2, depth: 3 },
-    level: "beginner",
+    personas: ["Practical / Value Seeker"],
     budgetCeiling: 3000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
@@ -44,9 +49,10 @@ export const SHEET_BUNDLES = [
   {
     id: 2,
     name: null,
+    label: "Cube",
     functions: ["smith","cable"],
     footprint: { length: 1.5, depth: 2 },
-    level: "intermediate",
+    personas: ["Convenience Seeker"],
     budgetCeiling: 4000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
@@ -56,9 +62,10 @@ export const SHEET_BUNDLES = [
   {
     id: 3,
     name: null,
+    label: "X20",
     functions: ["smith","power_rack","cable","leg_press"],
     footprint: { length: 3, depth: 3 },
-    level: "advanced",
+    personas: ["Maximum Function User","Serious Strength Trainer"],
     budgetCeiling: 7000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
@@ -70,9 +77,10 @@ export const SHEET_BUNDLES = [
   {
     id: 4,
     name: null,
+    label: "bf900",
     functions: ["smith","power_rack","cable"],
     footprint: { length: 1.5, depth: 2.5 },
-    level: "intermediate",
+    personas: ["Convenience Seeker"],
     budgetCeiling: 4000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html",
@@ -82,9 +90,10 @@ export const SHEET_BUNDLES = [
   {
     id: 5,
     name: null,
+    label: "xpress pro",
     functions: ["multigym"],
     footprint: { length: 1.5, depth: 2 },
-    level: "beginner",
+    personas: ["Convenience Seeker"],
     budgetCeiling: 2500,
     productUrls: [
       "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
@@ -93,9 +102,10 @@ export const SHEET_BUNDLES = [
   {
     id: 6,
     name: null,
+    label: "Infinity 2in1",
     functions: ["power_rack","cable"],
     footprint: { length: 2, depth: 3 },
-    level: "intermediate",
+    personas: ["Serious Strength Trainer"],
     budgetCeiling: 3500,
     productUrls: [
       "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
@@ -107,9 +117,10 @@ export const SHEET_BUNDLES = [
   {
     id: 7,
     name: null,
+    label: "infinity 3in1",
     functions: ["smith","power_rack","cable"],
     footprint: { length: 2.5, depth: 3 },
-    level: "intermediate",
+    personas: ["Serious Strength Trainer"],
     budgetCeiling: 4000,
     productUrls: [
       "https://homegym.sg/strength.html/infinity-series/infinity-all-in-1-trainer.html",
@@ -121,9 +132,10 @@ export const SHEET_BUNDLES = [
   {
     id: 8,
     name: null,
+    label: "Aeke",
     functions: ["cable","smart"],
     footprint: { length: 1, depth: 2 },
-    level: "beginner",
+    personas: ["Guided / Accountability User"],
     budgetCeiling: 6000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
@@ -132,9 +144,10 @@ export const SHEET_BUNDLES = [
   {
     id: 9,
     name: null,
+    label: "im2000",
     functions: ["smith","power_rack","cable"],
     footprint: { length: 2, depth: 2 },
-    level: "beginner",
+    personas: ["Practical / Value Seeker"],
     budgetCeiling: 3000,
     productUrls: [
       "https://homegym.sg/strength/multi-functional.html/space-saving/ironmaster-im2000-self-spotting-system.html",
@@ -145,9 +158,10 @@ export const SHEET_BUNDLES = [
   {
     id: 10,
     name: null,
+    label: "Folding rack",
     functions: ["power_rack","cable"],
     footprint: { length: 2.5, depth: 3 },
-    level: "intermediate",
+    personas: ["Practical / Value Seeker"],
     budgetCeiling: 2500,
     productUrls: [
       "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
@@ -160,10 +174,10 @@ export const SHEET_BUNDLES = [
 /**
  * Customer personas from the sheet's third tab.
  *
- * Carried through the sync but not yet read by the quiz: the sheet has no
- * column linking a persona to a bundle, so using them in results would mean
- * inventing that mapping. Add a "Persona" column to the rules tab and they can
- * be wired up without another data migration.
+ * These now DRIVE QUESTION THREE of the quiz. The options a visitor picks from
+ * are generated from this list, and the rules tab's Style column says which
+ * personas each bundle is built for, so adding a persona here and using it
+ * there is enough to change what the quiz asks. Order is the sheet's order.
  */
 export const PERSONAS = [
   {
@@ -185,5 +199,10 @@ export const PERSONAS = [
     name: "Guided / Accountability User",
     quote: "Tell me what to do.",
     description: "Wants programs, coaching, tracking and motivation"
+  },
+  {
+    name: "Practical / Value Seeker",
+    quote: "I don't need everything. Just give me enough to train my whole body.",
+    description: "Their priority is value for money, not maximum features."
   }
 ];

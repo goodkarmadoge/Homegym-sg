@@ -26,7 +26,7 @@ The recommendation engine is a rules engine running in the page. All 3,072 possi
 
 `bundle-quiz.html` is a **standalone page**. It carries no site navigation and links to nothing else in this engagement, so it can be deployed on its own at `homegym.sg/bundle-quiz` without dragging the teardown with it.
 
-Four questions (what you want to train, floor space, experience level, budget) matched against ten pre-defined bundles. The result view shows the bundle, its total, every product inside it with image, price and a link to its live product page, and two next steps.
+Four questions (what you want to train, floor space, which customer you are, budget) matched against the bundles defined in the Google Sheet. The result view shows the bundle, its total, every product inside it with image, price and a link to its live product page, and two next steps.
 
 The same code ships twice from one source:
 
@@ -129,9 +129,9 @@ is matched to one**. Adding a bundle is a spreadsheet edit, not a code change.
 
 | Tab | Owns |
 |---|---|
-| Bundle rules | One row per bundle: functions, size, style, budget ceiling, number, name |
-| Product matrix | One column per bundle, product URLs down the rows. Row A is the anchor machine and stays first in the result grid |
-| Personas | Four customer types. Read and versioned, but not yet used, see below |
+| Bundle rules | One row per bundle: functions, size, **Style (the personas it is built for)**, budget ceiling, number, name |
+| Products | One row per bundle: number, a short working name, then its product URLs running across. The first URL is the anchor machine and stays first in the result grid |
+| Personas | The customer types. These **drive question three** of the quiz |
 
 The sheet holds no prices, no sales copy and no photographs, so those stay in
 `src/quiz/bundles.js` and are joined on by bundle number.
@@ -139,7 +139,7 @@ The sheet holds no prices, no sales copy and no photographs, so those stay in
 | Lives in the sheet | Lives in `src/quiz/bundles.js` |
 |---|---|
 | Which bundles exist | Product catalogue: name, price, `was`, stock note, image |
-| Functions, footprint, level, budget ceiling | Per-bundle `tagline`, `pitch`, `trains`, `hero` |
+| Functions, footprint, personas, budget ceiling | Per-bundle `tagline`, `pitch`, `trains`, `hero` |
 | Which products are in each bundle, by URL | The `ROOMS` strip |
 
 **A bundle price is always the sum of its products.** It is never typed in
@@ -229,7 +229,7 @@ an "Enable workflow" button, not a code change.
 ### Why the data is committed rather than fetched live
 
 The quiz ships as one static file with no runtime dependencies, and the
-64,575-combination sweep only means anything if the data it swept is the data
+exhaustive sweep only means anything if the data it swept is the data
 that ships. Committing the sheet's contents keeps both properties.
 
 If you want sheet edits to appear without waiting for the nightly sync, add
@@ -240,12 +240,32 @@ half-edited row all leave the committed data in place, so what a customer sees
 is never worse than the snapshot that shipped. Outcomes surface on the
 `quiz:sheet` event and in the console.
 
-### The personas tab
+### The personas tab drives question three
 
-Parsed, versioned and exported as `PERSONAS`, but nothing reads it yet. The
-sheet has no column linking a persona to a bundle, so using them in results
-would mean inventing that mapping. Add a **Persona** column to the rules tab and
-they can be wired up without another data migration.
+The quiz's third question is generated from this tab. The options a visitor sees
+are the personas' own quotes, with the explanation underneath as helper text,
+and the rules tab's **Style** column says which personas each bundle is built
+for. Adding a persona there and using it on the rules tab is enough to change
+what the quiz asks, with no code change.
+
+A bundle can serve more than one persona: put them in one cell separated by
+commas, as bundle 3 does.
+
+Two things are checked on every sync, because both names are typed by hand on
+two different tabs weeks apart:
+
+- a persona on the rules tab that is **not** on the personas tab **fails** the
+  sync and names the typo, because it would create a bundle no customer could
+  ever be matched to
+- a persona that **no bundle is built for** logs a warning, because the option
+  would show in the quiz but could never change the answer
+
+Persona scoring is deliberately all or nothing. The question used to ask for a
+training level, where beginner, intermediate and advanced sit on a line and
+"one rung out" could sensibly score partial credit. Personas are not on a line:
+a Convenience Seeker is not one step from a Serious Strength Trainer, they want
+a different machine. Across 896 realistic answer sets, the persona picked
+changes the matched bundle 33.6% of the time.
 
 ## How the matching works
 
@@ -258,7 +278,7 @@ Two hard filters run first: the bundle must fit the stated floor **in either ori
 | 40 | Function coverage: how much of what they asked for it does, plus up to +0.15 for capability beyond that |
 | 25 | Budget fit: rewards using the budget without wasting it |
 | 20 | Space fit: rewards filling the room, since a bigger machine in the same floor is more capable |
-| 15 | Level match: exact 1.0, one step 0.6, two steps 0.2 |
+| 15 | Persona match: 1 if the bundle is built for the persona picked, otherwise 0 |
 
 When two bundles land within 2 points, the tie breaks on function coverage, then price, then footprint, then bundle number.
 
@@ -273,7 +293,7 @@ If nothing passes both filters, constraints relax in a fixed order and the resul
 
 ### Coverage
 
-`npm run sweep` runs all 64,575 realistic answer combinations and asserts every bundle is reachable and nothing throws. Current distribution:
+`npm run sweep` runs every realistic answer combination (107,625 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
 
 | Bundle | Share of matched runs |
 |---|---|
@@ -330,7 +350,7 @@ Seven things need a decision from HomeGym. They are flagged in code at the exact
 2. **The Vigor X20 Sliding Bench is out of stock**, and its URL slug says `b20` while the product page title says `X20`. It currently renders an "On backorder" badge. Confirm the correct SKU.
 3. **Image URLs are CloudFront cache paths.** The `/cache/c0dcb29ef.../` segment changes when Magento regenerates its image cache, which would 404 every image at once. The initial-letter fallback tile stops the grid breaking; resolving images from the product API is the real fix.
 4. **Footprints are unverified.** They came from the source spreadsheet, not from measuring machines, and they read as working areas including clearance. A customer who buys on a wrong footprint is a returned 338 kg machine. **This is the highest-risk item on the list.**
-5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, level and price. Adding a distinguishing tag to each, `folding`, `self_spotting`, `connected`, plus a matching quiz option would sharpen them.
+5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, persona and price. Adding a distinguishing tag to each, `folding`, `self_spotting`, `connected`, plus a matching quiz option would sharpen them.
 6. **`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed. Check it resolves before launch.
 6b. **Their link blue `#22B4FF` fails WCAG AA at 2.32:1 on white**, here and on the live site, on every product link. The quiz uses a darkened `#0077B3` for text. Worth fixing site-wide.
 7. **The budget slider starts at S$2,500** while the cheapest bundle is S$2,241, so every bundle clears its floor. Dropping the minimum to S$2,000 would capture sub-S$2,500 traffic but needs a lighter bundle to answer it with.
@@ -363,7 +383,7 @@ dist/        generated site (gitignored, produced by the build)
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
-npm run sweep    # assert every bundle is reachable across 64,575 combinations
+npm run sweep    # assert every bundle is reachable across 107,625 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -391,7 +411,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any bundle becomes unreachable, or the matcher throws on any of 64,575 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 107,625 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output

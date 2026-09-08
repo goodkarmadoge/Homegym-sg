@@ -21,7 +21,7 @@
  *   breaking, but the real fix is resolving images from the product API.
  */
 
-import { SHEET_BUNDLES } from './sheet-data.js';
+import { SHEET_BUNDLES, PERSONAS } from './sheet-data.js';
 
 /**
  * Product catalogue, keyed by id. Prices in SGD.
@@ -146,7 +146,7 @@ export const PRODUCTS = {
  *
  * WHAT THE SHEET OWNS vs WHAT THIS FILE OWNS
  *   The sheet decides which bundles exist and how a customer is matched to one:
- *   functions, footprint, level, budget ceiling and the list of products. It
+ *   functions, footprint, personas, budget ceiling and the list of products. It
  *   holds no prices, no sales copy and no photographs, so those stay here and
  *   are joined on by bundle number in composeBundles() below.
  *
@@ -304,10 +304,14 @@ export function composeBundles(sheetBundles, { strict = true } = {}) {
       // today, which the parser turns into null, so the curated names below
       // are what actually show.
       name: s.name || c.name || `Bundle ${s.id}`,
+      // The short working name off the products tab ("Cube", "bf900", "X20").
+      // Internal shorthand for talking about a bundle in the sheet, never shown
+      // to a visitor: "The Foldaway Beast" sells, "Cube" does not.
+      label: s.label || null,
       tagline: c.tagline || autoTagline(s, products),
       functions: s.functions,
       footprint: s.footprint,
-      level: s.level,
+      personas: s.personas,
       price,
       budgetCeiling: s.budgetCeiling,
       products,
@@ -349,12 +353,24 @@ export const FUNCTION_OPTIONS = [
   { tag: 'smart',      label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }
 ];
 
-/** Step 3 options. */
-export const LEVEL_OPTIONS = [
-  { value: 'beginner',     label: 'Beginner',     help: 'New to lifting, or coming back after a long break' },
-  { value: 'intermediate', label: 'Intermediate', help: 'Comfortable with the main lifts, training consistently' },
-  { value: 'advanced',     label: 'Advanced',     help: 'Years under the bar, chasing specific numbers' }
-];
+/**
+ * Step 3 options, generated from the sheet's personas tab.
+ *
+ * NOT A HAND-WRITTEN LIST ANY MORE. Question three used to ask for a training
+ * level from three fixed options. The sheet now matches bundles on persona
+ * instead, so the question has to ask the thing the matcher actually uses, and
+ * the options have to come from the same tab the rules reference. Adding a
+ * persona to the sheet adds an option here with no code change.
+ *
+ * The quote is the label because it is how someone recognises themselves, and
+ * it is what the personas tab leads with. The explanation sits underneath as
+ * helper text, exactly as the level descriptions used to.
+ */
+export const PERSONA_OPTIONS = PERSONAS.map((p) => ({
+  value: p.name,
+  label: p.quote || p.name,
+  help: p.description || p.name
+}));
 
 /** Short human labels for the "why this one" chips on the result view. */
 export const FUNCTION_SHORT = {

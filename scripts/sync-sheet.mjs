@@ -127,9 +127,10 @@ function render(bundles, personas, source, sheetId, tabs) {
     '  {',
     `    id: ${b.id},`,
     `    name: ${j(b.name)},`,
+    `    label: ${j(b.label)},`,
     `    functions: ${j(b.functions)},`,
     `    footprint: { length: ${b.footprint.length}, depth: ${b.footprint.depth} },`,
-    `    level: ${j(b.level)},`,
+    `    personas: ${j(b.personas)},`,
     `    budgetCeiling: ${b.budgetCeiling},`,
     '    productUrls: [',
     ...b.productUrls.map((u) => `      ${j(u)},`),
@@ -157,9 +158,13 @@ function render(bundles, personas, source, sheetId, tabs) {
  * Source: ${source}
  *
  * WHAT THIS FILE CARRIES: which bundles exist, the rules that match a customer
- * to one (functions, footprint, level, budget ceiling), and the products in
+ * to one (functions, footprint, personas, budget ceiling), and the products in
  * each, by URL. It carries no prices, copy or imagery, because the sheet holds
  * none. Those are joined on in src/quiz/bundles.js.
+ *
+ * "label" is the short working name from the products tab ("Cube", "bf900").
+ * It is an internal handle for talking about a bundle, NOT customer-facing
+ * copy, and nothing rendered to a visitor uses it.
  */
 
 export const SHEET_SOURCE = ${JSON.stringify(source)};
@@ -181,10 +186,10 @@ ${bundleLines}
 /**
  * Customer personas from the sheet's third tab.
  *
- * Carried through the sync but not yet read by the quiz: the sheet has no
- * column linking a persona to a bundle, so using them in results would mean
- * inventing that mapping. Add a "Persona" column to the rules tab and they can
- * be wired up without another data migration.
+ * These now DRIVE QUESTION THREE of the quiz. The options a visitor picks from
+ * are generated from this list, and the rules tab's Style column says which
+ * personas each bundle is built for, so adding a persona here and using it
+ * there is enough to change what the quiz asks. Order is the sheet's order.
  */
 export const PERSONAS = [
 ${personaLines}
@@ -194,14 +199,14 @@ ${personaLines}
 
 /** One line per bundle describing what changed against the committed file. */
 function reportDiff(before, after) {
-  const key = (b) => JSON.stringify([b.functions, b.footprint, b.level, b.budgetCeiling, b.productUrls, b.name]);
+  const key = (b) => JSON.stringify([b.functions, b.footprint, b.personas, b.budgetCeiling, b.productUrls, b.name, b.label]);
   const oldById = new Map(before.map((b) => [b.id, b]));
   const newById = new Map(after.map((b) => [b.id, b]));
   let changes = 0;
 
   for (const b of after) {
     const was = oldById.get(b.id);
-    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.productUrls.length} products, ${b.level}, ceiling ${b.budgetCeiling}`); changes++; }
+    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.productUrls.length} products, ${b.personas.join(' + ')}, ceiling ${b.budgetCeiling}`); changes++; }
     else if (key(was) !== key(b)) { console.log(`  CHANGED  bundle ${b.id}`); changes++; }
   }
   for (const b of before) {
@@ -222,7 +227,7 @@ async function main() {
   let bundles;
   let personas;
   try {
-    bundles = buildSheetBundles(tabs.rules, tabs.products);
+    bundles = buildSheetBundles(tabs.rules, tabs.products, tabs.personas);
     personas = parsePersonas(tabs.personas);
   } catch (e) {
     if (e instanceof SheetError) {
@@ -254,6 +259,7 @@ async function main() {
   }
 
   console.log(`parsed ${bundles.length} bundles and ${personas.length} personas`);
+  for (const w of bundles.warnings || []) console.warn(`  WARNING  ${w}`);
   const changes = reportDiff(previous, bundles);
   if (!changes) console.log('  no changes');
 

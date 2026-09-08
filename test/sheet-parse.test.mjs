@@ -11,14 +11,14 @@ import {
   parseCsv, parseRules, parseProducts, parsePersonas,
   buildSheetBundles, SheetError
 } from '../src/quiz/sheet-parse.js';
-import { SHEET_BUNDLES } from '../src/quiz/sheet-data.js';
-import { BUNDLES, PRODUCTS_BY_URL, composeBundles } from '../src/quiz/bundles.js';
+import { SHEET_BUNDLES, PERSONAS } from '../src/quiz/sheet-data.js';
+import { BUNDLES, PRODUCTS_BY_URL, PERSONA_OPTIONS, composeBundles } from '../src/quiz/bundles.js';
 
 const RULES = [
   ',,,,,',
   'Functions,Size,Style,Budget,Bundle,Bundle Name',
-  'smith;power rack;cable,2 x 3,Beginner,3000,1,TBD',
-  'Cable;smart,1 x 2,Advance,6000,2,The Quiet One'
+  'smith;power rack;cable,2 x 3,Convenience Seeker,3000,1,TBD',
+  'Cable;smart,1 x 2,"Maximum Function User,Serious Strength Trainer",6000,2,The Quiet One'
 ].join('\n');
 
 /** assert.throws does not hand the error back, and these tests are about what
@@ -32,9 +32,9 @@ const A = 'https://homegym.sg/a.html';
 const B = 'https://homegym.sg/b.html';
 
 const PRODUCTS_CSV = [
-  'Product #,1,2',
-  `A,${A},${B}`,
-  `B,${B},`
+  'Bundle no,Name,,',
+  `1,First,${A},${B}`,
+  `2,Second,${B},`
 ].join('\n');
 
 /* CSV ---------------------------------------------------------------------- */
@@ -60,12 +60,15 @@ test('the rules tab parses into bundles, skipping the blank spacer row', () => {
   assert.equal(out.length, 2);
   assert.deepEqual(out[0].functions, ['smith', 'power_rack', 'cable']);
   assert.deepEqual(out[0].footprint, { length: 2, depth: 3 });
-  assert.equal(out[0].level, 'beginner');
+  assert.deepEqual(out[0].personas, ['Convenience Seeker']);
   assert.equal(out[0].budgetCeiling, 3000);
 });
 
-test('"Advance" in the sheet means advanced in the quiz', () => {
-  assert.equal(parseRules(RULES)[1].level, 'advanced');
+// A bundle can be built for more than one kind of customer, so the Style cell
+// is a comma separated list rather than a single value.
+test('a Style cell naming two personas produces both', () => {
+  assert.deepEqual(parseRules(RULES)[1].personas,
+    ['Maximum Function User', 'Serious Strength Trainer']);
 });
 
 test('"TBD" is not a name, but a real name is kept', () => {
@@ -88,21 +91,21 @@ test('columns are found by name, so reordering them changes nothing', () => {
   assert.equal(a.budgetCeiling, b.budgetCeiling);
 });
 
-test('function and level wording is case and punctuation tolerant', () => {
+test('function wording is case and punctuation tolerant', () => {
   const csv = [
     'Functions,Size,Style,Budget,Bundle',
-    'POWER_RACK;Leg Press,2 x 2,INTERMEDIATE,3000,1'
+    'POWER_RACK;Leg Press,2 x 2,Convenience Seeker,3000,1'
   ].join('\n');
   assert.deepEqual(parseRules(csv)[0].functions, ['power_rack', 'leg_press']);
 });
 
 test('a budget typed as $4,000 is still four thousand', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Beginner,"$4,000",1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Convenience Seeker,"$4,000",1'].join('\n');
   assert.equal(parseRules(csv)[0].budgetCeiling, 4000);
 });
 
 test('an unknown function is refused, and the message names the cell and the options', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'trampoline,2 x 2,Beginner,3000,1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'trampoline,2 x 2,Convenience Seeker,3000,1'].join('\n');
   const err = caught(() => parseRules(csv));
   assert.ok(err instanceof SheetError);
   assert.match(err.problems[0], /row 2/);
@@ -111,14 +114,14 @@ test('an unknown function is refused, and the message names the cell and the opt
 });
 
 test('a malformed size is refused rather than guessed at', () => {
-  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,about 2m,Beginner,3000,1'].join('\n');
+  const csv = ['Functions,Size,Style,Budget,Bundle', 'cable,about 2m,Convenience Seeker,3000,1'].join('\n');
   assert.throws(() => parseRules(csv), /not in "length x depth" form/);
 });
 
 test('every problem is reported at once, not just the first', () => {
   const csv = [
     'Functions,Size,Style,Budget,Bundle',
-    'trampoline,nonsense,Wizard,free,1'
+    'trampoline,nonsense,,free,1'
   ].join('\n');
   const err = caught(() => parseRules(csv));
   assert.ok(err instanceof SheetError);
@@ -128,27 +131,28 @@ test('every problem is reported at once, not just the first', () => {
 test('a duplicated bundle number is refused', () => {
   const csv = [
     'Functions,Size,Style,Budget,Bundle',
-    'cable,2 x 2,Beginner,3000,1',
-    'smith,2 x 2,Beginner,3000,1'
+    'cable,2 x 2,Convenience Seeker,3000,1',
+    'smith,2 x 2,Convenience Seeker,3000,1'
   ].join('\n');
   assert.throws(() => parseRules(csv), /listed more than once/);
 });
 
 /* Products ----------------------------------------------------------------- */
 
-test('the product matrix reads down each bundle column, keeping row order', () => {
+test('the products tab reads across each bundle row, keeping column order', () => {
   const out = parseProducts(PRODUCTS_CSV);
-  assert.deepEqual(out.get(1), [A, B], 'row A must stay first, it is the anchor machine');
-  assert.deepEqual(out.get(2), [B]);
+  assert.deepEqual(out.get(1).urls, [A, B], 'the first URL column is the anchor machine and stays first');
+  assert.deepEqual(out.get(2).urls, [B]);
+  assert.equal(out.get(1).label, 'First', 'the Name column is carried through as an internal label');
 });
 
-test('a product pasted twice into one column is counted once, not charged twice', () => {
-  const out = parseProducts(['Product #,1', `A,${A}`, `B,${A}`].join('\n'));
-  assert.deepEqual(out.get(1), [A]);
+test('a product pasted twice into one row is counted once, not charged twice', () => {
+  const out = parseProducts(['Bundle no,Name,,', `1,Dup,${A},${A}`].join('\n'));
+  assert.deepEqual(out.get(1).urls, [A]);
 });
 
-test('a non-URL in the product matrix is refused', () => {
-  assert.throws(() => parseProducts(['Product #,1', 'A,ask Derek'].join('\n')), /is not a URL/);
+test('a non-URL in the products tab is refused', () => {
+  assert.throws(() => parseProducts(['Bundle no,Name,,', '1,Nope,ask Derek'].join('\n')), /is not a URL/);
 });
 
 /* Assembly ----------------------------------------------------------------- */
@@ -159,13 +163,78 @@ test('rules and products are joined by bundle number', () => {
 });
 
 test('a bundle with rules but no products fails loudly instead of shipping empty', () => {
-  assert.throws(() => buildSheetBundles(RULES, ['Product #,1', `A,${A}`].join('\n')),
+  assert.throws(() => buildSheetBundles(RULES, ['Bundle no,Name,,', `1,Only,${A}`].join('\n')),
     /bundle 2 is defined on the rules tab but has no products/);
 });
 
-test('a product column with no rules row fails too', () => {
-  const rules = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Beginner,3000,1'].join('\n');
-  assert.throws(() => buildSheetBundles(rules, PRODUCTS_CSV), /column for bundle 2, but no rules row/);
+test('a products row with no rules row fails too', () => {
+  const rules = ['Functions,Size,Style,Budget,Bundle', 'cable,2 x 2,Convenience Seeker,3000,1'].join('\n');
+  assert.throws(() => buildSheetBundles(rules, PRODUCTS_CSV), /row for bundle 2, but no rules row/);
+});
+
+// The rules tab and the personas tab both spell the persona name by hand, on
+// different tabs, weeks apart. A typo on one of them would produce a bundle no
+// customer can ever be matched to, and nothing else would notice.
+const PERSONAS_CSV = [
+  'Convenience Seeker,"""I just want to work out."" Minimal setup"',
+  'Maximum Function User,"""Give me everything."" Wants variety"',
+  'Serious Strength Trainer,"""I want to get stronger."" Cares about load"'
+].join('\n');
+
+const oneBundle = (style) => ({
+  rules: ['Functions,Size,Style,Budget,Bundle', `cable,2 x 2,${style},3000,1`].join('\n'),
+  products: ['Bundle no,Name,,', `1,One,${A}`].join('\n')
+});
+
+test('a persona on the rules tab that is not on the personas tab is refused', () => {
+  const { rules, products } = oneBundle('Convienience Seeker');   // note the typo
+  const err = caught(() => buildSheetBundles(rules, products, PERSONAS_CSV));
+  assert.ok(err instanceof SheetError);
+  assert.match(err.problems[0], /Convienience Seeker/);
+  assert.match(err.problems[0], /not on the personas tab/);
+});
+
+test('persona names match across tabs regardless of case and spacing', () => {
+  const { rules, products } = oneBundle('convenience seeker');
+  assert.doesNotThrow(() => buildSheetBundles(rules, products, PERSONAS_CSV));
+});
+
+// The reverse is a warning, not an error: the option still shows and still
+// returns a match on the other three axes, it just never scores on persona.
+test('a persona no bundle is built for warns rather than fails', () => {
+  const { rules, products } = oneBundle('Convenience Seeker');
+  const out = buildSheetBundles(rules, products, PERSONAS_CSV);
+  assert.equal(out.length, 1);
+  assert.ok(out.warnings.some((w) => /Maximum Function User/.test(w)));
+});
+
+// Both directions, against the data that actually ships.
+test('every persona in the committed data is used by at least one bundle', () => {
+  for (const p of PERSONAS) {
+    assert.ok(
+      SHEET_BUNDLES.some((b) => b.personas.some((x) => x.toLowerCase() === p.name.toLowerCase())),
+      `no bundle is built for "${p.name}", so picking it can never change the answer`
+    );
+  }
+});
+
+test('every persona a bundle names is defined on the personas tab', () => {
+  const known = PERSONAS.map((p) => p.name.toLowerCase());
+  for (const b of SHEET_BUNDLES) {
+    for (const p of b.personas) {
+      assert.ok(known.includes(p.toLowerCase()), `bundle ${b.id} names unknown persona "${p}"`);
+    }
+  }
+});
+
+// Question three is generated from the personas tab, so an empty tab would ship
+// a step with nothing to pick.
+test('question three has an option for every persona', () => {
+  assert.equal(PERSONA_OPTIONS.length, PERSONAS.length);
+  assert.ok(PERSONA_OPTIONS.length >= 2, 'a single-option question is not a question');
+  for (const o of PERSONA_OPTIONS) {
+    assert.ok(o.value && o.label && o.help, `persona option is incomplete: ${JSON.stringify(o)}`);
+  }
 });
 
 /* Personas ----------------------------------------------------------------- */
@@ -205,7 +274,7 @@ test('a bundle added to the sheet with no copy written yet still composes', () =
     name: null,
     functions: ['cable'],
     footprint: { length: 2, depth: 2 },
-    level: 'beginner',
+    personas: ['Convenience Seeker'],
     budgetCeiling: 9000,
     productUrls: [known.url]
   }]);
@@ -222,7 +291,7 @@ test('a bundle added to the sheet with no copy written yet still composes', () =
 test('a bundle naming a product not in the catalogue fails the build', () => {
   assert.throws(() => composeBundles([{
     id: 998, name: null, functions: ['cable'],
-    footprint: { length: 2, depth: 2 }, level: 'beginner', budgetCeiling: 9000,
+    footprint: { length: 2, depth: 2 }, personas: ['Convenience Seeker'], budgetCeiling: 9000,
     productUrls: ['https://homegym.sg/does-not-exist.html']
   }]), /no product in the catalogue matches/);
 });
@@ -232,9 +301,9 @@ test('in lenient mode a broken bundle is dropped and the rest survive', () => {
   const known = Object.values(PRODUCTS_BY_URL)[0];
   const { bundles, problems } = composeBundles([
     { id: 1, name: null, functions: ['cable'], footprint: { length: 2, depth: 2 },
-      level: 'beginner', budgetCeiling: 9000, productUrls: ['https://homegym.sg/nope.html'] },
+      personas: ['Convenience Seeker'], budgetCeiling: 9000, productUrls: ['https://homegym.sg/nope.html'] },
     { id: 2, name: null, functions: ['cable'], footprint: { length: 2, depth: 2 },
-      level: 'beginner', budgetCeiling: 9000, productUrls: [known.url] }
+      personas: ['Convenience Seeker'], budgetCeiling: 9000, productUrls: [known.url] }
   ], { strict: false });
 
   assert.equal(bundles.length, 1, 'only the broken bundle should be dropped');

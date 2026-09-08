@@ -9,11 +9,8 @@
  *   match(answers, bundles) -> { primary, alternates, fallback, debug }
  */
 
-/** Level ordering, used for the "steps away" distance in levelScore. */
-const LEVEL_ORDER = ['beginner', 'intermediate', 'advanced'];
-
 /** Scoring weights. Must total 100. */
-export const WEIGHTS = { fn: 40, budget: 25, space: 20, level: 15 };
+export const WEIGHTS = { fn: 40, budget: 25, space: 20, persona: 15 };
 
 /** Fallback tiers, in the order the ladder relaxes constraints. */
 export const FALLBACK = {
@@ -74,13 +71,30 @@ export function spaceScore(bundle, userLength, userDepth) {
   return clamp(bundleArea / userArea, 0, 1);
 }
 
-/** Exact match 1.0, one step away 0.6, two steps away 0.2. */
-export function levelScore(userLevel, bundleLevel) {
-  const a = LEVEL_ORDER.indexOf(userLevel);
-  const b = LEVEL_ORDER.indexOf(bundleLevel);
-  if (a === -1 || b === -1) return 0;
-  const distance = Math.abs(a - b);
-  return distance === 0 ? 1.0 : distance === 1 ? 0.6 : 0.2;
+/**
+ * Does this bundle target the persona the customer picked?
+ *
+ * THIS REPLACED A DISTANCE SCORE, AND IT HAD TO.
+ *   The old version matched training level, where beginner, intermediate and
+ *   advanced sit on a line, so "one rung out" could sensibly score 0.6. The
+ *   sheet now matches on persona instead, and personas are not on a line: a
+ *   Convenience Seeker is not "one step" from a Serious Strength Trainer, they
+ *   want a different machine. There is no honest partial credit to give, so
+ *   this is deliberately all or nothing.
+ *
+ * A bundle can serve more than one persona; bundle 3 is built for both the
+ * Maximum Function User and the Serious Strength Trainer.
+ *
+ * Comparison ignores case and punctuation so "Guided / Accountability User" and
+ * "guided/accountability user" are the same person, which matters because the
+ * name is typed by hand on two different tabs.
+ */
+const flat = (v) => String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+export function personaScore(userPersona, bundlePersonas) {
+  if (!userPersona || !Array.isArray(bundlePersonas) || !bundlePersonas.length) return 0;
+  const want = flat(userPersona);
+  return bundlePersonas.some((p) => flat(p) === want) ? 1 : 0;
 }
 
 /** Full 0-100 score plus the component breakdown, for the debug payload. */
@@ -88,18 +102,18 @@ export function scoreBundle(bundle, answers) {
   const fn = functionScore(answers.functions, bundle.functions);
   const budget = budgetScore(bundle.price, answers.budget);
   const space = spaceScore(bundle, answers.length, answers.depth);
-  const level = levelScore(answers.level, bundle.level);
+  const persona = personaScore(answers.persona, bundle.personas);
 
   const score =
     WEIGHTS.fn * fn +
     WEIGHTS.budget * budget +
     WEIGHTS.space * space +
-    WEIGHTS.level * level;
+    WEIGHTS.persona * persona;
 
   return {
     bundle,
     score,
-    parts: { fn, budget, space, level },
+    parts: { fn, budget, space, persona },
     // Raw coverage without the capability bonus, tie-break (a) uses this, so a
     // bundle that genuinely covers more of what you asked for wins over one that
     // merely does more things in general.
@@ -154,7 +168,7 @@ function eligible(bundles, length, depth, budget) {
 /**
  * Match a set of answers to a bundle.
  *
- * @param {{functions: string[], length: number, depth: number, level: string, budget: number}} answers
+ * @param {{functions: string[], length: number, depth: number, persona: string, budget: number}} answers
  * @param {Array} bundles
  * @returns {{primary: object|null, alternates: object[], fallback: string|null, debug: object}}
  */
@@ -163,7 +177,10 @@ export function match(answers, bundles) {
     functions: Array.isArray(answers?.functions) ? answers.functions.slice() : [],
     length: Number(answers?.length) || 0,
     depth: Number(answers?.depth) || 0,
-    level: answers?.level || 'beginner',
+    // No default persona. Guessing one would silently hand 15 points to
+    // whichever bundles happen to serve it, on behalf of a customer who never
+    // said that about themselves.
+    persona: answers?.persona || null,
     budget: Number(answers?.budget) || 0
   };
 

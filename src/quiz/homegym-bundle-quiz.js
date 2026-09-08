@@ -19,7 +19,7 @@
  * the cart CTA POSTs to cart-endpoint when one is configured, and every
  * meaningful action also fires a bubbling, composed CustomEvent for GTM.
  */
-import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, LEVEL_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
+import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, PERSONA_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
 import { buildSheetBundles } from './sheet-parse.js';
 import { SHEET_ID, SHEET_TABS } from './sheet-data.js';
 import { match, FALLBACK } from './matcher.js';
@@ -60,7 +60,7 @@ const DEFAULT_ANSWERS = {
   functions: [],
   length: 2.5,
   depth: 3.0,
-  level: null,
+  persona: null,
   budget: 5000
 };
 
@@ -76,6 +76,12 @@ const CHECK_SVG =
 
 const WA_SVG =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.23-8.24 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.78.97-.15.16-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29Z"/></svg>';
+
+/* Persona name to the quote the customer actually picked, so the result can
+   echo their own words back rather than label them a "Convenience Seeker". */
+const PERSONA_QUOTE = Object.fromEntries(
+  PERSONA_OPTIONS.map((o) => [o.value, o.label])
+);
 
 const ARROW = '<span aria-hidden="true">&#8594;</span>';
 const BACK_ARROW = '<span aria-hidden="true">&#8592;</span>';
@@ -422,7 +428,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="progress">
         <div class="progress__meta">
           <span class="progress__step">Step ${this.state.step} of ${TOTAL_STEPS}</span>
-          <span class="progress__name">${['Function', 'Space', 'Level', 'Budget'][this.state.step - 1]}</span>
+          <span class="progress__name">${['Function', 'Space', 'You', 'Budget'][this.state.step - 1]}</span>
         </div>
         <div class="progress__track" role="progressbar"
              aria-valuenow="${this.state.step}" aria-valuemin="1" aria-valuemax="${TOTAL_STEPS}"
@@ -482,7 +488,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (this.state.step === 1 && this.state.answers.functions.length === 0) {
       return 'Pick at least one thing you want to train.';
     }
-    if (this.state.step === 3 && !this.state.answers.level) {
+    if (this.state.step === 3 && !this.state.answers.persona) {
       return 'Pick the option that describes you best.';
     }
     return '';
@@ -658,16 +664,27 @@ class HomegymBundleQuiz extends HTMLElement {
       </svg>`;
   }
 
+  /**
+   * Question three: which customer is this?
+   *
+   * This used to ask for a training level. The sheet now matches bundles on
+   * persona instead, so the question asks the thing the matcher actually uses.
+   * The options come straight from the personas tab, which is why the labels
+   * below are quotes: it is how the client wrote them, and a quote is how
+   * someone recognises themselves. The segment NAME ("Convenience Seeker") is
+   * deliberately never shown, because it is an internal label and reads as a
+   * judgement when pointed at the person reading it.
+   */
   step3() {
-    const current = this.state.answers.level;
+    const current = this.state.answers.persona;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>Where are you at right now?</h1>
-      <p class="subhead">This sets how much machine you'll actually use, not how hard you train.</p>
+      <h1 class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</h1>
+      <p class="subhead">This is about what you want out of it, not how hard you train.</p>
       <fieldset class="options options--single">
-        <legend class="visually-hidden">Fitness level</legend>
-        ${LEVEL_OPTIONS.map((o) => `
+        <legend class="visually-hidden">What you want from your gym</legend>
+        ${PERSONA_OPTIONS.map((o) => `
           <label class="option option--radio${current === o.value ? ' is-selected' : ''}">
-            <input type="radio" name="level" value="${esc(o.value)}" ${current === o.value ? 'checked' : ''}>
+            <input type="radio" name="persona" value="${esc(o.value)}" ${current === o.value ? 'checked' : ''}>
             <span class="option__mark">${CHECK_SVG}</span>
             <span class="option__body">
               <span class="option__label">${esc(o.label)}</span>
@@ -729,10 +746,11 @@ class HomegymBundleQuiz extends HTMLElement {
       matched.length
         ? `${matched.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`
         : `${bundle.functions.map((f) => FUNCTION_SHORT[f] || f).join(' + ')} work`,
-      // The level is only a REASON when it agrees with the answer given. Telling
-      // an advanced lifter their match is "intermediate" argues against it.
-      bundle.level === a.level
-        ? `Built for ${bundle.level}`
+      // The persona is only a REASON when the bundle is actually built for the
+      // one they picked. Otherwise fall back to something true about the kit,
+      // rather than telling someone they are a customer type they did not choose.
+      (bundle.personas || []).some((p) => p === a.persona)
+        ? `Built for "${PERSONA_QUOTE[a.persona] || a.persona}"`
         : `${bundle.trains.length} movements covered`
     ];
 
@@ -772,7 +790,7 @@ class HomegymBundleQuiz extends HTMLElement {
           <button class="btn btn--text" data-action="adjust" type="button">Adjust my answers</button>
           <button class="btn btn--text" data-action="restart" type="button">Start again</button>
         </div>
-        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.level || 'any level')} &middot; ${this.budgetLabel(a.budget)} budget</p>
+        <p class="summary">${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m &middot; ${esc(a.persona || 'any profile')} &middot; ${this.budgetLabel(a.budget)} budget</p>
         </div>
       </div>`;
   }
@@ -1020,8 +1038,8 @@ class HomegymBundleQuiz extends HTMLElement {
       if (this.state.answers.functions.length) this._refreshGate();
       this._save();
     }
-    if (t.name === 'level') {
-      this.state.answers.level = t.value;
+    if (t.name === 'persona') {
+      this.state.answers.persona = t.value;
       this.shadowRoot.querySelectorAll('.option--radio').forEach((el) => {
         el.classList.toggle('is-selected', el.contains(t));
       });
@@ -1109,7 +1127,7 @@ class HomegymBundleQuiz extends HTMLElement {
       if (box) box.textContent = this.state.error;
       return;
     }
-    if (this.state.step === 3 && !this.state.answers.level) {
+    if (this.state.step === 3 && !this.state.answers.persona) {
       this.state.error = 'Pick the option that describes you best.';
       const box = this.shadowRoot.querySelector('.validation');
       if (box) box.textContent = this.state.error;
@@ -1321,7 +1339,7 @@ class HomegymBundleQuiz extends HTMLElement {
     const fns = a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
     lines.push(`Training: ${fns}`);
     lines.push(`Space: ${a.length.toFixed(1)} x ${a.depth.toFixed(1)} m`);
-    lines.push(`Level: ${a.level ? a.level.charAt(0).toUpperCase() + a.level.slice(1) : 'Not specified'}`);
+    lines.push(`Looking for: ${a.persona || 'Not specified'}`);
     lines.push(`Budget: ${this.money(a.budget)}`);
 
     if (bundle) {
@@ -1362,7 +1380,7 @@ class HomegymBundleQuiz extends HTMLElement {
       functions: a.functions.slice(),
       length: a.length,
       depth: a.depth,
-      level: a.level || 'beginner',
+      persona: a.persona || null,
       budget: a.budget
     };
   }

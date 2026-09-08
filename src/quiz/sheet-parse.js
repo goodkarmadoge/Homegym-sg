@@ -90,17 +90,19 @@ export const FUNCTION_ALIASES = {
   smarttrainer: 'smart'
 };
 
-/** "Advance" is what the sheet says; the quiz has always called it advanced. */
-export const LEVEL_ALIASES = {
-  beginner: 'beginner',
-  novice: 'beginner',
-  intermediate: 'intermediate',
-  advance: 'advanced',
-  advanced: 'advanced',
-  expert: 'advanced'
-};
-
+/**
+ * Persona names are NOT aliased.
+ *
+ * They used to be training levels, where "Advance" and "advanced" clearly meant
+ * the same rung. Personas are free text owned by the personas tab, so the only
+ * safe check is that a name used on the rules tab actually exists there. Anything
+ * cleverer would let a typo quietly become a fifth persona that no bundle serves
+ * and no customer can ever be matched to.
+ */
 const norm = (v) => String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Compare two persona names the way a human would, ignoring case and spacing. */
+export const samePersona = (a, b) => norm(a) === norm(b);
 
 /* Errors ------------------------------------------------------------------- */
 
@@ -194,14 +196,16 @@ export function parseRules(csv) {
       else footprint = { length, depth };
     }
 
-    // Style, the training level.
-    const levelRaw = at(row, 'style');
-    const level = LEVEL_ALIASES[norm(levelRaw)];
-    if (!level) {
-      problems.push(
-        where + ': style "' + levelRaw + '" is not recognised. Known: ' +
-        [...new Set(Object.keys(LEVEL_ALIASES))].join(', ')
-      );
+    // Style, the customer personas this bundle is built for.
+    //
+    // Comma separated, because a bundle can serve more than one: bundle 3 is
+    // aimed at both the Maximum Function User and the Serious Strength Trainer.
+    // Names are checked against the personas tab in buildSheetBundles(), which
+    // is the only place that has both tabs in hand.
+    const personaRaw = at(row, 'style');
+    const personas = personaRaw.split(',').map((p) => p.trim()).filter(Boolean);
+    if (!personas.length) {
+      problems.push(where + ': bundle ' + id + ' names no persona in the Style column');
     }
 
     // Budget ceiling. Tolerates "$4,000" as well as "4000".
@@ -217,7 +221,7 @@ export function parseRules(csv) {
     const nameRaw = at(row, 'bundlename');
     const name = nameRaw && norm(nameRaw) !== 'tbd' ? nameRaw : null;
 
-    bundles.push({ id, functions, footprint, level, budgetCeiling, name, productUrls: [] });
+    bundles.push({ id, functions, footprint, personas, budgetCeiling, name, label: null, productUrls: [] });
   }
 
   if (!bundles.length) problems.push('the rules tab has no bundle rows');
@@ -228,48 +232,62 @@ export function parseRules(csv) {
 /* Tab 2, the product matrix ------------------------------------------------ */
 
 /**
- * Parse the products tab into bundle id to ordered product URLs.
+ * Parse the products tab into bundle id to ordered product URLs, plus the
+ * short working name in the Name column.
  *
- * The tab is transposed relative to the rules tab: bundles run across as
- * columns and products down as rows (A, B, C and an unlabelled fourth). Reading
- * rows top to bottom preserves the intended order, so the anchor machine in row
- * A stays first in the result page's product grid.
+ * ONE ROW PER BUNDLE: "Bundle no", "Name", then the product URLs running across
+ * in as many unnamed columns as that bundle needs. Left to right is the order
+ * they appear in the result grid, so the anchor machine in the first URL column
+ * stays first.
+ *
+ * The URL columns are found by CONTENT rather than by header, because they have
+ * no headers to find: everything after Bundle no and Name is blank in row 1.
+ * That also means adding a fifth product to a bundle needs no code change.
  */
 export function parseProducts(csv) {
   const rows = parseCsv(csv);
-  const head = findHeader(rows, ['product'], 'product matrix');
+  const head = findHeader(rows, ['bundleno'], 'product list');
+  const cols = {};
+  rows[head].forEach((name, i) => { if (norm(name) && cols[norm(name)] == null) cols[norm(name)] = i; });
 
-  // Map each column that holds a bundle number to that bundle.
-  const colToBundle = new Map();
-  rows[head].forEach((cell, i) => {
-    const n = Number(String(cell).trim());
-    if (Number.isInteger(n) && n >= 1) colToBundle.set(i, n);
-  });
-
-  if (!colToBundle.size) {
-    throw new SheetError([
-      'the product matrix header row ' + (head + 1) + ' has no bundle numbers across it'
-    ]);
-  }
+  const idCol = cols.bundleno;
+  const nameCol = cols.name;
 
   const problems = [];
-  const byBundle = new Map([...colToBundle.values()].map((id) => [id, []]));
+  const byBundle = new Map();
 
   for (let i = head + 1; i < rows.length; i++) {
-    for (const [col, id] of colToBundle) {
-      const cell = (rows[i][col] || '').trim();
-      if (!cell) continue;
-      if (!/^https?:\/\//i.test(cell)) {
-        problems.push('product matrix row ' + (i + 1) + ', bundle ' + id + ': "' + cell + '" is not a URL');
-        continue;
-      }
-      const list = byBundle.get(id);
-      // A product listed twice in one column is a copy-paste slip, not an
-      // instruction to charge for it twice.
-      if (!list.includes(cell)) list.push(cell);
+    const row = rows[i];
+    const idRaw = (row[idCol] || '').trim();
+    if (!idRaw) continue;                       // blank spacer row
+
+    const id = Number(idRaw);
+    if (!Number.isInteger(id) || id < 1) {
+      problems.push('product list row ' + (i + 1) + ': bundle number "' + idRaw + '" is not a positive whole number');
+      continue;
     }
+    if (byBundle.has(id)) {
+      problems.push('product list row ' + (i + 1) + ': bundle ' + id + ' is listed more than once');
+      continue;
+    }
+
+    const urls = [];
+    row.forEach((cell, col) => {
+      const value = (cell || '').trim();
+      if (!value || col === idCol || col === nameCol) return;
+      if (!/^https?:\/\//i.test(value)) {
+        problems.push('product list row ' + (i + 1) + ', bundle ' + id + ': "' + value + '" is not a URL');
+        return;
+      }
+      // A product pasted twice into one row is a slip, not an instruction to
+      // charge for it twice.
+      if (!urls.includes(value)) urls.push(value);
+    });
+
+    byBundle.set(id, { urls, label: nameCol == null ? null : (row[nameCol] || '').trim() || null });
   }
 
+  if (!byBundle.size) problems.push('the products tab has no bundle rows');
   if (problems.length) throw new SheetError(problems);
   return byBundle;
 }
@@ -295,11 +313,15 @@ export function parsePersonas(csv) {
 
     // The body is a quote followed by the explanation, for example:
     //   "I just want to work out." Minimal setup, quick weight changes
+    // The explanation can run onto a second line inside the cell, as the
+    // Practical / Value Seeker's does. Collapse it so it sets as one line of
+    // helper text under the option rather than breaking mid-sentence.
+    const flatten = (s) => s.replace(/\s+/g, ' ').trim();
     const m = body.match(/^["“](.+?)["”]\s*([\s\S]*)$/);
     out.push({
       name,
-      quote: m ? m[1].trim() : null,
-      description: m ? m[2].trim() : body
+      quote: m ? flatten(m[1]) : null,
+      description: flatten(m ? m[2] : body)
     });
   }
   return out;
@@ -308,33 +330,63 @@ export function parsePersonas(csv) {
 /* Assembly ----------------------------------------------------------------- */
 
 /**
- * Join the rules tab to the product matrix.
+ * Join all three tabs.
  *
  * A bundle with rules but no products cannot be priced or shown, so it is a
- * hard error rather than a bundle that silently renders as empty. A column of
- * products with no matching rules row is the same mistake seen from the other
- * side and fails just as loudly.
+ * hard error rather than a bundle that silently renders as empty. A products
+ * row with no matching rules row is the same mistake seen from the other side
+ * and fails just as loudly.
+ *
+ * Passing the personas tab is optional only so existing callers keep working.
+ * Pass it: it is the one chance to catch a persona typed on the rules tab that
+ * does not exist as a persona, which would otherwise become a bundle no
+ * customer can ever be matched to.
  */
-export function buildSheetBundles(rulesCsv, productsCsv) {
+export function buildSheetBundles(rulesCsv, productsCsv, personasCsv) {
   const bundles = parseRules(rulesCsv);
   const byBundle = parseProducts(productsCsv);
+  const personas = personasCsv ? parsePersonas(personasCsv) : null;
   const problems = [];
+  const warnings = [];
 
   for (const b of bundles) {
-    const urls = byBundle.get(b.id);
-    if (!urls || !urls.length) {
-      problems.push('bundle ' + b.id + ' is defined on the rules tab but has no products in its column');
+    const entry = byBundle.get(b.id);
+    if (!entry || !entry.urls.length) {
+      problems.push('bundle ' + b.id + ' is defined on the rules tab but has no products on the products tab');
     } else {
-      b.productUrls = urls;
+      b.productUrls = entry.urls;
+      b.label = entry.label;
     }
   }
 
   for (const id of byBundle.keys()) {
     if (!bundles.some((b) => b.id === id)) {
-      problems.push('the product matrix has a column for bundle ' + id + ', but no rules row defines it');
+      problems.push('the products tab has a row for bundle ' + id + ', but no rules row defines it');
+    }
+  }
+
+  if (personas) {
+    const known = personas.map((p) => p.name);
+    for (const b of bundles) {
+      for (const p of b.personas) {
+        if (!known.some((k) => samePersona(k, p))) {
+          problems.push(
+            'bundle ' + b.id + ': persona "' + p + '" is not on the personas tab. Known: ' + known.join('; ')
+          );
+        }
+      }
+    }
+    // The other direction is not fatal. A persona nobody is built for still
+    // shows as an option and still returns a match on the other three axes, it
+    // just never scores on persona. Worth knowing about, not worth blocking.
+    for (const k of known) {
+      if (!bundles.some((b) => b.personas.some((p) => samePersona(p, k)))) {
+        warnings.push('no bundle is built for the "' + k + '" persona');
+      }
     }
   }
 
   if (problems.length) throw new SheetError(problems);
+  bundles.warnings = warnings;
   return bundles;
 }
