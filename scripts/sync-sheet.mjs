@@ -54,16 +54,41 @@ const csvUrl = (sheetId, gid) =>
 /**
  * Fetch one tab.
  *
- * Google answers an unauthorised request with a 200-or-401 HTML sign-in page
- * rather than an error, so a naive fetch would hand the CSV parser a lump of
- * markup and produce a baffling "could not find the header row". Detect that
- * case and say what to actually do about it.
+ * TWO FAILURES LOOK ALIKE FROM HERE AND HAVE COMPLETELY DIFFERENT FIXES.
+ *
+ *   A PRIVATE SHEET. Google answers an unauthorised request with a 200-or-401
+ *   HTML sign-in page rather than an error, so a naive fetch would hand the CSV
+ *   parser a lump of markup and produce a baffling "could not find the header
+ *   row". The fix is the Share dialog.
+ *
+ *   A GID THAT NO LONGER EXISTS, which answers 400. The fix is config/sheet.json,
+ *   and the Share dialog does nothing at all. A tab that is deleted and rebuilt,
+ *   rather than edited in place, gets a NEW gid and leaves the old number
+ *   pointing at nothing. That is not a rare accident: it is what happens any
+ *   time someone restructures a tab by replacing it.
+ *
+ * Telling the second story as the first sends whoever is fixing it to the wrong
+ * dialog, so they are reported separately. Happened for real on 8 Sep 2026,
+ * when the products tab was restructured: the rules tab on gid 0 fetched
+ * perfectly in the same run, which on its own proves the sheet is public.
  */
 async function fetchTab(sheetId, gid, name) {
   const url = csvUrl(sheetId, gid);
   const res = await fetch(url, { redirect: 'follow' });
   const body = await res.text();
   const type = res.headers.get('content-type') || '';
+
+  if (res.status === 400) {
+    throw new Error(
+      `the "${name}" tab's gid (${gid}) does not exist in this spreadsheet (HTTP 400).\n` +
+      `  The sheet is readable. This gid is not: a tab that was deleted and\n` +
+      `  rebuilt rather than edited gets a new number, and the old one stops\n` +
+      `  resolving. Sharing settings have nothing to do with it.\n` +
+      `  Fix: open the sheet, click the "${name}" tab, and copy the number after\n` +
+      `  "#gid=" in the address bar into config/sheet.json.\n` +
+      `  URL tried: ${url}`
+    );
+  }
 
   if (!res.ok || type.includes('text/html') || /^\s*<!DOCTYPE/i.test(body)) {
     throw new Error(
@@ -120,11 +145,20 @@ async function loadTabs() {
   }
 
   console.log(`fetching sheet ${cfg.sheetId}\n`);
-  const [rules, products, personas] = await Promise.all([
-    fetchTab(cfg.sheetId, cfg.tabs.rules, 'rules'),
-    fetchTab(cfg.sheetId, cfg.tabs.products, 'products'),
-    fetchTab(cfg.sheetId, cfg.tabs.personas, 'personas')
-  ]);
+
+  // allSettled, not all. Promise.all rejects on whichever tab fails first and
+  // abandons the rest, so a run with two stale gids reports one and hides the
+  // other, costing a second round trip to find out. Fetch all three, then
+  // report every one that failed, the same way SheetError reports every bad
+  // cell rather than the first.
+  const wanted = [['rules', cfg.tabs.rules], ['products', cfg.tabs.products], ['personas', cfg.tabs.personas]];
+  const settled = await Promise.allSettled(wanted.map(([name, gid]) => fetchTab(cfg.sheetId, gid, name)));
+  const failures = settled
+    .map((r, i) => (r.status === 'rejected' ? `${wanted[i][0]}: ${r.reason.message}` : null))
+    .filter(Boolean);
+  if (failures.length) throw new Error(failures.join('\n\n'));
+
+  const [rules, products, personas] = settled.map((r) => r.value);
   return { source: `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`, rules, products, personas };
 }
 
