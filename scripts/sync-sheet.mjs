@@ -62,14 +62,32 @@ async function fetchTab(sheetId, gid, name) {
   const type = res.headers.get('content-type') || '';
 
   if (!res.ok || type.includes('text/html') || /^\s*<!DOCTYPE/i.test(body)) {
-    throw new Error(
-      `could not read the "${name}" tab (HTTP ${res.status}).\n` +
-      `  Google returned its sign-in page, which means the sheet is private.\n` +
-      `  Fix: open the sheet, Share, "Anyone with the link" as Viewer.\n` +
-      `  That makes only this sheet readable, not your Drive.\n` +
-      `  Then re-run. To sync without sharing, export each tab as CSV and use:\n` +
-      `    npm run sync -- --csv-dir ./path-with-rules-products-personas-csv\n` +
-      `  URL tried: ${url}`
+    // 400 and 404 mean the sheet was readable but that gid is not in it.
+    // Anything else is Google's sign-in page, which it serves in place of an
+    // error when the document is private.
+    //
+    // These need opposite fixes and used to produce the same message. A tab
+    // that is deleted, duplicated or rebuilt gets a NEW gid and the old one
+    // stops existing, which is exactly what happened to the products tab on
+    // 8 Sep 2026. Being told "the sheet is private" when it is not sends you
+    // looking in completely the wrong place.
+    const missingTab = res.status === 400 || res.status === 404;
+
+    throw new Error(missingTab
+      ? `the "${name}" tab (gid ${gid}) is not in this sheet any more (HTTP ${res.status}).\n` +
+        `  A tab that is deleted, duplicated or rebuilt gets a new gid, and the old\n` +
+        `  one stops working. The sheet itself is readable, so this is NOT a\n` +
+        `  sharing problem.\n` +
+        `  Fix: open the sheet, click the "${name}" tab, and copy the number after\n` +
+        `  "#gid=" in the address bar into config/sheet.json.\n` +
+        `  URL tried: ${url}`
+      : `could not read the "${name}" tab (HTTP ${res.status}).\n` +
+        `  Google returned its sign-in page, which means the sheet is private.\n` +
+        `  Fix: open the sheet, Share, "Anyone with the link" as Viewer.\n` +
+        `  That makes only this sheet readable, not your Drive.\n` +
+        `  Then re-run. To sync without sharing, export each tab as CSV and use:\n` +
+        `    npm run sync -- --csv-dir ./path-with-rules-products-personas-csv\n` +
+        `  URL tried: ${url}`
     );
   }
   return body;
