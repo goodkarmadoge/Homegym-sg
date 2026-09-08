@@ -417,13 +417,15 @@ export const FUNCTION_OPTIONS = [
  * the options have to come from the same tab the rules reference. Adding a
  * persona to the sheet adds an option here with no code change.
  *
- * The quote is the label because it is how someone recognises themselves, and
- * it is what the personas tab leads with. The explanation sits underneath as
- * helper text, exactly as the level descriptions used to.
+ * Each option shows all three parts of a persona: the segment name, the quote
+ * underneath it, then the explanation. The name was hidden at first on the
+ * grounds that it reads as a label pointed at the reader, and the client asked
+ * for it back on 8 Sep 2026.
  */
 export const PERSONA_OPTIONS = PERSONAS.map((p) => ({
   value: p.name,
-  label: p.quote || p.name,
+  label: p.name,
+  quote: p.quote,
   help: p.description || p.name
 }));
 
