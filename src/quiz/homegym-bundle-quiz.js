@@ -29,7 +29,7 @@ const STORAGE_KEY = 'homegym-bundle-quiz-v1';
 const TOTAL_STEPS = 4;
 
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
-   it renders as "S$7,500+", so anyone with more to spend still lands on the
+   it renders as "$7,500+", so anyone with more to spend still lands on the
    most capable bundle rather than being told their number is out of range. */
 const BUDGET_MIN = 2500;
 const BUDGET_MAX = 7500;
@@ -197,7 +197,7 @@ class HomegymBundleQuiz extends HTMLElement {
   money(n) {
     const value = Math.round(Number(n) || 0);
     if (this.currency.toUpperCase() === 'SGD') {
-      return 'S$' + value.toLocaleString('en-SG');
+      return '$' + value.toLocaleString('en-SG');
     }
     try {
       return new Intl.NumberFormat('en-SG', {
@@ -690,7 +690,7 @@ class HomegymBundleQuiz extends HTMLElement {
       </fieldset>`;
   }
 
-  /** The top of the range reads as a floor, so "S$7,500" renders "S$7,500+". */
+  /** The top of the range reads as a floor, so "$7,500" renders "$7,500+". */
   budgetLabel(v) {
     return this.money(v) + (v >= BUDGET_MAX ? '+' : '');
   }
@@ -734,7 +734,7 @@ class HomegymBundleQuiz extends HTMLElement {
     const a = this.state.answers;
     const matched = a.functions.filter((f) => bundle.functions.includes(f));
 
-    // No "S$X under budget" chip. Coming in under budget is a guarantee of the
+    // No "$X under budget" chip. Coming in under budget is a guarantee of the
     // matcher, not a feature of this bundle. When one genuinely is over, the
     // fallback banner says so instead.
     const chips = [
@@ -804,7 +804,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
         <p class="fineprint">
           Prices are current sale prices as at 30 August 2026 and exclude installation,
-          which is quoted separately. Delivery is free on orders over S$150. These units
+          which is quoted separately. Delivery is free on orders over $150. These units
           run from 90&nbsp;kg to over 300&nbsp;kg.
         </p>
       </section>`;

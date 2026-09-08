@@ -378,7 +378,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
   <span><b>Fast Singapore delivery</b></span>
   <span><b>Expert setup available</b></span>
   <span><b>Equipment that lasts</b></span>
-  <span class="far">Free delivery over S$150</span>
+  <span class="far">Free delivery over $150</span>
 </div></div>
 
 <header><div class="wrap">
@@ -407,7 +407,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
     </div>
     <div class="assure">
       <div><strong>Fast delivery</strong><span>3 working days average</span></div>
-      <div><strong>Expert setup</strong><span>Assembly from S$200</span></div>
+      <div><strong>Expert setup</strong><span>Assembly from $200</span></div>
       <div><strong>Warranty</strong><span>Lifetime frames</span></div>
     </div>
   </div>
@@ -424,7 +424,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
       <div><dt>Footprint</dt><dd>2.07 × 1.61 m</dd></div>
       <div><dt>Height</dt><dd>2.24 m</dd></div>
       <div><dt>Exercises</dt><dd>100+</dd></div>
-      <div><dt>From</dt><dd>S$4,899</dd></div>
+      <div><dt>From</dt><dd>$4,899</dd></div>
     </dl>
   </div>
 </div></section>
@@ -535,7 +535,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
     <div class="pack">
       <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/19b8779ea82eba7c3074c2b874ba8dba/4/-/4-235_dumbbell_2_.jpg" alt="Vigor Smartlock adjustable dumbbells" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Starter</h3>
-      <div class="from">From S$499</div>
+      <div class="from">From $499</div>
       <p>Getting stronger without giving up an entire room. Everything stows under a bed or in a cupboard.</p>
       <ul>
         <li>Adjustable dumbbells <em>2 × 24 kg</em></li>
@@ -548,7 +548,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
       <span class="badge">Most popular</span>
       <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/v/s/vs-vr-3.jpg" alt="Vigor Folding Power Rack" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Strength Setup</h3>
-      <div class="from">From S$1,499</div>
+      <div class="from">From $1,499</div>
       <p>The serious answer for an HDB or condo room. Folds back to 72 cm when you are done training.</p>
       <ul>
         <li>Folding power rack <em>1000 lb</em></li>
@@ -561,7 +561,7 @@ footer p{margin:.7rem 0 0;font-size:.83rem;max-width:34ch;line-height:1.55}
     <div class="pack">
       <span class="pshot"><img src="https://d101vd00cis701.cloudfront.net/catalog/product/cache/19b8779ea82eba7c3074c2b874ba8dba/x/2/x20-main-min.jpg" alt="Vigor Titan X20 All-in-1 Trainer" loading="lazy" decoding="async"></span>
       <h3 class="disp">The Complete Home Gym</h3>
-      <div class="from">From S$2,999</div>
+      <div class="from">From $2,999</div>
       <p>A full training floor: press, pull, squat, condition. Built for a dedicated room or garage.</p>
       <ul>
         <li>Power rack + cables <em>Full</em></li>
@@ -793,10 +793,10 @@ const Q = [
   { key:'budget', head:'What is the budget?',
     help:'We will show the honest total including delivery and assembly, not a starting-from price.',
     opts:[
-      {v:'b1', cap:1000,  t:'Under S$1,000',      d:'Focused, high-use pieces only.'},
-      {v:'b2', cap:3000,  t:'S$1,000 – 3,000',    d:'A real rack and a working weight set.'},
-      {v:'b3', cap:6000,  t:'S$3,000 – 6,000',    d:'A complete room with conditioning.'},
-      {v:'b4', cap:99999, t:'S$6,000 and up',     d:'Commercial-grade, no compromises.'}
+      {v:'b1', cap:1000,  t:'Under $1,000',      d:'Focused, high-use pieces only.'},
+      {v:'b2', cap:3000,  t:'$1,000 – 3,000',    d:'A real rack and a working weight set.'},
+      {v:'b3', cap:6000,  t:'$3,000 – 6,000',    d:'A complete room with conditioning.'},
+      {v:'b4', cap:99999, t:'$6,000 and up',     d:'Commercial-grade, no compromises.'}
     ]}
 ];
 
@@ -808,7 +808,7 @@ const pTxt  = document.getElementById('pTxt');
 const pBar  = document.getElementById('pBar');
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function money(n){return 'S$'+n.toLocaleString('en-SG')}
+function money(n){return '$'+n.toLocaleString('en-SG')}
 
 function renderStep(){
   const q = Q[step];
@@ -1098,7 +1098,7 @@ function renderResult(){
       '<div class="totals">'+
         '<span class="lbl">Total, delivered</span>'+
         '<div style="text-align:right"><span class="big">'+money(b.total)+'</span>'+
-        '<small>Free delivery over S$150 · '+b.stats.lead+' average · assembly included above where listed</small></div>'+
+        '<small>Free delivery over $150 · '+b.stats.lead+' average · assembly included above where listed</small></div>'+
       '</div>'+
     '</div>'+
 
