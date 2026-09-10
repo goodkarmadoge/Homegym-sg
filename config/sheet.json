@@ -4,17 +4,12 @@
     "sheetId is the long id in the Google Sheets URL, between /d/ and /edit.",
     "Each tab's gid is the number after '#gid=' in the URL when that tab is open.",
     "Set a gid to null and scripts/sync-sheet.mjs will tell you where to find it",
-    "rather than guessing and silently syncing the wrong tab.",
-    "",
-    "The keys below are the ROLE each tab plays, so renaming a tab in the",
-    "spreadsheet does not need a change here. Today they are: rules = 'Filter',",
-    "products = 'Bundle', personas = 'Style' (the five customer styles, which",
-    "the rules tab's Style column assigns to bundles)."
+    "rather than guessing and silently syncing the wrong tab."
   ],
   "sheetId": "1ntgik1NX9IjqNmaSI1E8Sj95r4bPAE-90cdKzjbnssU",
   "tabs": {
     "rules": 0,
-    "products": 460381699,
+    "products": 1201616033,
     "personas": 1303527735
   }
 }

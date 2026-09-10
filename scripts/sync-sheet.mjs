@@ -6,11 +6,7 @@
 //   npm run sync                    fetch the live sheet, rewrite sheet-data.js
 //   npm run sync -- --check         fail if the committed file is out of date
 //   npm run sync -- --csv-dir DIR   read rules.csv/products.csv/personas.csv
-//                                   from DIR instead of the network. The tabs
-//                                   are named Filter, Bundle and Style in the
-//                                   spreadsheet; the file names here are the
-//                                   roles they play, which do not move when a
-//                                   tab is renamed.
+//                                   from DIR instead of the network
 //
 // WHY A COMMITTED FILE RATHER THAN A LIVE FETCH ON EVERY PAGE LOAD.
 //   The quiz ships as one static script with no runtime dependencies, and the
@@ -54,23 +50,10 @@ const csvUrl = (sheetId, gid) =>
 /**
  * Fetch one tab.
  *
- * TWO FAILURES LOOK ALIKE FROM HERE AND HAVE COMPLETELY DIFFERENT FIXES.
- *
- *   A PRIVATE SHEET. Google answers an unauthorised request with a 200-or-401
- *   HTML sign-in page rather than an error, so a naive fetch would hand the CSV
- *   parser a lump of markup and produce a baffling "could not find the header
- *   row". The fix is the Share dialog.
- *
- *   A GID THAT NO LONGER EXISTS, which answers 400. The fix is config/sheet.json,
- *   and the Share dialog does nothing at all. A tab that is deleted and rebuilt,
- *   rather than edited in place, gets a NEW gid and leaves the old number
- *   pointing at nothing. That is not a rare accident: it is what happens any
- *   time someone restructures a tab by replacing it.
- *
- * Telling the second story as the first sends whoever is fixing it to the wrong
- * dialog, so they are reported separately. Happened for real on 8 Sep 2026,
- * when the products tab was restructured: the rules tab on gid 0 fetched
- * perfectly in the same run, which on its own proves the sheet is public.
+ * Google answers an unauthorised request with a 200-or-401 HTML sign-in page
+ * rather than an error, so a naive fetch would hand the CSV parser a lump of
+ * markup and produce a baffling "could not find the header row". Detect that
+ * case and say what to actually do about it.
  */
 async function fetchTab(sheetId, gid, name) {
   const url = csvUrl(sheetId, gid);
@@ -78,27 +61,33 @@ async function fetchTab(sheetId, gid, name) {
   const body = await res.text();
   const type = res.headers.get('content-type') || '';
 
-  if (res.status === 400) {
-    throw new Error(
-      `the "${name}" tab's gid (${gid}) does not exist in this spreadsheet (HTTP 400).\n` +
-      `  The sheet is readable. This gid is not: a tab that was deleted and\n` +
-      `  rebuilt rather than edited gets a new number, and the old one stops\n` +
-      `  resolving. Sharing settings have nothing to do with it.\n` +
-      `  Fix: open the sheet, click the "${name}" tab, and copy the number after\n` +
-      `  "#gid=" in the address bar into config/sheet.json.\n` +
-      `  URL tried: ${url}`
-    );
-  }
-
   if (!res.ok || type.includes('text/html') || /^\s*<!DOCTYPE/i.test(body)) {
-    throw new Error(
-      `could not read the "${name}" tab (HTTP ${res.status}).\n` +
-      `  Google returned its sign-in page, which means the sheet is private.\n` +
-      `  Fix: open the sheet, Share, "Anyone with the link" as Viewer.\n` +
-      `  That makes only this sheet readable, not your Drive.\n` +
-      `  Then re-run. To sync without sharing, export each tab as CSV and use:\n` +
-      `    npm run sync -- --csv-dir ./path-with-rules-products-personas-csv\n` +
-      `  URL tried: ${url}`
+    // 400 and 404 mean the sheet was readable but that gid is not in it.
+    // Anything else is Google's sign-in page, which it serves in place of an
+    // error when the document is private.
+    //
+    // These need opposite fixes and used to produce the same message. A tab
+    // that is deleted, duplicated or rebuilt gets a NEW gid and the old one
+    // stops existing, which is exactly what happened to the products tab on
+    // 8 Sep 2026. Being told "the sheet is private" when it is not sends you
+    // looking in completely the wrong place.
+    const missingTab = res.status === 400 || res.status === 404;
+
+    throw new Error(missingTab
+      ? `the "${name}" tab (gid ${gid}) is not in this sheet any more (HTTP ${res.status}).\n` +
+        `  A tab that is deleted, duplicated or rebuilt gets a new gid, and the old\n` +
+        `  one stops working. The sheet itself is readable, so this is NOT a\n` +
+        `  sharing problem.\n` +
+        `  Fix: open the sheet, click the "${name}" tab, and copy the number after\n` +
+        `  "#gid=" in the address bar into config/sheet.json.\n` +
+        `  URL tried: ${url}`
+      : `could not read the "${name}" tab (HTTP ${res.status}).\n` +
+        `  Google returned its sign-in page, which means the sheet is private.\n` +
+        `  Fix: open the sheet, Share, "Anyone with the link" as Viewer.\n` +
+        `  That makes only this sheet readable, not your Drive.\n` +
+        `  Then re-run. To sync without sharing, export each tab as CSV and use:\n` +
+        `    npm run sync -- --csv-dir ./path-with-rules-products-personas-csv\n` +
+        `  URL tried: ${url}`
     );
   }
   return body;
@@ -114,17 +103,8 @@ function readLocal(dir, name) {
 async function loadTabs() {
   if (CSV_DIR) {
     console.log(`reading CSV from ${CSV_DIR}\n`);
-    // The recorded source is the SPREADSHEET, not this directory. Those CSVs
-    // are an export of it, so the data's origin is the same either way, and
-    // recording the path instead would make a --csv-dir sync write a file that
-    // the very next `npm run sync --check` in CI rejects as out of date.
-    let source = `local CSV, ${CSV_DIR}`;
-    try {
-      const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'));
-      if (cfg.sheetId) source = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`;
-    } catch { /* no config, fall back to naming the directory */ }
     return {
-      source,
+      source: `local CSV, ${CSV_DIR}`,
       rules: readLocal(CSV_DIR, 'rules'),
       products: readLocal(CSV_DIR, 'products'),
       personas: readLocal(CSV_DIR, 'personas')
@@ -145,20 +125,11 @@ async function loadTabs() {
   }
 
   console.log(`fetching sheet ${cfg.sheetId}\n`);
-
-  // allSettled, not all. Promise.all rejects on whichever tab fails first and
-  // abandons the rest, so a run with two stale gids reports one and hides the
-  // other, costing a second round trip to find out. Fetch all three, then
-  // report every one that failed, the same way SheetError reports every bad
-  // cell rather than the first.
-  const wanted = [['rules', cfg.tabs.rules], ['products', cfg.tabs.products], ['personas', cfg.tabs.personas]];
-  const settled = await Promise.allSettled(wanted.map(([name, gid]) => fetchTab(cfg.sheetId, gid, name)));
-  const failures = settled
-    .map((r, i) => (r.status === 'rejected' ? `${wanted[i][0]}: ${r.reason.message}` : null))
-    .filter(Boolean);
-  if (failures.length) throw new Error(failures.join('\n\n'));
-
-  const [rules, products, personas] = settled.map((r) => r.value);
+  const [rules, products, personas] = await Promise.all([
+    fetchTab(cfg.sheetId, cfg.tabs.rules, 'rules'),
+    fetchTab(cfg.sheetId, cfg.tabs.products, 'products'),
+    fetchTab(cfg.sheetId, cfg.tabs.personas, 'personas')
+  ]);
   return { source: `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`, rules, products, personas };
 }
 
@@ -174,10 +145,10 @@ function render(bundles, personas, source, sheetId, tabs) {
     '  {',
     `    id: ${b.id},`,
     `    name: ${j(b.name)},`,
-    `    sheetLabel: ${j(b.sheetLabel ?? null)},`,
+    `    label: ${j(b.label)},`,
     `    functions: ${j(b.functions)},`,
     `    footprint: { length: ${b.footprint.length}, depth: ${b.footprint.depth} },`,
-    `    styles: ${j(b.styles)},`,
+    `    personas: ${j(b.personas)},`,
     `    budgetCeiling: ${b.budgetCeiling},`,
     '    productUrls: [',
     ...b.productUrls.map((u) => `      ${j(u)},`),
@@ -188,7 +159,6 @@ function render(bundles, personas, source, sheetId, tabs) {
   const personaLines = personas.map((p) => [
     '  {',
     `    name: ${j(p.name)},`,
-    `    tag: ${j(p.tag)},`,
     `    quote: ${j(p.quote)},`,
     `    description: ${j(p.description)}`,
     '  }'
@@ -206,9 +176,13 @@ function render(bundles, personas, source, sheetId, tabs) {
  * Source: ${source}
  *
  * WHAT THIS FILE CARRIES: which bundles exist, the rules that match a customer
- * to one (functions, footprint, style, budget ceiling), and the products in
+ * to one (functions, footprint, personas, budget ceiling), and the products in
  * each, by URL. It carries no prices, copy or imagery, because the sheet holds
  * none. Those are joined on in src/quiz/bundles.js.
+ *
+ * "label" is the short working name from the products tab ("Cube", "bf900").
+ * It is an internal handle for talking about a bundle, NOT customer-facing
+ * copy, and nothing rendered to a visitor uses it.
  */
 
 export const SHEET_SOURCE = ${JSON.stringify(source)};
@@ -228,12 +202,12 @@ ${bundleLines}
 ];
 
 /**
- * Customer styles from the sheet's third tab.
+ * Customer personas from the sheet's third tab.
  *
- * These are live now. The rules tab's Style column assigns them to bundles, so
- * the quiz asks the customer which one they are, in the sheet's own wording,
- * and the matcher scores that answer against the bundle. \`tag\` is the internal
- * value; a style whose name has no tag is carried but never offered.
+ * These now DRIVE QUESTION THREE of the quiz. The options a visitor picks from
+ * are generated from this list, and the rules tab's Style column says which
+ * personas each bundle is built for, so adding a persona here and using it
+ * there is enough to change what the quiz asks. Order is the sheet's order.
  */
 export const PERSONAS = [
 ${personaLines}
@@ -243,15 +217,15 @@ ${personaLines}
 
 /** One line per bundle describing what changed against the committed file. */
 function reportDiff(before, after) {
-  const key = (b) => JSON.stringify([b.functions, b.footprint, b.styles, b.budgetCeiling, b.productUrls, b.name, b.sheetLabel]);
+  const key = (b) => JSON.stringify([b.functions, b.footprint, b.personas, b.budgetCeiling, b.productUrls, b.name, b.label]);
   const oldById = new Map(before.map((b) => [b.id, b]));
   const newById = new Map(after.map((b) => [b.id, b]));
   let changes = 0;
 
   for (const b of after) {
     const was = oldById.get(b.id);
-    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.sheetLabel || 'unnamed'}, ${b.productUrls.length} products, ${b.styles.join(' + ')}, ceiling ${b.budgetCeiling}`); changes++; }
-    else if (key(was) !== key(b)) { console.log(`  CHANGED  bundle ${b.id}  ${b.sheetLabel || ''}`.trimEnd()); changes++; }
+    if (!was) { console.log(`  NEW      bundle ${b.id}  ${b.productUrls.length} products, ${b.personas.join(' + ')}, ceiling ${b.budgetCeiling}`); changes++; }
+    else if (key(was) !== key(b)) { console.log(`  CHANGED  bundle ${b.id}`); changes++; }
   }
   for (const b of before) {
     if (!newById.has(b.id)) { console.log(`  REMOVED  bundle ${b.id}`); changes++; }
@@ -271,7 +245,7 @@ async function main() {
   let bundles;
   let personas;
   try {
-    bundles = buildSheetBundles(tabs.rules, tabs.products);
+    bundles = buildSheetBundles(tabs.rules, tabs.products, tabs.personas);
     personas = parsePersonas(tabs.personas);
   } catch (e) {
     if (e instanceof SheetError) {
@@ -303,6 +277,7 @@ async function main() {
   }
 
   console.log(`parsed ${bundles.length} bundles and ${personas.length} personas`);
+  for (const w of bundles.warnings || []) console.warn(`  WARNING  ${w}`);
   const changes = reportDiff(previous, bundles);
   if (!changes) console.log('  no changes');
 

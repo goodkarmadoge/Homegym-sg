@@ -72,5 +72,67 @@ homegym-bundle-quiz:not(:defined){min-height:620px}
 </div>
 
 <!-- Dev loads the ES modules straight from src/quiz/. scripts/build.mjs swaps
-     this exact tag for the inlined single-file bundle when building dist/. -->
+     this exact tag for the inlined single-file bundle when building dist/.
+     Anything below this point must NOT be a script element before it:
+     scripts/verify.mjs finds the inlined bundle by taking the first one. -->
 <script type="module" src="quiz/homegym-bundle-quiz.js"></script>
+
+<script>
+/* IFRAME AUTO-HEIGHT.
+   ─────────────────────────────────────────────────────────────────────────
+   An iframe does not grow with its content, so an embedded quiz would either
+   be cut off at the result or sit in a tall box with dead space under the
+   questions. This posts the document height to the parent whenever it changes,
+   and README.md, "Embedding it", has the four-line listener that resizes the
+   iframe.
+
+   It is a no-op when the page is not in an iframe, so the standalone page and
+   the component embed are unaffected.
+
+   Only ever sends a number. targetOrigin is "*" because this page cannot know
+   which page on homegym.sg embedded it, and the payload is a height, which is
+   not worth protecting. The LISTENER is where the origin gets checked, and the
+   snippet in the README does check it. */
+(function () {
+  if (window.parent === window) return;   // not embedded, nothing to report
+
+  var mount = document.querySelector('.quiz-mount');
+  var last = 0;
+
+  /* MEASURE THE CONTENT, NOT THE DOCUMENT, and that distinction is the whole
+     trick. documentElement.scrollHeight can never report less than the iframe's
+     own viewport, so once the parent has grown the frame to fit a result page,
+     the document reports that tall forever. Going back to question one then
+     sends no message at all and the quiz sits in a screen of empty space.
+     Measured against the real page: growing worked, shrinking silently did not.
+
+     The mount element is in normal flow and shrinks freely, so it tells the
+     truth in both directions. */
+  function report() {
+    if (!mount) return;
+    var r = mount.getBoundingClientRect();
+    var h = Math.ceil(r.height + r.top + (window.scrollY || 0));
+
+    // A sub-pixel jitter loop between parent and child is a real failure mode
+    // here, so only speak up when the change is worth acting on.
+    if (Math.abs(h - last) < 2) return;
+    last = h;
+    window.parent.postMessage({ type: 'homegym-quiz:height', height: h }, '*');
+  }
+
+  // The quiz swaps whole views in and out of a shadow root; observing the mount
+  // catches every one of those without needing to know the component exists.
+  // The load and resize handlers cover first paint and the viewport changing
+  // under a fixed-width iframe.
+  if (window.ResizeObserver && mount) {
+    new ResizeObserver(report).observe(mount);
+  }
+  window.addEventListener('load', report);
+  window.addEventListener('resize', report);
+
+  // Images arriving late change the height after everything else has settled.
+  document.addEventListener('load', report, true);
+
+  report();
+}());
+</script>
