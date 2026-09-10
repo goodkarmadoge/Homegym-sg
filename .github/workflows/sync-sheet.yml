@@ -5,7 +5,7 @@ name: Sync bundle data from the Google Sheet
 #
 # The commit this pushes to main triggers ci.yml, which is what actually
 # deploys. Nothing reaches the live quiz without passing the test suite and the
-# 64,575-combination sweep first: that is the whole reason the data is committed
+# 107,625-combination sweep first: that is the whole reason the data is committed
 # rather than fetched in the browser on every page load.
 #
 # REQUIRES the sheet to be readable without signing in:
