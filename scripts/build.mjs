@@ -93,7 +93,7 @@ function main() {
         process.exit(1);
       }
       // Replacer FUNCTION, not a replacement string: the bundle contains
-      // `'S$' + value` for the SGD prefix, and in a replacement string `$'`
+      // `'$' + value` for the SGD prefix, and in a replacement string `$'`
       // means "everything after the match", it silently ate the quote and
       // shipped a page whose script would not parse.
       body = body.replace(QUIZ_SCRIPT_TAG, () => `<script>\n${quizBundle}\n</script>`);

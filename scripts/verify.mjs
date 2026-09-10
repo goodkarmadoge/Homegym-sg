@@ -50,7 +50,7 @@ for (const p of PAGES) {
 // The two must be byte-identical.
 //
 // This exists because they once were not: build.mjs inlined the bundle with a
-// replacement STRING, and `$'` inside `'S$' + value` is a special replacement
+// replacement STRING, and `$'` inside `'$' + value` is a special replacement
 // pattern meaning "everything after the match". It ate the closing quote, and
 // the page shipped with a script that would not parse, while the standalone
 // file was perfectly fine. Comparing the two catches any repeat instantly.

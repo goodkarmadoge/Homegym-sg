@@ -19,7 +19,7 @@ const catalogue = cut('/* ─────────── product imagery ─�
 const engine    = cut('function build(){', '/* ─────────── result view ─────────── */');
 
 const A = {};
-const money = n => 'S$' + n.toLocaleString('en-SG');
+const money = n => '$' + n.toLocaleString('en-SG');
 const { build } = new Function('A', 'money', `${catalogue}\n${engine}\nreturn {build, C};`)(A, money);
 
 const DIMS = {

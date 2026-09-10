@@ -58,7 +58,7 @@ Every attribute is optional; the values above are the defaults.
 |---|---|
 | `theme` | `light` (default, homegym.sg's own white ground) or `dark` |
 | `accent` | Any CSS colour. Hex values are contrast-corrected; see below |
-| `currency` | Currency code. `SGD` renders as `S$2,241`; anything else goes through `Intl.NumberFormat` |
+| `currency` | Currency code. `SGD` renders as `$2,241`; anything else goes through `Intl.NumberFormat` |
 | `cart-endpoint` | Optional. If set, an **Add all to cart** button appears alongside the WhatsApp CTA and POSTs the product list here. Unset by default, so WhatsApp is the only call to action |
 | `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
 | `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
@@ -329,7 +329,7 @@ When two bundles land within 2 points, the tie breaks on function coverage, then
 
 If nothing passes both filters, constraints relax in a fixed order and the result view says so honestly rather than pretending:
 
-1. Budget relaxed 10%. Banner: *"this one is S$X over"*
+1. Budget relaxed 10%. Banner: *"this one is $X over"*
 2. Shorter dimension relaxed 0.5 m. Banner: *"needs about 0.5 m more depth than you entered"*
 3. Cheapest bundle that fits on space alone
 4. Nothing fits, a **"Let's talk"** card with a contact CTA. It never fabricates a bundle.
@@ -351,7 +351,7 @@ If nothing passes both filters, constraints relax in a fixed order and the resul
 | The Barbell Purist | 1.8% |
 | The Iron Fortress | 0.8% |
 
-32.0% of combinations hit the fallback ladder, almost all of them floors under 1.5 m on a side or budgets under S$2,750, rare in practice. 12.0% reach the "let's talk" card. The ladder never throws.
+32.0% of combinations hit the fallback ladder, almost all of them floors under 1.5 m on a side or budgets under $2,750, rare in practice. 12.0% reach the "let's talk" card. The ladder never throws.
 
 Rung 3 currently never fires: rung 2's space relaxation always unlocks something affordable first. It is kept because a future price or footprint change could open that gap.
 
@@ -396,9 +396,9 @@ Seven things need a decision from HomeGym. They are flagged in code at the exact
 5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, persona and price. Adding a distinguishing tag to each, `folding`, `self_spotting`, `connected`, plus a matching quiz option would sharpen them.
 6. ~~**`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed.~~ Confirmed resolving (HTTP 200) on 8 Sep 2026. It is only ever used as a fallback when no `whatsapp` number is set, which is not the case in production.
 6b. **Their link blue `#22B4FF` fails WCAG AA at 2.32:1 on white**, here and on the live site, on every product link. The quiz uses a darkened `#0077B3` for text. Worth fixing site-wide.
-7. **The budget slider starts at S$2,500** while the cheapest bundle is S$2,241, so every bundle clears its floor. Dropping the minimum to S$2,000 would capture sub-S$2,500 traffic but needs a lighter bundle to answer it with.
+7. **The budget slider starts at $2,500** while the cheapest bundle is $2,241, so every bundle clears its floor. Dropping the minimum to $2,000 would capture sub-$2,500 traffic but needs a lighter bundle to answer it with.
 
-One correction to the source brief: it gives The Barbell Purist's saving as S$208. The catalogue data gives **S$200** (Folding Rack S$151 + Olympic set S$49). The page shows the computed figure, not the quoted one.
+One correction to the source brief: it gives The Barbell Purist's saving as $208. The catalogue data gives **$200** (Folding Rack $151 + Olympic set $49). The page shows the computed figure, not the quoted one.
 
 ## Scope and limitations
 

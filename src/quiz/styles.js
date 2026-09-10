@@ -177,6 +177,10 @@ export const STYLES = css`
     line-height: 1.5;
     max-width: 60ch;
   }
+  /* Full column width. Body copy wraps at 60ch because that is comfortable to
+     read; a single line of fine print under a control is not body copy, and
+     breaking it into three short ragged lines makes it look like an error. */
+  .note--wide { max-width: none; }
 
   /* The system's 2px rule. Never softened to a hairline. */
   .hr {
@@ -280,6 +284,18 @@ export const STYLES = css`
     font-weight: 800;
     line-height: 1.2;
   }
+  /* The words someone recognises themselves in, so they carry more weight
+     than the explanation under them but less than the segment name above. */
+  .option__quote {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-top: 4px;
+  }
+  .option.is-selected .option__quote,
+  .option:has(input:checked) .option__quote { color: #FFFFFF; }
+
   .option__help {
     display: block;
     font-size: 14px;
@@ -472,6 +488,12 @@ export const STYLES = css`
 
   /* ── Buttons ────────────────────────────────────────────────────────────── */
 
+  /* Back on the left, Continue on the right.
+     The primary action sits at the end of the row because that is where a
+     reader who has finished the step is already looking, and Back sits where
+     they would reach to undo. Continue is pushed over with margin rather than
+     space-between so it stays right even on step one, where there is no Back
+     beside it and the position would otherwise jump between steps. */
   .actions {
     display: flex;
     align-items: center;
@@ -479,6 +501,11 @@ export const STYLES = css`
     flex-wrap: wrap;
     margin-top: clamp(14px, 1.6vw, 20px);
   }
+  .actions [data-action="next"] { margin-left: auto; }
+
+  /* The reason Continue is disabled goes on its own line under the row, so a
+     long message cannot squeeze the buttons or push Continue off the right. */
+  .actions .validation { flex: 1 0 100%; margin-top: 2px; }
   .actions--result { gap: 12px; margin-top: 26px; }
 
   .btn {
@@ -542,7 +569,7 @@ export const STYLES = css`
     font-size: 14px;
     font-weight: 600;
     color: var(--accent-700);
-    max-width: 34ch;
+    max-width: 60ch;
     line-height: 1.35;
   }
 
