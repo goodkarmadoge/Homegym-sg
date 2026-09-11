@@ -256,8 +256,8 @@ export const BUNDLE_COPY = {
     tagline: "350+ movements from a machine the size of a bookshelf.",
     pitch: "Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.",
     trains: ["Chest press", "Rows", "Squats", "Core work", "Pilates", "Rowing", "185 training angles"],
-    hero: "https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/s/1/s1pro-114.jpg",
-    heroSource: "gallery"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
+    heroSource: "instagram"
   },
 
   9: {

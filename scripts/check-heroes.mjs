@@ -86,9 +86,16 @@ async function loadFeed() {
     try {
       const o = JSON.parse(html.slice(start, end));
       if (!o.media_url || posts.has(o.media_url)) continue;
+      const full = (o.caption_decoded || o.caption || '').replace(/[^\x20-\x7E\n]/g, '');
       posts.set(o.media_url, {
-        caption: (o.caption_decoded || o.caption || '').split('\n')[0]
-          .replace(/[^\x20-\x7E]/g, '').trim(),
+        // Headline only, for the report table. Short enough to read at a glance.
+        caption: full.split('\n')[0].trim(),
+        // THE WHOLE CAPTION IS WHAT GETS MATCHED, not just the headline.
+        // Two AEKE posts open with "One machine. Endless possibilities." and
+        // name the machine three lines further down. Matching the headline
+        // alone reported them as not existing, which left the AEKE bundle on a
+        // studio shot while a real install of it sat in the feed.
+        full,
         date: o.timestamp || null
       });
     } catch { /* not a clean post object */ }
@@ -107,7 +114,7 @@ for (const b of BUNDLES) {
   const sigs = SIGNATURE[anchorId] || [];
   const post = posts.get(b.hero);
   const available = [...posts.entries()]
-    .filter(([, p]) => sigs.some((re) => re.test(p.caption)))
+    .filter(([, p]) => sigs.some((re) => re.test(p.full)))
     .map(([url, p]) => ({ url, ...p }));
 
   let status, detail;
@@ -118,7 +125,7 @@ for (const b of BUNDLES) {
       ? `studio shot, but the feed now has ${available.length} post(s) of this machine`
       : 'studio shot; the feed has no post of this machine';
   } else if (post) {
-    const ok = sigs.some((re) => re.test(post.caption));
+    const ok = sigs.some((re) => re.test(post.full));
     status = ok ? 'OK' : 'WRONG';
     detail = `"${post.caption}"`;
   } else if (EYE_VERIFIED[b.hero]) {

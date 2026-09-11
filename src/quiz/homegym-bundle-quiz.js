@@ -777,7 +777,7 @@ class HomegymBundleQuiz extends HTMLElement {
         ${this.sectionTrain(bundle)}
         ${this.sectionSpecialist(bundle)}
         ${this.sectionAlternates(alternates)}
-        ${this.sectionRooms()}
+        ${this.sectionRooms(bundle)}
         ${this.sectionAdvice()}
 
         <div class="hr"></div>
@@ -909,8 +909,12 @@ class HomegymBundleQuiz extends HTMLElement {
 
   /* ── 5. Rooms we have built ───────────────────────────────────────────── */
 
-  sectionRooms() {
-    if (!ROOMS || !ROOMS.length) return '';
+  sectionRooms(bundle) {
+    // The hero is drawn from the same feed as this strip, so for most bundles
+    // its photo was appearing twice on one page: once large at the top and
+    // again as a tile down here. Drop the repeat rather than the strip.
+    const tiles = ROOMS.filter((r) => !bundle || r.image !== bundle.hero);
+    if (!tiles.length) return '';
     return `
       <section class="section">
         <h2 class="section__title">Rooms we've built</h2>
@@ -919,7 +923,7 @@ class HomegymBundleQuiz extends HTMLElement {
           to the machine in the picture.
         </p>
         <div class="rooms">
-          ${ROOMS.map((r) => `
+          ${tiles.map((r) => `
             <a class="room" href="${esc(r.href)}" target="_blank" rel="noopener"
                data-action="cta-room" data-title="${esc(r.title)}">
               <span class="room__media">
