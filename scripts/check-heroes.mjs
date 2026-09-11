@@ -43,9 +43,16 @@ const SIGNATURE = {
   'infinity-halfrack': [/infinity.*half\s*rack/i, /half\s*rack.*infinity/i,
                         /infinity dual cable/i, /infinity functional trainer/i],
   // Deliberately NOT /infinity smith/: the feed's "Infinity smith machine" is a
-  // four-post cage with a barbell, not this dual-stack all-in-one. Compared
-  // side by side against the catalogue photo on 11 Sep 2026.
-  'infinity-aio':      [/infinity.*all\s*in\s*1/i, /infinity.*31\s*in/i],
+  // four-post cage with a barbell and no weight stacks, not this dual-stack
+  // all-in-one. Compared side by side against both Infinity catalogue photos on
+  // 11 Sep 2026.
+  //
+  // "3in1" is what the sheet calls this machine internally, so a post using
+  // that shorthand is caught too. The whole feed was searched on 11 Sep 2026
+  // and none of these matched: six Infinity posts are the Half Rack, which is
+  // a different bundle's machine, and the seventh is the cage above.
+  'infinity-aio':      [/infinity.*all\s*in\s*1/i, /infinity.*31\s*in/i,
+                        /infinity.*3\s*in\s*1/i, /infinity.*3in1/i],
   'aeke-s1-pro':       [/aeke/i],
   'im2000':            [/im\s*2000/i, /ironmaster/i],
   'folding-rack':      [/folding power rack/i, /vigor folding/i]
