@@ -714,12 +714,59 @@ export const STYLES = css`
      The photograph is not a separate section any more: it sits in the space the
      product cards do not use, so the setup is visible while the contents are
      being read rather than a scroll away. Below 820px it stacks and leads. */
+  /* THE ROOM LEADS, THE CONTENTS FOLLOW.
+     Desktop puts the install photograph in the left column and the products in
+     a stack on the right; mobile puts the photograph on top and the stack under
+     it. Same source order for both, so nothing is reordered with CSS and the
+     reading order is the order on screen.
+
+     Why a stack rather than a 2x2 of the existing cards: bundles hold anywhere
+     from one product to four. A 2x2 is only ever right for exactly four, and
+     leaves a hole at three, which is the problem this section already had once.
+     A stack is correct at every count. */
   .bundle-split { display: grid; grid-template-columns: 1fr; }
-  .bundle-split .grid { border-left: 0; }
+
+  /* Mobile: the photo's bottom border is the divider, so the stack adds none of
+     its own or the line doubles. */
+  .bundle-split .grid { border-left: 0; border-top: 0; }
+
   @media (min-width: 820px) {
-    .bundle-split { grid-template-columns: 1.1fr 0.9fr; }
-    .bundle-split .grid { border-left: 1px solid var(--n300); }
-    .bundle-split .install { order: 2; }
+    /* Slightly the larger share to the photograph: it is one image and carries
+       the section, while the stack beside it is mostly type. */
+    .bundle-split { grid-template-columns: 1.02fr 0.98fr; }
+    /* Side by side now, so each column draws its own top edge. */
+    .bundle-split .grid { border-top: 1px solid var(--n300); }
+  }
+
+  /* One product per row, however many there are. */
+  .bundle-split .grid { flex-direction: column; flex-wrap: nowrap; }
+  .bundle-split .grid > * { flex: 0 0 auto; }
+
+  /* Cards turn on their side: image left, name and price beside it. Stacked
+     vertically at this column width the old portrait card would have put a
+     square photograph above two lines of text and run the section far past the
+     height of the photo it sits next to. */
+  .bundle-split .card { flex-direction: row; align-items: stretch; min-height: 132px; }
+  .bundle-split .card__media {
+    flex: 0 0 clamp(104px, 34%, 190px);
+    aspect-ratio: auto;
+    border-bottom: 0;
+    border-right: 1px solid var(--n300);
+  }
+  .bundle-split .card__body { justify-content: center; gap: 8px; }
+  /* The price sits under the name rather than pinned to the bottom of a tall
+     card, which is what margin-top:auto was doing in the portrait layout. */
+  .bundle-split .card__prices { margin-top: 0; }
+  /* The stock badge spanned the top of a square card with room to spare. The
+     media cell here is a fraction of that width, so at the top it covered the
+     machine it is describing. Along the bottom it still reads and the product
+     stays visible, which is the entire point of showing it. */
+  .bundle-split .card__badge {
+    top: auto;
+    bottom: 0;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 3px 6px;
   }
 
   .install {
@@ -728,9 +775,9 @@ export const STYLES = css`
     display: flex;
     flex-direction: column;
     background: var(--n100);
-    border-right: 1px solid var(--n300);
-    border-bottom: 1px solid var(--n300);
-    border-top: 1px solid var(--n300);
+    /* Leftmost on desktop and a closed box on mobile, so it carries its own
+       four sides. Its right edge is the divider between the two columns. */
+    border: 1px solid var(--n300);
     min-height: 260px;
   }
   @media (min-width: 820px) {

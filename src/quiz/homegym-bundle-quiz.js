@@ -798,8 +798,8 @@ class HomegymBundleQuiz extends HTMLElement {
       <section class="section">
         <h2 class="section__title">What's in the bundle</h2>
         <div class="bundle-split">
-          <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
           ${this.installShot(bundle)}
+          <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
         </div>
         <div class="total-row"><span>Bundle total</span><b>${this.money(bundle.price)}</b></div>
         <p class="fineprint">

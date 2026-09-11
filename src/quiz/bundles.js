@@ -193,7 +193,7 @@ export const BUNDLE_COPY = {
     tagline: "One machine, three disciplines, a spare bedroom.",
     pitch: "Smith, rack and cable in a single frame, plus the bench and plates to make it a real gym on day one. If you've got a spare room and you're starting from nothing, start here.",
     trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Cable rows", "Overhead press"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/522969686_18519237319005504_7228295298475325837_n.jpg",
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/729964639_18600529420005504_3034992830324318055_n.jpg",
     heroSource: "instagram"
   },
 
