@@ -92,7 +92,7 @@ export const SHEET_BUNDLES = [
     name: null,
     label: "xpress pro",
     functions: ["multigym"],
-    footprint: { length: 1.5, depth: 2 },
+    footprint: { length: 1.6, depth: 2 },
     personas: ["Convenience Seeker"],
     budgetCeiling: 2500,
     productUrls: [
