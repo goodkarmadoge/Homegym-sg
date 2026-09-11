@@ -431,6 +431,8 @@ npm run verify   # validate dist/ structure, noindex tags, internal links, quiz 
 npm run check    # all four, in order, this is what CI and Vercel run
 
 npm run check:images   # confirm every hotlinked HomeGym image still resolves
+npm run check:heroes   # confirm each bundle's install photo shows that bundle's machine
+npm run check:fit      # confirm each anchor machine fits the footprint its row claims
 ```
 
 No dependencies; Node 20+ only.

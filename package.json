@@ -16,7 +16,8 @@
     "verify": "node scripts/verify.mjs",
     "check": "npm run test && npm run sweep && npm run build && npm run verify",
     "check:images": "node scripts/check-images.mjs",
-    "check:fit": "node scripts/check-fit.mjs"
+    "check:fit": "node scripts/check-fit.mjs",
+    "check:heroes": "node scripts/check-heroes.mjs"
   },
   "engines": {
     "node": ">=20"

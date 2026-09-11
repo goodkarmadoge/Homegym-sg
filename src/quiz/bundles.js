@@ -193,7 +193,7 @@ export const BUNDLE_COPY = {
     tagline: "One machine, three disciplines, a spare bedroom.",
     pitch: "Smith, rack and cable in a single frame, plus the bench and plates to make it a real gym on day one. If you've got a spare room and you're starting from nothing, start here.",
     trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Cable rows", "Overhead press"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/522969686_18519237319005504_7228295298475325837_n.jpg",
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/729964639_18600529420005504_3034992830324318055_n.jpg",
     heroSource: "instagram"
   },
 
@@ -256,8 +256,8 @@ export const BUNDLE_COPY = {
     tagline: "350+ movements from a machine the size of a bookshelf.",
     pitch: "Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.",
     trains: ["Chest press", "Rows", "Squats", "Core work", "Pilates", "Rowing", "185 training angles"],
-    hero: "https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/s/1/s1pro-114.jpg",
-    heroSource: "gallery"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
+    heroSource: "instagram"
   },
 
   9: {
