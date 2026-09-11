@@ -347,10 +347,28 @@ class HomegymBundleQuiz extends HTMLElement {
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (saved && saved.answers) {
-        this.state.answers = { ...DEFAULT_ANSWERS, ...saved.answers };
+        // Copy only the answers we still ask for. A session saved before step 3
+        // asked for a persona carries a `level` instead, and spreading it in
+        // wholesale keeps that dead key alive in state.
+        this.state.answers = { ...DEFAULT_ANSWERS };
+        for (const key of Object.keys(DEFAULT_ANSWERS)) {
+          if (saved.answers[key] != null) this.state.answers[key] = saved.answers[key];
+        }
         if (!Array.isArray(this.state.answers.functions)) this.state.answers.functions = [];
+
         const step = parseInt(saved.step, 10);
         if (step >= 1 && step <= TOTAL_STEPS) this.state.step = step;
+
+        // NEVER RESUME PAST AN UNANSWERED STEP 3.
+        //
+        // The step-3 gate only fires while you are standing on step 3, so a
+        // session restored straight to step 4 walks around it. A tab left open
+        // across the deploy that replaced the level question does exactly that:
+        // it comes back at the budget slider with no persona, and Continue
+        // submits. personaScore(null, ...) is 0 for every bundle, so the whole
+        // 15-point axis silently contributes nothing and the visitor is matched
+        // on a question they were never shown.
+        if (!this.state.answers.persona && this.state.step > 3) this.state.step = 3;
       }
     } catch {
       /* Corrupt payload, start clean rather than crash. */

@@ -7,10 +7,10 @@
  *
  *   Function subsets of size 1-3 from 6 tags : 6 + 15 + 20 = 41
  *   Space combos (5 lengths x 5 depths)      : 25
- *   Levels                                   : 3
+ *   Personas                                 : 5
  *   Budget steps ($2,500-$7,500 by $250)     : 21
  *   ---------------------------------------------------
- *   Total                                    : 64,575
+ *   Total                                    : 107,625
  *
  * Run with:  npm run sweep
  * Exits non-zero if any bundle is unreachable or any combination throws.

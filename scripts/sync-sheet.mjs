@@ -103,8 +103,19 @@ function readLocal(dir, name) {
 async function loadTabs() {
   if (CSV_DIR) {
     console.log(`reading CSV from ${CSV_DIR}\n`);
+    // THE RECORDED SOURCE IS THE SPREADSHEET, NOT THIS DIRECTORY. Those CSVs
+    // are an export of it, so the data's origin is the same whichever way the
+    // bytes arrived. Naming the directory instead puts a path that exists on
+    // one machine into the generated file, and the very next `npm run sync
+    // --check` in CI, which fetches over the network, rejects the file it just
+    // wrote as out of date.
+    let source = `local CSV, ${CSV_DIR}`;
+    try {
+      const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'));
+      if (cfg.sheetId) source = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`;
+    } catch { /* no config to read, fall back to naming the directory */ }
     return {
-      source: `local CSV, ${CSV_DIR}`,
+      source,
       rules: readLocal(CSV_DIR, 'rules'),
       products: readLocal(CSV_DIR, 'products'),
       personas: readLocal(CSV_DIR, 'personas')
