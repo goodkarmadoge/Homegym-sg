@@ -24,10 +24,13 @@
    and as its own document it has no competing <h1>, so the tag below carries
    no heading-level and the component's default of 1 is correct.
 
-   Note for anyone editing this file: do not put a closing script tag inside
-   this comment. scripts/verify.mjs finds the inlined bundle by looking for the
-   first script element on the page, and a stray one here would send it looking
-   at a CSS comment instead. */
+   Note for anyone editing this file: script ORDER matters below, though no
+   longer in the way it once did. verify used to identify the inlined bundle as
+   the first script element on the page, so a stray closing script tag in this
+   comment could misdirect it; it now finds the bundle by looking for the one
+   that defines the element, which is what it actually is. What order still
+   decides is that the analytics bridge has to run BEFORE the bundle, because
+   quiz:start fires during element upgrade. verify checks that too. */
 
 /* Transparent, not white: in an iframe or a content slot the host page's own
    background should show through, whatever it is. */
@@ -76,10 +79,72 @@ homegym-bundle-quiz:not(:defined){min-height:620px}
   </noscript>
 </div>
 
-<!-- Dev loads the ES modules straight from src/quiz/. scripts/build.mjs swaps
-     this exact tag for the inlined single-file bundle when building dist/.
-     Anything below this point must NOT be a script element before it:
-     scripts/verify.mjs finds the inlined bundle by taking the first one. -->
+<!-- The analytics bridge sits ABOVE the quiz deliberately: quiz:start is
+     emitted while the element upgrades, which happens the instant the bundle
+     calls customElements.define, so a listener registered after it would never
+     hear the event and the client's funnel would lose its denominator. Found
+     in the browser, where every other event arrived and only that one did not.
+     scripts/verify.mjs fails the build if this order is reversed.
+
+     The tag below loads the ES modules straight from src/quiz/ in dev.
+     scripts/build.mjs swaps that exact tag for the inlined single-file bundle
+     when building dist/, matching it as one literal string, so renaming it
+     fails the build loudly rather than shipping a page with no quiz. -->
+<script>
+/* ANALYTICS BRIDGE.
+   ─────────────────────────────────────────────────────────────────────────
+   The quiz fires bubbling, composed CustomEvents so a host page's GTM can
+   listen at document level. In an iframe that document is THIS one, not the
+   host's, so those events die at the frame boundary and the embedding site
+   sees nothing: no funnel, no conversion, no idea anyone took the quiz. That
+   is the one real cost of choosing the iframe over the component, and this is
+   what buys it back.
+
+   Each event is forwarded up as {type:'homegym-quiz:event', name, detail} and
+   the parent pushes it into dataLayer. README.md, "Embedding it", has the
+   listener.
+
+   A no-op when the page is not in an iframe: the standalone page and the
+   component embed already deliver these events to their own document, and
+   forwarding them to yourself would double-count every conversion.
+
+   ON targetOrigin "*", which is a deliberate choice and not an oversight.
+   Unlike the height message below, this payload carries the visitor's answers
+   and their matched bundle, so "any window may read it" deserves a reason.
+   The reason is that this page cannot know which page on homegym.sg framed
+   it, and the browser is already enforcing the boundary that matters:
+   Content-Security-Policy frame-ancestors on this deployment permits only
+   homegym.sg to frame it at all, so "*" resolves to an origin that header has
+   already vetted. Widen that header and you widen this, which is why they are
+   verified together in scripts/verify.mjs. */
+(function () {
+  if (window.parent === window) return;   // not embedded, nothing to forward
+
+  var EVENTS = [
+    'quiz:start', 'quiz:step', 'quiz:complete', 'quiz:product-click',
+    'quiz:cta-click', 'quiz:alternate-view', 'quiz:restart'
+  ];
+
+  EVENTS.forEach(function (name) {
+    document.addEventListener(name, function (e) {
+      var detail;
+      // structuredClone is not available everywhere and postMessage will throw
+      // on anything it cannot clone, which would take the quiz down with it.
+      // A JSON round trip is the cheap way to guarantee a plain, cloneable
+      // object, and every payload here is already plain data.
+      try {
+        detail = JSON.parse(JSON.stringify(e.detail == null ? {} : e.detail));
+      } catch (err) {
+        detail = {};
+      }
+      try {
+        window.parent.postMessage({ type: 'homegym-quiz:event', name: name, detail: detail }, '*');
+      } catch (err) { /* a parent that cannot receive is not the quiz's problem */ }
+    });
+  });
+}());
+</script>
+
 <script type="module" src="quiz/homegym-bundle-quiz.js"></script>
 
 <script>

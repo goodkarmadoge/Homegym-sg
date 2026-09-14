@@ -61,17 +61,50 @@ if (!existsSync(embedPath)) {
 } else if (existsSync(quizPage)) {
   const standalone = readFileSync(embedPath, 'utf8').trim();
   const page = readFileSync(quizPage, 'utf8');
-  const inline = page.slice(page.indexOf('<script>') + 8, page.indexOf('</script>')).trim();
 
-  if (!inline) fail('bundle-quiz.html: no inline quiz bundle found');
+  // Find the bundle by what it IS, not by where it sits.
+  //
+  // This used to take the first <script> on the page, which quietly made script
+  // ORDER part of the contract: the page now carries two more inline scripts,
+  // and the analytics bridge has to run BEFORE the bundle or it misses
+  // quiz:start, which fires during element upgrade. Under the old rule, moving
+  // it there made verify compare the bridge against the bundle and fail with a
+  // length mismatch that said nothing about the real cause.
+  const blocks = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1].trim());
+  const inline = blocks.find((b) => /customElements\.define/.test(b)) || '';
+
+  if (!inline) fail('bundle-quiz.html: no inline quiz bundle found (no inline script defines the element)');
   else if (inline !== standalone) {
     fail(
       'bundle-quiz.html: the inlined bundle does not match dist/homegym-bundle-quiz.min.js ' +
       `(${inline.length} vs ${standalone.length} chars), something mangled it during inlining`
     );
   }
-  if (!/customElements\.define/.test(inline)) fail('bundle-quiz.html: inlined bundle never defines the element');
+  // Exactly one, not merely at least one: two copies of the bundle would each
+  // define the element and each fire quiz:start, double-counting every session
+  // in the client's analytics while the page still looked perfectly fine.
+  const defining = blocks.filter((b) => /customElements\.define/.test(b)).length;
+  if (defining > 1) fail(`bundle-quiz.html: the bundle is inlined ${defining} times, it must appear exactly once`);
+
   if (!/<homegym-bundle-quiz\b/.test(page)) fail('bundle-quiz.html: the component is never mounted');
+
+  // The analytics bridge must run BEFORE the bundle. quiz:start is emitted
+  // during element upgrade, which happens the moment the bundle calls
+  // customElements.define, so a bridge registered after it never hears the
+  // event and the client's funnel loses its denominator. Caught in the browser,
+  // not in review: everything else arrived and only quiz:start was missing.
+  //
+  // Compared by SCRIPT BLOCK, not by position in the raw page. Searching the
+  // page text finds these strings inside the HTML comments that explain them,
+  // and the comment sits above the code it describes: the first version of this
+  // check failed the build on a correctly ordered page because it matched its
+  // own documentation.
+  const bridgeIdx = blocks.findIndex((b) => /homegym-quiz:event/.test(b));
+  const bundleIdx = blocks.findIndex((b) => /customElements\.define/.test(b));
+  if (bridgeIdx === -1) fail('bundle-quiz.html: the analytics bridge is missing, the iframe embed would report nothing');
+  else if (bundleIdx !== -1 && bridgeIdx > bundleIdx) {
+    fail('bundle-quiz.html: the analytics bridge runs after the quiz bundle, so it will miss quiz:start');
+  }
 }
 
 // ── The quiz page must stay framable by homegym.sg ─────────────────────────

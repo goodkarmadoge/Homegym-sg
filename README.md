@@ -28,17 +28,28 @@ The recommendation engine is a rules engine running in the page. All 3,072 possi
 
 Four questions (what you want to train, floor space, which customer you are, budget) matched against the bundles defined in the Google Sheet. The result view shows the bundle, its total, every product inside it with image, price and a link to its live product page, and two next steps.
 
+**Question one has two escape hatches,** because a shopper who does not yet know what they want is the one this quiz is most useful to, and a required multi-select was turning them away at the first screen:
+
+- **All of the above** ticks all six functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
+- **No preference** declines the question. The 40-point function axis stops discriminating entirely and floor space, budget and persona decide the match.
+
+They are deliberately **not** the same answer. "I want everything" and "I don't mind" pull in different directions, and the matcher honours both: across a spread of rooms, budgets and personas the two land on a different bundle about a third of the time. Both are exclusive against the individual options, so no one can hold a contradiction like *barbell lifts* **and** *no preference*.
+
 The same code ships twice from one source:
 
 1. **The page:** `dist/bundle-quiz.html`, fully self-contained with the component inlined.
-2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 107 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 71% of the 150 KB budget the build enforces, and **26.5 KB over the wire** once the host serves it gzipped, which any Magento install already does.
+2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 109 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 73% of the 150 KB budget the build enforces, and **27.1 KB over the wire** once the host serves it gzipped, which any Magento install already does.
 
 ## Embedding it
 
 > **Handing this to the client's developer?** [`HANDOFF.md`](HANDOFF.md) is the
-> single page they need: which of the two paths to take and why, the snippet to
-> paste, the CSP checks, and the data questions to settle before launch. This
-> section is the reference behind it.
+> single page they need: the snippet to paste, the CSP checks, the analytics
+> wiring, and the data questions to settle before launch. This section is the
+> reference behind it.
+>
+> **The client chose the iframe on 14 Sep 2026.** Both paths are documented and
+> supported below, but that is the one being shipped, so the iframe section and
+> [Events through an iframe](#events-through-an-iframe) are the live ones.
 
 This is the quiz's main use. `bundle-quiz.html` is deliberately bare: no
 masthead, no hero, no footer, transparent background. It is the quiz and
@@ -258,6 +269,50 @@ document.addEventListener('quiz:complete', e => {
 });
 ```
 
+**`answers.functions` can carry two values that are not training functions.**
+Question one has two shortcuts, and both show up here:
+
+| value in `functions` | what the visitor did |
+|---|---|
+| all six tags | ticked **All of the above** (or all six by hand, which is the same answer) |
+| `["_any"]` | ticked **No preference**, declining the question |
+
+`_any` is a sentinel, never a tag: no bundle carries it and nothing in the sheet
+can define it. Segment on it rather than filtering it out — "didn't know what
+they wanted" is one of the more interesting things this quiz can tell you, and
+it is the cohort most likely to need a salesperson.
+
+### Events through an iframe
+
+Events are fired on the **iframe's** document, not the host page's, so an
+embedded quiz delivers nothing to the host's GTM on its own. `bundle-quiz.html`
+forwards them to the parent; the host listens once and pushes into `dataLayer`:
+
+```js
+window.dataLayer = window.dataLayer || [];
+(function () {
+  var f = document.getElementById('homegym-quiz');
+  var origin = new URL(f.src).origin;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== origin) return;                     // only trust the quiz
+    if (!e.data) return;
+    if (e.data.type === 'homegym-quiz:height') { f.style.height = e.data.height + 'px'; return; }
+    if (e.data.type === 'homegym-quiz:event') {
+      dataLayer.push(Object.assign({ event: e.data.name.replace(':', '_') }, e.data.detail));
+    }
+  });
+}());
+```
+
+That is the same listener as the height snippet with one more branch, so use
+this version and not both.
+
+`quiz:start` is emitted while the custom element upgrades, which is why the
+forwarder is loaded **before** the quiz bundle on that page rather than after
+it. Registered afterwards it hears every other event and misses that one, which
+costs you the denominator of every funnel built on top of it. `npm run verify`
+fails the build if the order is ever reversed.
+
 ## Where the data comes from
 
 The bundles live in a **Google Sheet**, not in the code:
@@ -433,7 +488,7 @@ If nothing passes both filters, constraints relax in a fixed order and the resul
 
 ### Coverage
 
-`npm run sweep` runs every realistic answer combination (107,625 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
+`npm run sweep` runs every realistic answer combination (112,875 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
 
 | Bundle | Share of matched runs |
 |---|---|
@@ -523,7 +578,7 @@ dist/        generated site (gitignored, produced by the build)
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
-npm run sweep    # assert every bundle is reachable across 107,625 combinations
+npm run sweep    # assert every bundle is reachable across 112,875 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -553,7 +608,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any bundle becomes unreachable, or the matcher throws on any of 107,625 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 112,875 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output

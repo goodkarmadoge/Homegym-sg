@@ -10,7 +10,7 @@
 //
 // WHY A COMMITTED FILE RATHER THAN A LIVE FETCH ON EVERY PAGE LOAD.
 //   The quiz ships as one static script with no runtime dependencies, and the
-//   64,575-combination sweep in scripts/sweep.mjs only means something if the
+//   112,875-combination sweep in scripts/sweep.mjs only means something if the
 //   data it swept is the data that ships. Syncing at build time keeps both
 //   properties: bad sheet data fails CI instead of reaching customers. The
 //   component can still be pointed at a live CSV with the sheet-src attribute

@@ -9,6 +9,21 @@ step, no npm install on your side. One JavaScript file and one tag.
 
 ---
 
+> **Decision, 14 Sep 2026: the quiz ships as an iframe**, pointed at the
+> deployment described in §7. That makes §7 the section to read and §1's
+> recommendation a record of what was weighed rather than a live question.
+>
+> **One thing has to happen first.** The page is only framable by homegym.sg
+> because of a response header that is still on an unmerged branch. Until it
+> lands, the iframe shows an empty box and a console error on your page. See
+> §7, *The frame has to be allowed to load*.
+>
+> Choosing the iframe also means quiz events do not reach your GTM on their
+> own. The forwarder in §6 is what buys that back, and it is not optional if
+> you want to measure anything.
+
+---
+
 ## 0. Is this copy-paste?
 
 Straight answer, because it decides how you schedule the work:
@@ -24,7 +39,7 @@ homegym.sg page this afternoon, take it, and move to B later if you want the
 quiz in the page flow rather than in a box.
 
 **B is the one to launch on**, and the "one file" is the only step that is not
-paste: `homegym-bundle-quiz.min.js`, 107 KB, no dependencies. Drop it in
+paste: `homegym-bundle-quiz.min.js`, 109 KB, no dependencies. Drop it in
 `pub/media/` or your theme's `web/js/`, point the `<script src>` at it, done. It
 is a static asset like any image you have ever uploaded.
 
@@ -51,7 +66,7 @@ depends on things about your deployment we cannot see from outside.
 
 | | **Script tag** | **iframe** |
 |---|---|---|
-| What you host | one 107 KB JS file | nothing |
+| What you host | one 109 KB JS file | nothing |
 | Sits in page flow | yes, natively | needs the height script |
 | Shares page fonts, scroll, focus | yes | no |
 | Analytics | events reach your `dataLayer` directly | needs `postMessage` plumbing |
@@ -84,7 +99,7 @@ Two ways, and you do **not** need the repository for the first:
 Either way, copy it to wherever Magento serves static assets, for example
 `pub/media/homegym/` or your theme's `web/js/`.
 
-It is 107 KB raw, **26.5 KB gzipped**, which is what your visitors actually
+It is 109 KB raw, **27.1 KB gzipped**, which is what your visitors actually
 download. It has no external requests of its own beyond the product images,
 which already come from your CloudFront.
 
@@ -185,29 +200,52 @@ Tiers stop at `h6` rather than emitting invalid tags.
 
 ## 6. Wire up analytics
 
-Every meaningful action fires a `CustomEvent` that bubbles and crosses the shadow
-boundary, so you can listen at `document` level without knowing the component is
-there:
+**On the iframe, this is required, not optional.** The quiz fires its events on
+the iframe's own document, so your GTM on homegym.sg hears nothing by default:
+no funnel, no conversion, no idea anyone took the quiz. The page forwards them
+to the parent and this is the listener that receives them. It is the §7 height
+snippet with one extra branch, so **use this version and not both.**
 
 ```html
 <script>
-['quiz:start','quiz:step','quiz:complete','quiz:product-click','quiz:cta-click',
- 'quiz:alternate-view','quiz:restart'].forEach(function (name) {
-  document.addEventListener(name, function (e) {
-    window.dataLayer = window.dataLayer || [];
-    dataLayer.push({ event: name.replace(':', '_'), ...e.detail });
+window.dataLayer = window.dataLayer || [];
+(function () {
+  var f = document.getElementById('homegym-quiz');
+  var origin = new URL(f.src).origin;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== origin) return;                     // only trust the quiz
+    if (!e.data) return;
+    if (e.data.type === 'homegym-quiz:height') { f.style.height = e.data.height + 'px'; return; }
+    if (e.data.type === 'homegym-quiz:event') {
+      dataLayer.push(Object.assign({ event: e.data.name.replace(':', '_') }, e.data.detail));
+    }
   });
-});
+}());
 </script>
 ```
+
+Verified end to end in a browser against a real cross-document iframe, not
+assumed: `quiz_start`, three `quiz_step`s and `quiz_complete` all arrive in the
+parent's `dataLayer` with their payloads intact.
+
+*(If you ever switch to the script-tag embed, drop all of this and just listen
+for the events on your own `document` — no forwarding involved. The README's
+**Events** section has that version.)*
 
 `quiz:complete` is the one that matters: it carries the full answer set, the
 matched bundle, its price, and whether the fallback ladder was used. The README's
 **Events** section has the payload for each.
 
+**Two values in `answers.functions` are not training functions.** Question one
+has two shortcuts and both reach your `dataLayer`: all six tags means the visitor
+ticked **All of the above**, and `["_any"]` means they ticked **No preference**
+and declined the question. Segment on `_any` rather than filtering it out —
+"didn't know what they wanted" is the cohort most likely to need a salesperson,
+and it is worth knowing how big it is.
+
 **Worth instrumenting from day one:** the share of sessions where `quiz:complete`
 reports `fallbackUsed`, and the share that reach the "let's talk" card with no
-bundle at all. Swept across all 107,625 realistic answer combinations, the
+bundle at all. Swept across all 112,875 realistic answer combinations, the
 fallback ladder is used by **38.9%** and **13.1%** end with no bundle. Those are
 combinations, not visitors, and real traffic will not be spread evenly across
 them, which is exactly why it is worth measuring. If the live numbers land near
@@ -216,7 +254,10 @@ a quiz that needs retuning.
 
 ---
 
-## 7. If you go the iframe route instead
+## 7. The iframe embed
+
+This is the chosen path. Paste this where the quiz should appear, then add the
+§6 listener — or, better, paste §6's version of the script, which does both jobs.
 
 ```html
 <iframe id="homegym-quiz"
@@ -240,18 +281,42 @@ a quiz that needs retuning.
 The `e.origin` check is not optional. Without it any page in any other tab can
 post a height at yours.
 
-**The frame must be allowed to load,** which is a response header on the quiz's
-deployment, not something your page can grant. It currently sends:
+The `height` in the style attribute is only what shows before the first message
+arrives; 900px is about a first question, so the page does not jump.
+
+Without the height script the quiz still works; it just sits in a fixed box and
+scrolls internally.
+
+### The frame has to be allowed to load
+
+This is a response header on the quiz's deployment, not something your page can
+grant itself, and it is **the one blocker between you and a working embed.**
+
+**Not live yet.** The deployment currently sends `X-Frame-Options: SAMEORIGIN`,
+which refuses cross-origin framing outright — paste the snippet today and you
+get an empty box and a console error. The replacement is written and tested but
+sits on an unmerged branch:
 
 ```
 Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://www.homegym.sg
 ```
 
-Embedding from a staging host or any other domain is refused by the browser, with
-an empty box and a console error. Tell us the origin and it goes on the list.
+**Ask for that branch to be merged before you schedule the work**, and confirm
+the header on the wire with `curl -I https://homegym-sg.vercel.app/bundle-quiz.html`
+before concluding anything else is broken. `X-Frame-Options` should be absent
+from that output, not merely permissive: it has no allowlist form current
+browsers honour, and where both headers are present it wins.
 
-Without the height script the quiz still works; it just sits in a fixed box and
-scrolls internally.
+Embedding from a staging host or any other domain is refused the same way. Tell
+us the origin and it goes on the list.
+
+### What you are depending on
+
+That URL is the pro bono review deployment. It is served `noindex`, nobody has
+committed to its uptime, and anything pushed to it changes what your visitors
+run with no review on your side. That is an accepted trade for not hosting
+anything; it is worth revisiting once the quiz is earning its keep, and §0's
+option B is the ten-minute move away from it.
 
 ---
 

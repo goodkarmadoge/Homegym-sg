@@ -6,17 +6,19 @@
  * regression baseline in the spec.
  *
  *   Function subsets of size 1-3 from 6 tags : 6 + 15 + 20 = 41
+ *     plus "all of the above" (all 6 at once): 1
+ *     plus "no preference" (the sentinel)    : 1
  *   Space combos (5 lengths x 5 depths)      : 25
  *   Personas                                 : 5
  *   Budget steps ($2,500-$7,500 by $250)     : 21
  *   ---------------------------------------------------
- *   Total                                    : 107,625
+ *   Total                                    : 43 x 25 x 5 x 21 = 112,875
  *
  * Run with:  npm run sweep
  * Exits non-zero if any bundle is unreachable or any combination throws.
  */
 import { BUNDLES, FUNCTION_OPTIONS, PERSONA_OPTIONS } from '../src/quiz/bundles.js';
-import { match, FALLBACK } from '../src/quiz/matcher.js';
+import { match, FALLBACK, ANY_FUNCTION } from '../src/quiz/matcher.js';
 
 const TAGS = FUNCTION_OPTIONS.map((o) => o.tag);
 const DIMS = [1.0, 1.5, 2.0, 2.5, 3.0];
@@ -41,7 +43,17 @@ function subsets(arr, maxSize) {
   return out;
 }
 
-const FUNCTION_SETS = subsets(TAGS, 3);
+/**
+ * Every function answer the UI can actually produce.
+ *
+ * Subsets of 1-3 are what someone picking by hand realistically does, but the
+ * two shortcuts on question one reach states no subset of that size covers:
+ * "all of the above" selects all six at once, and "no preference" stores the
+ * sentinel alone. Both take different branches through functionScore, so
+ * leaving them out of the sweep would ship the two newest paths as the only
+ * two nothing checks.
+ */
+const FUNCTION_SETS = [...subsets(TAGS, 3), TAGS.slice(), [ANY_FUNCTION]];
 
 const counts = new Map(BUNDLES.map((b) => [b.id, 0]));
 const fallbackCounts = new Map([

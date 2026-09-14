@@ -22,11 +22,22 @@
 import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, PERSONA_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
 import { buildSheetBundles } from './sheet-parse.js';
 import { SHEET_ID, SHEET_TABS } from './sheet-data.js';
-import { match, FALLBACK } from './matcher.js';
+import { match, FALLBACK, ANY_FUNCTION } from './matcher.js';
 import { STYLES } from './styles.js';
 
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
 const TOTAL_STEPS = 4;
+
+/**
+ * The "all of the above" checkbox's value.
+ *
+ * UI ONLY, and unlike ANY_FUNCTION it is never stored. "All of the above" is a
+ * shortcut for ticking the six real boxes, not a seventh answer, so its own
+ * checked state is DERIVED from whether all six are selected. That is what
+ * makes ticking the six by hand light it up, and unticking one turn it off,
+ * with no extra state to keep in step.
+ */
+const ALL_FUNCTIONS = '_all';
 
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
    it renders as "$7,500+", so anyone with more to spend still lands on the
@@ -189,7 +200,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
      mount, so a bundle added to the spreadsheet appears without a redeploy.
      Without it the quiz uses the committed snapshot, which is the data that
-     every test and the 64,575-combination sweep actually checked. */
+     every test and the 112,875-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
 
@@ -517,9 +528,12 @@ class HomegymBundleQuiz extends HTMLElement {
 
   /** "2 of 6 selected", so the multi-select nature is visible not just implied. */
   _countLabel() {
-    const n = this.state.answers.functions.length;
+    const picked = this.state.answers.functions;
     const total = FUNCTION_OPTIONS.length;
-    return n === 0 ? `None chosen yet, pick as many as you like` : `${n} of ${total} selected`;
+    if (picked.includes(ANY_FUNCTION)) return 'No preference, matching on space and budget';
+    if (picked.length === 0) return 'None chosen yet, pick as many as you like';
+    if (picked.length === total) return `All ${total} selected`;
+    return `${picked.length} of ${total} selected`;
   }
 
   /** Why Continue is unavailable on this step, or '' when it is available. */
@@ -535,6 +549,19 @@ class HomegymBundleQuiz extends HTMLElement {
 
   step1() {
     const chosen = new Set(this.state.answers.functions);
+    const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+    const allPicked = tags.length > 0 && tags.every((tag) => chosen.has(tag));
+
+    const box = (value, on, label, help) => `
+      <label class="option option--check${on ? ' is-selected' : ''}">
+        <input type="checkbox" name="function" value="${esc(value)}" ${on ? 'checked' : ''}>
+        <span class="option__mark">${CHECK_SVG}</span>
+        <span class="option__body">
+          <span class="option__label">${esc(label)}</span>
+          <span class="option__help">${esc(help)}</span>
+        </span>
+      </label>`;
+
     return `
       <${this._h(0)} class="headline" tabindex="-1" data-focus>What do you actually want to train?</${this._h(0)}>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
@@ -554,6 +581,12 @@ class HomegymBundleQuiz extends HTMLElement {
               <span class="option__help">${esc(o.help)}</span>
             </span>
           </label>`).join('')}
+
+        <p class="options__or">Not sure yet?</p>
+        ${box(ALL_FUNCTIONS, allPicked, 'All of the above',
+          'Everything on the list. We’ll look for the most capable bundle that still fits your room and budget.')}
+        ${box(ANY_FUNCTION, chosen.has(ANY_FUNCTION), 'No preference',
+          'Skip this question. We’ll match on your floor space, your budget and the kind of buyer you are instead.')}
       </fieldset>`;
   }
 
@@ -1074,13 +1107,33 @@ class HomegymBundleQuiz extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (t.name === 'function') {
-      const set = new Set(this.state.answers.functions);
-      t.checked ? set.add(t.value) : set.delete(t.value);
-      // Keep the authored order rather than click order, so the "why this one"
-      // chip reads the same way every time.
-      this.state.answers.functions = FUNCTION_OPTIONS.map((o) => o.tag).filter((tag) => set.has(tag));
-      t.closest('.option')?.classList.toggle('is-selected', t.checked);
-      if (this.state.answers.functions.length) this._refreshGate();
+      const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+
+      if (t.value === ALL_FUNCTIONS) {
+        // Ticking the shortcut selects the six real tags; unticking it clears
+        // them. It never lands in state itself.
+        this.state.answers.functions = t.checked ? tags.slice() : [];
+      } else if (t.value === ANY_FUNCTION) {
+        // "No preference" is exclusive by definition: holding it alongside a
+        // chosen function would be a contradiction, so it replaces everything.
+        this.state.answers.functions = t.checked ? [ANY_FUNCTION] : [];
+      } else {
+        const set = new Set(this.state.answers.functions);
+        // Naming a function IS a preference, so it cannot sit next to having
+        // declined to express one.
+        set.delete(ANY_FUNCTION);
+        t.checked ? set.add(t.value) : set.delete(t.value);
+        // Keep the authored order rather than click order, so the "why this
+        // one" chip reads the same way every time.
+        this.state.answers.functions = tags.filter((tag) => set.has(tag));
+      }
+
+      // One click can change several boxes now, so the whole group is synced
+      // from state rather than the clicked box toggling only itself. Done in
+      // place instead of through render() so the box keeping keyboard focus
+      // does not get replaced under the user mid-interaction.
+      this._syncFunctionBoxes();
+      this._refreshGate();
       this._save();
     }
     if (t.name === 'persona') {
@@ -1151,6 +1204,27 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   /** Keep the Continue button and its hint in step with the current answers. */
+  /**
+   * Drive every function checkbox from state.
+   *
+   * Needed because the three kinds of box are entangled: "all of the above"
+   * ticks six, "no preference" clears everything, and ticking the six by hand
+   * has to light up "all of the above". Reading state once and writing all of
+   * them is the only version of this that cannot drift; toggling just the box
+   * that was clicked cannot express any of those.
+   */
+  _syncFunctionBoxes() {
+    const chosen = new Set(this.state.answers.functions);
+    const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+    const allPicked = tags.length > 0 && tags.every((tag) => chosen.has(tag));
+
+    this.shadowRoot.querySelectorAll('input[name="function"]').forEach((box) => {
+      const on = box.value === ALL_FUNCTIONS ? allPicked : chosen.has(box.value);
+      box.checked = on;
+      box.closest('.option')?.classList.toggle('is-selected', on);
+    });
+  }
+
   _refreshGate() {
     const reason = this._blockedReason();
     const btn = this.shadowRoot.querySelector('[data-action="next"]');
@@ -1381,7 +1455,14 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('*My answers*');
     }
 
-    const fns = a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
+    // A salesperson reads this message. "_any" would be noise, and a list of
+    // all six reads as a demand rather than the shrug it actually was, so both
+    // shortcuts are spelled out in the words the visitor saw on screen.
+    const fns = a.functions.includes(ANY_FUNCTION)
+      ? 'No preference'
+      : a.functions.length === FUNCTION_OPTIONS.length && FUNCTION_OPTIONS.length > 0
+        ? 'All of the above'
+        : a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
     lines.push(`Training: ${fns}`);
     lines.push(`Space: ${a.length.toFixed(1)} x ${a.depth.toFixed(1)} m`);
     lines.push(`Looking for: ${a.persona || 'Not specified'}`);
