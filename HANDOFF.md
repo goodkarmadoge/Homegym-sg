@@ -9,6 +9,41 @@ step, no npm install on your side. One JavaScript file and one tag.
 
 ---
 
+## 0. Is this copy-paste?
+
+Straight answer, because it decides how you schedule the work:
+
+| | Copy-paste alone? | What else you do |
+|---|---|---|
+| **A. iframe** | **Yes.** | Nothing. Paste ~15 lines into a CMS block and it works. |
+| **B. Script tag, self-hosted** | Almost. | Put **one file** where Magento serves static assets, then paste. |
+| **C. Script tag, hot-linked** | **Yes.** | Nothing, but read the warning below. |
+
+**A is genuinely zero-effort.** If the goal is to see the quiz live on a
+homegym.sg page this afternoon, take it, and move to B later if you want the
+quiz in the page flow rather than in a box.
+
+**B is the one to launch on**, and the "one file" is the only step that is not
+paste: `homegym-bundle-quiz.min.js`, 107 KB, no dependencies. Drop it in
+`pub/media/` or your theme's `web/js/`, point the `<script src>` at it, done. It
+is a static asset like any image you have ever uploaded.
+
+**C means pointing `<script src>` at `https://homegym-sg.vercel.app/homegym-bundle-quiz.min.js`.**
+That file is live and loading it cross-origin works. But that is the pro bono
+review deployment, not production infrastructure: it is served `noindex`, nobody
+has promised it uptime, and anything pushed to it changes what your visitors run
+with no review on your side. **Fine for a staging trial, wrong for launch.** If
+you use it to try the quiz out, budget the ten minutes to switch to B before it
+goes in front of customers.
+
+> **One catch on C right now.** The file currently at that URL is built from the
+> `main` branch, which does **not** yet include the `heading-level` attribute
+> described in §5. Until the handoff branch merges, hot-linking gets you a quiz
+> whose headings will not nest under your page's own. Self-host from a build of
+> the handoff branch and you get it today.
+
+---
+
 ## 1. Pick a path
 
 Two ways in. They are not equivalent, and the choice is yours to make because it
@@ -37,12 +72,17 @@ Everything below assumes the script tag unless it says otherwise.
 
 ## 2. Get the file
 
-```
-npm run build
-```
+Two ways, and you do **not** need the repository for the first:
 
-Writes `dist/homegym-bundle-quiz.min.js`. Copy it to wherever Magento serves
-static assets, for example `pub/media/homegym/` or your theme's `web/js/`.
+1. **Ask for it.** `homegym-bundle-quiz.min.js` is a single static file. Have it
+   emailed or dropped in shared storage. Nothing in it is environment-specific,
+   so the file you are handed is the file that runs in production.
+2. **Build it**, if you have the repo: `npm run build` writes it to `dist/`.
+   There is nothing to install first — the repo has no dependencies and the
+   build is plain Node.
+
+Either way, copy it to wherever Magento serves static assets, for example
+`pub/media/homegym/` or your theme's `web/js/`.
 
 It is 107 KB raw, **26.5 KB gzipped**, which is what your visitors actually
 download. It has no external requests of its own beyond the product images,
