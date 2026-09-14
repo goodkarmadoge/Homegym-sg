@@ -138,7 +138,11 @@ export const STYLES = css`
 
   /* ── Type ───────────────────────────────────────────────────────────────── */
 
-  h1, h2, h3, p { margin: 0; }
+  /* All six levels, not just the three the default rendering uses. The
+     heading-level attribute slides every tier down at once, so a host that
+     sets heading-level="3" gets an h5 card name, and a level missing from
+     this reset arrives carrying the UA's own margin. */
+  h1, h2, h3, h4, h5, h6, p { margin: 0; }
 
   /* Each view's heading takes focus on a step change so screen readers land in
      the right place. That focus is programmatic, so the ring is suppressed for

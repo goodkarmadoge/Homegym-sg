@@ -16,8 +16,13 @@
 
    TO EMBED WITHOUT AN IFRAME, load dist/homegym-bundle-quiz.min.js on any page
    and drop in the <homegym-bundle-quiz> tag below. The component registers
-   itself and carries its own styles, so it needs nothing else. README.md,
-   "Embedding the quiz", has the copy-paste snippet.
+   itself and carries its own styles, so it needs nothing else. HANDOFF.md has
+   the copy-paste snippet and the two things it is easy to leave out: the
+   Archivo font, which is document-scoped and so cannot be loaded from inside
+   the shadow root, and heading-level, which nests the quiz's headings under
+   the host page's own. Neither applies here: this page loads Archivo itself,
+   and as its own document it has no competing <h1>, so the tag below carries
+   no heading-level and the component's default of 1 is correct.
 
    Note for anyone editing this file: do not put a closing script tag inside
    this comment. scripts/verify.mjs finds the inlined bundle by looking for the

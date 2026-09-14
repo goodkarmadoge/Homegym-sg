@@ -144,7 +144,7 @@ function inkOn(accent) {
 class HomegymBundleQuiz extends HTMLElement {
   static get observedAttributes() {
     return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step',
-            'sheet-live', 'sheet-id'];
+            'sheet-live', 'sheet-id', 'heading-level'];
   }
 
   constructor() {
@@ -192,6 +192,25 @@ class HomegymBundleQuiz extends HTMLElement {
      every test and the 64,575-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
+
+  /* Where the quiz's headings sit in the HOST page's outline.
+     ─────────────────────────────────────────────────────────────────────────
+     A shadow root scopes styles, not the accessibility tree: an <h1> in here
+     is an <h1> in the host document's outline, however deeply nested the
+     component is. The standalone page is its own document, so 1 is right
+     there and stays the default. Dropped into a larger page that already has
+     an <h1>, that is a second one and the outline stops making sense, so a
+     host embedding the component sets heading-level="2" and every tier moves
+     down with it. */
+  get headingLevel() {
+    const n = parseInt(this.getAttribute('heading-level'), 10);
+    return n >= 1 && n <= 6 ? n : 1;
+  }
+
+  /** Tag name for a heading `depth` tiers below this component's top heading. */
+  _h(depth) {
+    return 'h' + Math.min(6, this.headingLevel + depth);
+  }
 
   /** Format a number as SGD. Falls back to Intl for any other currency code. */
   money(n) {
@@ -410,6 +429,14 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   _afterRender() {
+    // The progress fill's width is set here rather than in a style="" attribute
+    // on the markup. Magento 2.4 ships a Content-Security-Policy, and a host
+    // that enforces style-src-attr would strip that attribute and leave the bar
+    // reading 0% on every step. A CSSOM write is not governed by CSP at all, so
+    // the bar survives whatever policy the host page runs.
+    const fill = this.shadowRoot.querySelector('[data-fill]');
+    if (fill) fill.style.width = fill.getAttribute('data-fill') + '%';
+
     // Product images: swap in an initial-letter tile if the CloudFront path 404s.
     this.shadowRoot.querySelectorAll('img[data-fallback]').forEach((img) => {
       img.addEventListener('error', () => {
@@ -445,7 +472,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="progress__track" role="progressbar"
              aria-valuenow="${this.state.step}" aria-valuemin="1" aria-valuemax="${TOTAL_STEPS}"
              aria-label="Quiz progress">
-          <div class="progress__fill" style="width:${pct}%"></div>
+          <div class="progress__fill" data-fill="${pct}"></div>
         </div>
       </div>`;
   }
@@ -509,7 +536,7 @@ class HomegymBundleQuiz extends HTMLElement {
   step1() {
     const chosen = new Set(this.state.answers.functions);
     return `
-      <h1 class="headline" tabindex="-1" data-focus>What do you actually want to train?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>What do you actually want to train?</${this._h(0)}>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
       <div class="multi">
         <span class="multi__badge">Select all that apply</span>
@@ -548,7 +575,7 @@ class HomegymBundleQuiz extends HTMLElement {
     // phone the sliders come first, which is what was asked for. The plan holds
     // nothing focusable, so nothing can read out of order.
     return `
-      <h1 class="headline" tabindex="-1" data-focus>How much floor can you give it?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>How much floor can you give it?</${this._h(0)}>
       <p class="subhead">Drag the room to the size you actually have. We check every bundle against it.</p>
       <div class="space">
         <div class="space__controls">
@@ -691,7 +718,7 @@ class HomegymBundleQuiz extends HTMLElement {
   step3() {
     const current = this.state.answers.persona;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</${this._h(0)}>
       <p class="subhead">This is about what you want out of it, not how hard you train.</p>
       <fieldset class="options options--single">
         <legend class="visually-hidden">What you want from your gym</legend>
@@ -716,7 +743,7 @@ class HomegymBundleQuiz extends HTMLElement {
   step4() {
     const b = this.state.answers.budget;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>What's your budget?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>What's your budget?</${this._h(0)}>
       <p class="subhead">All prices in SGD. Installation quoted separately.</p>
       <div class="budget">
       <div class="budget__value" data-budget-value aria-live="polite">${this.budgetLabel(b)}</div>
@@ -775,7 +802,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="view">
         ${this.banner(res)}
         <p class="eyebrow">Your match</p>
-        <h1 class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</h1>
+        <${this._h(0)} class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</${this._h(0)}>
         <p class="result__tagline">${esc(bundle.tagline)}</p>
 
         <div class="chips">
@@ -814,7 +841,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionProducts(bundle) {
     return `
       <section class="section">
-        <h2 class="section__title">What's in the bundle</h2>
+        <${this._h(1)} class="section__title">What's in the bundle</${this._h(1)}>
         <div class="bundle-split">
           ${this.installShot(bundle)}
           <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
@@ -836,7 +863,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!bundle.trains || !bundle.trains.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">What you'll train</h2>
+        <${this._h(1)} class="section__title">What you'll train</${this._h(1)}>
         <div class="pills">${bundle.trains.map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>
       </section>`;
   }
@@ -876,7 +903,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionSpecialist(bundle) {
     return `
       <section class="section">
-        <h2 class="section__title">Send this to a specialist</h2>
+        <${this._h(1)} class="section__title">Send this to a specialist</${this._h(1)}>
         <p class="pitch">
           We will come back with availability, delivery and installation for this exact
           build, and answer anything the quiz could not.
@@ -902,7 +929,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!alternates.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Other bundles</h2>
+        <${this._h(1)} class="section__title">Other bundles</${this._h(1)}>
         <div class="alts">
           ${alternates.map((alt) => `
             <button class="alt" type="button" data-action="alternate" data-bundle="${alt.id}">
@@ -935,7 +962,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!tiles.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Rooms we've built</h2>
+        <${this._h(1)} class="section__title">Rooms we've built</${this._h(1)}>
         <p class="pitch">
           Real installs from our Instagram, not showroom mock-ups. Every one links
           to the machine in the picture.
@@ -962,7 +989,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionAdvice() {
     return `
       <section class="section advice">
-        <h2 class="section__title">Not sure yet?</h2>
+        <${this._h(1)} class="section__title">Not sure yet?</${this._h(1)}>
         <p class="pitch">
           Tell us the room and what you want to train and we will tell you what we would
           put in it, whether or not you buy from us. No obligation, no sales pitch.
@@ -1004,7 +1031,7 @@ class HomegymBundleQuiz extends HTMLElement {
           ${p.note ? `<span class="card__badge">${esc(p.note)}</span>` : ''}
         </div>
         <div class="card__body">
-          <h3 class="card__name">${esc(p.name)}</h3>
+          <${this._h(2)} class="card__name">${esc(p.name)}</${this._h(2)}>
           <div class="card__prices">
             <span class="card__price">${this.money(p.price)}</span>
             ${p.was ? `<span class="card__was">${this.money(p.was)}</span><span class="card__sale">SALE</span>` : ''}
@@ -1024,7 +1051,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="quiz">
         <div class="view talk">
           <p class="eyebrow">No honest match</p>
-          <h1 class="headline" tabindex="-1" data-focus>Let's talk</h1>
+          <${this._h(0)} class="headline" tabindex="-1" data-focus>Let's talk</${this._h(0)}>
           <p class="subhead">
             At ${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m there is nothing in the range we can
             recommend in good conscience. Rather than sell you something that will not fit, we would

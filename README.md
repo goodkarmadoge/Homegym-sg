@@ -31,9 +31,14 @@ Four questions (what you want to train, floor space, which customer you are, bud
 The same code ships twice from one source:
 
 1. **The page:** `dist/bundle-quiz.html`, fully self-contained with the component inlined.
-2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 66 KB file that registers `<homegym-bundle-quiz>` on any page.
+2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 107 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 71% of the 150 KB budget the build enforces, and **26.5 KB over the wire** once the host serves it gzipped, which any Magento install already does.
 
 ## Embedding it
+
+> **Handing this to the client's developer?** [`HANDOFF.md`](HANDOFF.md) is the
+> single page they need: which of the two paths to take and why, the snippet to
+> paste, the CSP checks, and the data questions to settle before launch. This
+> section is the reference behind it.
 
 This is the quiz's main use. `bundle-quiz.html` is deliberately bare: no
 masthead, no hero, no footer, transparent background. It is the quiz and
@@ -41,18 +46,45 @@ nothing else, so the host page supplies all surrounding chrome. Drop it in an
 iframe, or skip the page entirely and use the component directly:
 
 ```html
+<!-- Archivo is the quiz's typeface. Without it the component falls back to
+     system-ui and still works, it just stops looking like the design system.
+     Skip these three lines if homegym.sg already loads Archivo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
+
+<style>
+  /* Hold the space the quiz will occupy, so the page does not jump when the
+     custom element upgrades, then release it so short views are not padded. */
+  homegym-bundle-quiz:not(:defined) { display: block; min-height: 620px; }
+</style>
+
 <script src="/assets/homegym-bundle-quiz.min.js" defer></script>
 
 <homegym-bundle-quiz
-  theme="light"
-  accent="#FF6924"
+  heading-level="2"
   currency="SGD"
   contact-url="https://homegym.sg/contact"
   whatsapp="6580423952"
 ></homegym-bundle-quiz>
+
+<noscript>
+  <p>The quiz needs JavaScript. Browse the range at
+    <a href="https://homegym.sg/strength.html">homegym.sg</a>,
+    or message us on WhatsApp and we will size a build for you.</p>
+</noscript>
 ```
 
-Every attribute is optional; the values above are the defaults.
+Every attribute is optional, and the snippet shows the **production** values
+rather than the defaults: `whatsapp` has no default and is the one that matters
+most, since it is the primary call to action. Leave `theme` and `accent` off
+entirely unless you want to move off the design system, which is what their
+defaults already are.
+
+**`heading-level` is the one to think about.** Set it one level below the
+nearest heading above the quiz on the host page: under an `<h1>` page title use
+`2`, inside a section that already has its own `<h2>` use `3`. See
+[Headings](#headings) for why this is not cosmetic.
 
 | Attribute | Purpose |
 |---|---|
@@ -62,11 +94,57 @@ Every attribute is optional; the values above are the defaults.
 | `cart-endpoint` | Optional. If set, an **Add all to cart** button appears alongside the WhatsApp CTA and POSTs the product list here. Unset by default, so WhatsApp is the only call to action |
 | `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
 | `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
+| `heading-level` | `1` to `6`, default `1`. Where the quiz's own headings sit in the host page's outline. Anything outside that range, or unparseable, falls back to `1` |
 | `start-step` | Deep-link straight to a step, 1 to 4 |
 | `sheet-live` | Present, no value. Re-read the Google Sheet after first paint so sheet edits appear without a redeploy. Needs the tab gids in `config/sheet.json`. Falls back silently to the built-in data on any failure |
 | `sheet-id` | Override which spreadsheet `sheet-live` reads. Defaults to the one baked in at sync time |
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
+
+### Headings
+
+**A shadow root scopes styles, not the accessibility tree.** An `<h1>` inside
+the component is an `<h1>` in the host document's outline, however deeply the
+element is nested. Left at the default on a page that already has its own
+`<h1>`, the quiz contributes a second one and the outline stops describing the
+page: a screen-reader user navigating by heading hears two top-level titles,
+and the sections under the result hang off the wrong one.
+
+`heading-level` moves all three tiers at once. At `heading-level="3"`, on a page
+whose own headings run `h1` then `h2`, the flattened outline comes out as:
+
+```
+H1  [page]  Home Gym Equipment Singapore
+H2  [page]  Build your bundle
+H3  [quiz]  The Smart Smith                  <- the view heading
+H4  [quiz]  What's in the bundle             <- result sections
+H5  [quiz]  Vigor BF900 Pro Connected        <- product cards
+H4  [quiz]  Rooms we've built
+```
+
+The tiers stop at `h6` rather than running off the end, so a deliberately deep
+`heading-level="6"` flattens to `h6` throughout instead of emitting invalid
+tags. The standalone `bundle-quiz.html` is its own document with no competing
+title, so it stays at the default `1` and the iframe embed needs no change.
+
+### Content-Security-Policy
+
+Two things to check if homegym.sg enforces a CSP. Magento 2.4 ships one, in
+report-only mode by default, so this is worth a look before launch rather than
+after.
+
+- **`script-src`** has to allow the bundle. Self-hosting it under `/assets/`
+  means `'self'` covers it; hot-linking it from another origin does not.
+- **`style-src`** has to allow the component's stylesheet. It is a `<style>`
+  element created at runtime and injected into the shadow root, which a
+  nonce-based policy without `'unsafe-inline'` will block. The quiz then renders
+  as unstyled markup rather than failing loudly, which is the worse outcome to
+  debug. If the policy is strict, the fix is to serve the styles as their own
+  file and let `style-src 'self'` cover them.
+
+The component deliberately uses **no `style=""` attributes**, so a policy with
+`style-src-attr 'none'` is fine: the one place that needed a computed width, the
+progress bar, sets it through the CSSOM, which CSP does not govern.
 
 ### Or as an iframe
 
@@ -102,6 +180,25 @@ could post a height at yours.
 
 If you skip the script entirely the quiz still works, it just sits in a fixed
 box and scrolls internally.
+
+**The frame has to be allowed to load at all,** and that is a response header on
+this deployment, not something the embedding page can grant itself. `vercel.json`
+sends:
+
+```
+Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://www.homegym.sg
+```
+
+Embedding from any other origin, a staging host or a different domain, is
+refused by the browser: an empty box and a console error, with nothing in this
+repo failing. Add the origin to that list first.
+
+This was wrong until now. The header was `X-Frame-Options: SAMEORIGIN`, which
+made the snippet above impossible on homegym.sg, while the README documented it
+as the supported path. `X-Frame-Options` has no allowlist form that current
+browsers honour, `ALLOW-FROM` having been dropped, and where both headers are
+present it wins, so it is gone rather than loosened. `npm run verify` now fails
+the build if it comes back or if `frame-ancestors` stops naming homegym.sg.
 
 **A note on why it measures what it does.** The reporter measures the content
 element, not the document. `document.scrollHeight` can never report less than

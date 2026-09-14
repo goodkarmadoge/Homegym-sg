@@ -74,6 +74,54 @@ if (!existsSync(embedPath)) {
   if (!/<homegym-bundle-quiz\b/.test(page)) fail('bundle-quiz.html: the component is never mounted');
 }
 
+// ── The quiz page must stay framable by homegym.sg ─────────────────────────
+//
+// The whole point of bundle-quiz.html is to be embedded, and the README hands
+// the client an iframe snippet pointing at this deployment. A response header
+// that forbids cross-origin framing makes that snippet impossible: the browser
+// refuses to render the frame and shows an empty box with a console error, on
+// the client's live site, with nothing in this repo failing.
+//
+// It shipped that way. `X-Frame-Options: SAMEORIGIN` sat on `/(.*)` while the
+// README told them to iframe it from homegym.sg. This is the guard so it
+// cannot happen twice.
+//
+// X-Frame-Options has no working allowlist: ALLOW-FROM is obsolete and ignored
+// by every current browser, and where both headers are present XFO wins. So
+// the only header that can express "homegym.sg may frame this" is CSP
+// frame-ancestors, and XFO must be absent rather than merely permissive.
+const EMBED_HOSTS = ['https://homegym.sg', 'https://www.homegym.sg'];
+const vercelPath = join(ROOT, 'vercel.json');
+if (!existsSync(vercelPath)) {
+  fail('vercel.json: missing, cannot verify the quiz stays framable');
+} else {
+  const headers = (JSON.parse(readFileSync(vercelPath, 'utf8')).headers || [])
+    .flatMap((rule) => (rule.headers || []).map((h) => [h.key.toLowerCase(), h.value]));
+
+  const xfo = headers.find(([k]) => k === 'x-frame-options');
+  if (xfo) {
+    fail(
+      `vercel.json: X-Frame-Options "${xfo[1]}" blocks the iframe embed the README documents. ` +
+      'It has no allowlist form that browsers honour, so remove it and express the policy ' +
+      'with Content-Security-Policy frame-ancestors instead'
+    );
+  }
+
+  const csp = headers.filter(([k]) => k === 'content-security-policy').map(([, v]) => v).join('; ');
+  const ancestors = /frame-ancestors([^;]*)/.exec(csp);
+  if (!ancestors) {
+    fail('vercel.json: no Content-Security-Policy frame-ancestors, so nothing states who may embed the quiz');
+  } else {
+    const allowed = ancestors[1].trim();
+    const missing = EMBED_HOSTS.filter((h) => !allowed.includes(h));
+    if (allowed.includes("'none'")) {
+      fail("vercel.json: frame-ancestors 'none' forbids the embed this page exists for");
+    } else if (missing.length) {
+      fail(`vercel.json: frame-ancestors does not permit ${missing.join(' or ')}, so the embed on the live site would be refused`);
+    }
+  }
+}
+
 if (!existsSync(join(OUT, 'robots.txt'))) fail('robots.txt: missing');
 else if (!/Disallow: \//.test(readFileSync(join(OUT, 'robots.txt'), 'utf8')))
   fail('robots.txt: does not disallow crawling');
