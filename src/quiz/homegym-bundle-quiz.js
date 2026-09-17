@@ -12,6 +12,7 @@
  *     cart-endpoint="/checkout/cart/add"
  *     contact-url="/contact"
  *     whatsapp="6580423952"            E.164 digits, no + and no spaces
+ *     booking-url="https://..."        appointment page for the Book a visit CTA
  *     start-step="1"                   deep-link straight to a step
  *   ></homegym-bundle-quiz>
  *
@@ -26,6 +27,13 @@ import { match, FALLBACK } from './matcher.js';
 import { STYLES } from './styles.js';
 
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
+
+/* HomeGym's Google Calendar appointment page. A default, not a constant: the
+   booking-url attribute overrides it, so a campaign or a second showroom does
+   not need a rebuild. */
+const BOOKING_URL =
+  'https://calendar.google.com/calendar/u/0/appointments/schedules/' +
+  'AcZssZ2BmuRqTOVu8viZ_wPj95NB_Ul1tIRrx2nDnqdFAlrgpAJ2f_5ZangLeANXnaiJQp7LfRldGKKG';
 const TOTAL_STEPS = 4;
 
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
@@ -144,7 +152,7 @@ function inkOn(accent) {
 class HomegymBundleQuiz extends HTMLElement {
   static get observedAttributes() {
     return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step',
-            'sheet-live', 'sheet-id'];
+            'sheet-live', 'sheet-id', 'booking-url'];
   }
 
   constructor() {
@@ -192,6 +200,7 @@ class HomegymBundleQuiz extends HTMLElement {
      every test and the 64,575-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
+  get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }
 
   /** Format a number as SGD. Falls back to Intl for any other currency code. */
   money(n) {
@@ -305,6 +314,17 @@ class HomegymBundleQuiz extends HTMLElement {
     } catch (err) {
       this._sheetProblem(err.message);
     }
+  }
+
+  /** Fires alongside the booking link opening, for GTM. */
+  _bookingClick() {
+    const bundle = this._currentBundle();
+    this.emit('quiz:cta-click', {
+      bundleId: bundle ? bundle.id : null,
+      bundleName: bundle ? bundle.name : null,
+      price: bundle ? bundle.price : null,
+      action: 'book-visit'
+    });
   }
 
   _sheetProblem(message) {
@@ -868,12 +888,13 @@ class HomegymBundleQuiz extends HTMLElement {
             ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send this to a specialist ${ARROW}</button>`
             : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                   data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
-          <button class="btn btn--outline" data-action="showroom" type="button">Book a showroom visit ${ARROW}</button>
+          <a class="btn btn--outline" href="${esc(this.bookingUrl)}" target="_blank" rel="noopener"
+             data-action="book">Book a visit ${ARROW}</a>
           ${this.cartEndpoint ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>` : ''}
         </div>
         <p class="note cta-note">
-          Send it over and we will book you a time to come down to the showroom and put
-          your hands on everything in this bundle.
+          Send the build over for prices and availability, or pick a showroom slot
+          yourself and put your hands on everything in it before you decide.
         </p>
       </section>`;
   }
@@ -1098,7 +1119,7 @@ class HomegymBundleQuiz extends HTMLElement {
       case 'alternate': e.preventDefault(); this._showAlternate(parseInt(el.dataset.bundle, 10)); break;
       case 'cta':       e.preventDefault(); this._cta(); break;
       case 'whatsapp':  e.preventDefault(); this._whatsapp('bundle'); break;
-      case 'showroom':  e.preventDefault(); this._whatsapp('showroom'); break;
+      case 'book':      this._bookingClick(); break;   // let the link open naturally
       case 'advice':    e.preventDefault(); this._whatsapp('advice'); break;
       case 'product':   this._productClick(el); break;   // let the link open naturally
       default: break;
@@ -1352,9 +1373,7 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('');
       lines.push(`Total: ${this.money(bundle.price)}`);
       lines.push('');
-      lines.push(intent === 'showroom'
-        ? 'Could I book a time at the showroom to try this build before I decide?'
-        : intent === 'advice'
+      lines.push(intent === 'advice'
           ? 'Before I commit, could you tell me what you would actually put in this room?'
           : 'Could you confirm availability, delivery and installation, and when I could come down to the showroom to try these?');
     } else {
