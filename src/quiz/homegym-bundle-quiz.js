@@ -553,13 +553,13 @@ class HomegymBundleQuiz extends HTMLElement {
       <h1 class="headline" tabindex="-1" data-focus>How much floor can you give it?</h1>
       <p class="subhead">Drag the room to the size you actually have. We check every bundle against it.</p>
       <div class="space">
+        <div class="space__plan">${this.roomPanel(length, depth)}</div>
         <div class="space__controls">
           ${dim('length', 'Length (m)', length)}
           ${dim('depth', 'Depth (m)', depth)}
           <div class="hr"></div>
           <p class="note">Leave at least 0.5 m of clearance in front of any rack to pull the bar out. Every footprint we quote already includes it.</p>
         </div>
-        <div class="space__plan">${this.roomPanel(length, depth)}</div>
       </div>`;
   }
 
@@ -1149,6 +1149,50 @@ class HomegymBundleQuiz extends HTMLElement {
     if (count) count.textContent = this._countLabel();
   }
 
+  /**
+   * Put the top of the quiz back in view after a step change.
+   *
+   * WHY THIS IS NOT JUST scrollTo(0, 0).
+   *   Embedded, the quiz is not what scrolls. The iframe is a fixed-height
+   *   window onto a document that fits inside it, so the child has nothing to
+   *   scroll; the page doing the scrolling is the parent, on the other side of
+   *   an origin boundary this code cannot touch. On a phone that meant tapping
+   *   Continue left you looking at the middle of the next question with its
+   *   heading somewhere above the fold.
+   *
+   *   So it asks. The parent already listens for height messages from this
+   *   page; this is the same channel carrying one more message, and the
+   *   snippet in README.md acts on it. A host that has not added the listener
+   *   is no worse off than before.
+   *
+   * The direct scroll still runs too, for the component dropped straight onto
+   * a page with no iframe, and for an iframe tall enough to scroll internally.
+   */
+  _scrollToTop() {
+    // INSTANT, NOT SMOOTH, and that is not a style preference.
+    // behavior: 'smooth' is silently a no-op in more places than it looks:
+    // measured here, a smooth scrollIntoView left the page exactly where it
+    // was while the identical call with 'auto' moved it 900px. Engines also
+    // drop it under prefers-reduced-motion. A scroll that quietly does
+    // nothing is worse than one that jumps, and jumping to the top of the
+    // next question is what every multi-step form does anyway.
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'homegym-quiz:scroll-to-top' }, '*');
+      }
+    } catch { /* a parent that cannot be posted to is not an error here */ }
+
+    try {
+      // Only pull the page if the top of the quiz is actually out of view.
+      // Scrolling when it is already visible fights a host that deliberately
+      // placed it.
+      const top = this.getBoundingClientRect().top;
+      if (top < 0 || top > (window.innerHeight || 0) * 0.5) {
+        this.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
+    } catch { /* older engines without smooth scrolling */ }
+  }
+
   _next() {
     if (this.state.step === 1 && this.state.answers.functions.length === 0) {
       this.state.error = 'Pick at least one thing you want to train.';
@@ -1171,6 +1215,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this._save();
     this.emit('quiz:step', { step: this.state.step, answers: this._answersOut() });
     this.render();
+    this._scrollToTop();
   }
 
   _back() {
@@ -1181,6 +1226,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this._save();
     this.emit('quiz:step', { step: this.state.step, answers: this._answersOut() });
     this.render();
+    this._scrollToTop();
   }
 
   _submit() {
@@ -1194,6 +1240,9 @@ class HomegymBundleQuiz extends HTMLElement {
       this.state.completedBefore = true;
       this._shouldFocus = true;
       this.render();
+      // The result is the longest view in the quiz. Landing halfway down it on a
+      // phone hides the bundle name and the price, which are the whole answer.
+      this._scrollToTop();
       this.emit('quiz:complete', {
         answers,
         bundleId: result.primary ? result.primary.id : null,

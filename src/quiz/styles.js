@@ -332,10 +332,16 @@ export const STYLES = css`
 
   /* ── Step 2: space ──────────────────────────────────────────────────────── */
 
-  /* The handoff puts the plan left and the sliders right. Source order is
-     reversed here so the controls come first when the columns wrap on a phone,
-     which is what was asked for. The plan panel holds nothing focusable, so
-     visual order and tab order cannot disagree. */
+  /* The handoff puts the plan left and the sliders right, and the source order
+     now matches it, so desktop reads the way the handoff drew it.
+
+     On a phone the columns wrap and that puts the PLAN FIRST, with the sliders
+     under it. That is deliberate, asked for on 17 Sep 2026: the drawing is what
+     makes the numbers mean something, so it goes first and the controls follow.
+     The sliders then sit below the fold on a small screen, which is why every
+     step change now pulls the top of the quiz back into view. The plan panel
+     holds nothing focusable, so visual order and tab order still cannot
+     disagree. */
   .space {
     display: flex;
     flex-wrap: wrap;

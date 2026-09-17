@@ -86,12 +86,29 @@ content instead of scrolling inside a fixed box:
   var origin = new URL(f.src).origin;
   window.addEventListener('message', function (e) {
     if (e.origin !== origin) return;                     // only trust the quiz
-    if (!e.data || e.data.type !== 'homegym-quiz:height') return;
-    f.style.height = e.data.height + 'px';
+    if (!e.data) return;
+
+    // Grow and shrink the frame with its content.
+    if (e.data.type === 'homegym-quiz:height') {
+      f.style.height = e.data.height + 'px';
+    }
+
+    // Put the top of the quiz back in view on a step change. The quiz cannot
+    // do this itself: the iframe fits its content, so the child has nothing
+    // to scroll, and the page that does scroll is this one.
+    if (e.data.type === 'homegym-quiz:scroll-to-top') {
+      f.scrollIntoView({ block: 'start' });
+    }
   });
 }());
 </script>
 ```
+
+**Both messages matter on a phone.** Without the height one the frame is a
+fixed box the quiz scrolls inside. Without the scroll one, tapping Continue
+leaves the visitor looking at the middle of the next question with its heading
+above the fold, which is exactly what makes step two feel broken: the floor
+plan fills the screen and the sliders under it are never seen.
 
 The `height` in the style attribute is only what shows before the first message
 arrives; pick something close to a first question so the page does not jump.
