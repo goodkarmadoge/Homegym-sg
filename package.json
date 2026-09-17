@@ -17,7 +17,9 @@
     "check": "npm run test && npm run sweep && npm run build && npm run verify",
     "check:images": "node scripts/check-images.mjs",
     "check:fit": "node scripts/check-fit.mjs",
-    "check:heroes": "node scripts/check-heroes.mjs"
+    "check:heroes": "node scripts/check-heroes.mjs",
+    "sync:images": "node scripts/sync-images.mjs",
+    "sync:all": "npm run sync && npm run sync:images"
   },
   "engines": {
     "node": ">=20"

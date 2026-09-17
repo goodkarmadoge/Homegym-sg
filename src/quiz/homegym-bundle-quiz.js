@@ -12,6 +12,7 @@
  *     cart-endpoint="/checkout/cart/add"
  *     contact-url="/contact"
  *     whatsapp="6580423952"            E.164 digits, no + and no spaces
+ *     booking-url="https://..."        appointment page for the Book a visit CTA
  *     start-step="1"                   deep-link straight to a step
  *   ></homegym-bundle-quiz>
  *
@@ -26,6 +27,13 @@ import { match, FALLBACK, ANY_FUNCTION } from './matcher.js';
 import { STYLES } from './styles.js';
 
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
+
+/* HomeGym's Google Calendar appointment page. A default, not a constant: the
+   booking-url attribute overrides it, so a campaign or a second showroom does
+   not need a rebuild. */
+const BOOKING_URL =
+  'https://calendar.google.com/calendar/u/0/appointments/schedules/' +
+  'AcZssZ2BmuRqTOVu8viZ_wPj95NB_Ul1tIRrx2nDnqdFAlrgpAJ2f_5ZangLeANXnaiJQp7LfRldGKKG';
 const TOTAL_STEPS = 4;
 
 /**
@@ -155,7 +163,7 @@ function inkOn(accent) {
 class HomegymBundleQuiz extends HTMLElement {
   static get observedAttributes() {
     return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step',
-            'sheet-live', 'sheet-id', 'heading-level'];
+            'sheet-live', 'sheet-id', 'heading-level', 'booking-url'];
   }
 
   constructor() {
@@ -203,6 +211,7 @@ class HomegymBundleQuiz extends HTMLElement {
      every test and the 112,875-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
+  get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }
 
   /* Where the quiz's headings sit in the HOST page's outline.
      ─────────────────────────────────────────────────────────────────────────
@@ -335,6 +344,17 @@ class HomegymBundleQuiz extends HTMLElement {
     } catch (err) {
       this._sheetProblem(err.message);
     }
+  }
+
+  /** Fires alongside the booking link opening, for GTM. */
+  _bookingClick() {
+    const bundle = this._currentBundle();
+    this.emit('quiz:cta-click', {
+      bundleId: bundle ? bundle.id : null,
+      bundleName: bundle ? bundle.name : null,
+      price: bundle ? bundle.price : null,
+      action: 'book-visit'
+    });
   }
 
   _sheetProblem(message) {
@@ -611,13 +631,13 @@ class HomegymBundleQuiz extends HTMLElement {
       <${this._h(0)} class="headline" tabindex="-1" data-focus>How much floor can you give it?</${this._h(0)}>
       <p class="subhead">Drag the room to the size you actually have. We check every bundle against it.</p>
       <div class="space">
+        <div class="space__plan">${this.roomPanel(length, depth)}</div>
         <div class="space__controls">
           ${dim('length', 'Length (m)', length)}
           ${dim('depth', 'Depth (m)', depth)}
           <div class="hr"></div>
           <p class="note">Leave at least 0.5 m of clearance in front of any rack to pull the bar out. Every footprint we quote already includes it.</p>
         </div>
-        <div class="space__plan">${this.roomPanel(length, depth)}</div>
       </div>`;
   }
 
@@ -920,14 +940,22 @@ class HomegymBundleQuiz extends HTMLElement {
   installShot(bundle) {
     if (!bundle.hero) return '';
     const fromInstagram = bundle.heroSource === 'instagram';
-    const alt = fromInstagram
+    // Three states, not two, and the middle one is why the nightly image sync
+    // can run unattended. A caption on the feed proves WHICH MACHINE is in a
+    // photo; it cannot prove the photo is a room rather than a studio repost.
+    // So a hero the sync picked on its own says only where it came from, and
+    // earns the stronger line once a human has actually looked at it.
+    const verified = bundle.heroVerified !== false;
+    const alt = fromInstagram && verified
       ? `${bundle.name} installed in a customer's home`
       : `${bundle.name}`;
     return `
       <figure class="install">
         <img src="${esc(bundle.hero)}" alt="${esc(alt)}" loading="lazy" decoding="async" data-fallback>
         <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
-        <figcaption>${fromInstagram ? 'A real install, from our Instagram' : 'The anchor machine in this build'}</figcaption>
+        <figcaption>${fromInstagram
+          ? (verified ? 'A real install, from our Instagram' : 'From our Instagram')
+          : 'The anchor machine in this build'}</figcaption>
       </figure>`;
   }
 
@@ -946,12 +974,13 @@ class HomegymBundleQuiz extends HTMLElement {
             ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send this to a specialist ${ARROW}</button>`
             : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                   data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
-          <button class="btn btn--outline" data-action="showroom" type="button">Book a showroom visit ${ARROW}</button>
+          <a class="btn btn--ink" href="${esc(this.bookingUrl)}" target="_blank" rel="noopener"
+             data-action="book">Schedule a visit ${ARROW}</a>
           ${this.cartEndpoint ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>` : ''}
         </div>
         <p class="note cta-note">
-          Send it over and we will book you a time to come down to the showroom and put
-          your hands on everything in this bundle.
+          Send the build over for prices and availability, or pick a showroom slot
+          yourself and put your hands on everything in it before you decide.
         </p>
       </section>`;
   }
@@ -1196,7 +1225,7 @@ class HomegymBundleQuiz extends HTMLElement {
       case 'alternate': e.preventDefault(); this._showAlternate(parseInt(el.dataset.bundle, 10)); break;
       case 'cta':       e.preventDefault(); this._cta(); break;
       case 'whatsapp':  e.preventDefault(); this._whatsapp('bundle'); break;
-      case 'showroom':  e.preventDefault(); this._whatsapp('showroom'); break;
+      case 'book':      this._bookingClick(); break;   // let the link open naturally
       case 'advice':    e.preventDefault(); this._whatsapp('advice'); break;
       case 'product':   this._productClick(el); break;   // let the link open naturally
       default: break;
@@ -1239,6 +1268,50 @@ class HomegymBundleQuiz extends HTMLElement {
     if (count) count.textContent = this._countLabel();
   }
 
+  /**
+   * Put the top of the quiz back in view after a step change.
+   *
+   * WHY THIS IS NOT JUST scrollTo(0, 0).
+   *   Embedded, the quiz is not what scrolls. The iframe is a fixed-height
+   *   window onto a document that fits inside it, so the child has nothing to
+   *   scroll; the page doing the scrolling is the parent, on the other side of
+   *   an origin boundary this code cannot touch. On a phone that meant tapping
+   *   Continue left you looking at the middle of the next question with its
+   *   heading somewhere above the fold.
+   *
+   *   So it asks. The parent already listens for height messages from this
+   *   page; this is the same channel carrying one more message, and the
+   *   snippet in README.md acts on it. A host that has not added the listener
+   *   is no worse off than before.
+   *
+   * The direct scroll still runs too, for the component dropped straight onto
+   * a page with no iframe, and for an iframe tall enough to scroll internally.
+   */
+  _scrollToTop() {
+    // INSTANT, NOT SMOOTH, and that is not a style preference.
+    // behavior: 'smooth' is silently a no-op in more places than it looks:
+    // measured here, a smooth scrollIntoView left the page exactly where it
+    // was while the identical call with 'auto' moved it 900px. Engines also
+    // drop it under prefers-reduced-motion. A scroll that quietly does
+    // nothing is worse than one that jumps, and jumping to the top of the
+    // next question is what every multi-step form does anyway.
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'homegym-quiz:scroll-to-top' }, '*');
+      }
+    } catch { /* a parent that cannot be posted to is not an error here */ }
+
+    try {
+      // Only pull the page if the top of the quiz is actually out of view.
+      // Scrolling when it is already visible fights a host that deliberately
+      // placed it.
+      const top = this.getBoundingClientRect().top;
+      if (top < 0 || top > (window.innerHeight || 0) * 0.5) {
+        this.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
+    } catch { /* older engines without smooth scrolling */ }
+  }
+
   _next() {
     if (this.state.step === 1 && this.state.answers.functions.length === 0) {
       this.state.error = 'Pick at least one thing you want to train.';
@@ -1261,6 +1334,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this._save();
     this.emit('quiz:step', { step: this.state.step, answers: this._answersOut() });
     this.render();
+    this._scrollToTop();
   }
 
   _back() {
@@ -1271,6 +1345,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this._save();
     this.emit('quiz:step', { step: this.state.step, answers: this._answersOut() });
     this.render();
+    this._scrollToTop();
   }
 
   _submit() {
@@ -1284,6 +1359,9 @@ class HomegymBundleQuiz extends HTMLElement {
       this.state.completedBefore = true;
       this._shouldFocus = true;
       this.render();
+      // The result is the longest view in the quiz. Landing halfway down it on a
+      // phone hides the bundle name and the price, which are the whole answer.
+      this._scrollToTop();
       this.emit('quiz:complete', {
         answers,
         bundleId: result.primary ? result.primary.id : null,
@@ -1478,9 +1556,7 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('');
       lines.push(`Total: ${this.money(bundle.price)}`);
       lines.push('');
-      lines.push(intent === 'showroom'
-        ? 'Could I book a time at the showroom to try this build before I decide?'
-        : intent === 'advice'
+      lines.push(intent === 'advice'
           ? 'Before I commit, could you tell me what you would actually put in this room?'
           : 'Could you confirm availability, delivery and installation, and when I could come down to the showroom to try these?');
     } else {

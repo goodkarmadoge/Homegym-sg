@@ -13,9 +13,10 @@ step, no npm install on your side. One JavaScript file and one tag.
 > deployment described in §7. That makes §7 the section to read and §1's
 > recommendation a record of what was weighed rather than a live question.
 >
-> **One thing has to happen first.** The page is only framable by homegym.sg
-> because of a response header that is still on an unmerged branch. Until it
-> lands, the iframe shows an empty box and a console error on your page. See
+> **The framing blocker is cleared.** The deployment used to send
+> `X-Frame-Options: SAMEORIGIN`, which refused the embed outright. It now sends
+> a `frame-ancestors` allowlist naming homegym.sg and its subdomains, so the
+> iframe loads. Confirm it on the wire once before you schedule the work: see
 > §7, *The frame has to be allowed to load*.
 >
 > Choosing the iframe also means quiz events do not reach your GTM on their
@@ -39,7 +40,7 @@ homegym.sg page this afternoon, take it, and move to B later if you want the
 quiz in the page flow rather than in a box.
 
 **B is the one to launch on**, and the "one file" is the only step that is not
-paste: `homegym-bundle-quiz.min.js`, 109 KB, no dependencies. Drop it in
+paste: `homegym-bundle-quiz.min.js`, 111 KB, no dependencies. Drop it in
 `pub/media/` or your theme's `web/js/`, point the `<script src>` at it, done. It
 is a static asset like any image you have ever uploaded.
 
@@ -66,7 +67,7 @@ depends on things about your deployment we cannot see from outside.
 
 | | **Script tag** | **iframe** |
 |---|---|---|
-| What you host | one 109 KB JS file | nothing |
+| What you host | one 111 KB JS file | nothing |
 | Sits in page flow | yes, natively | needs the height script |
 | Shares page fonts, scroll, focus | yes | no |
 | Analytics | events reach your `dataLayer` directly | needs `postMessage` plumbing |
@@ -99,7 +100,7 @@ Two ways, and you do **not** need the repository for the first:
 Either way, copy it to wherever Magento serves static assets, for example
 `pub/media/homegym/` or your theme's `web/js/`.
 
-It is 109 KB raw, **27.1 KB gzipped**, which is what your visitors actually
+It is 111 KB raw, **27.6 KB gzipped**, which is what your visitors actually
 download. It has no external requests of its own beyond the product images,
 which already come from your CloudFront.
 
@@ -290,25 +291,31 @@ scrolls internally.
 ### The frame has to be allowed to load
 
 This is a response header on the quiz's deployment, not something your page can
-grant itself, and it is **the one blocker between you and a working embed.**
-
-**Not live yet.** The deployment currently sends `X-Frame-Options: SAMEORIGIN`,
-which refuses cross-origin framing outright — paste the snippet today and you
-get an empty box and a console error. The replacement is written and tested but
-sits on an unmerged branch:
+grant itself. It used to be the one blocker between you and a working embed;
+**it is now cleared.** The deployment sends:
 
 ```
-Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://www.homegym.sg
+Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://*.homegym.sg
 ```
 
-**Ask for that branch to be merged before you schedule the work**, and confirm
-the header on the wire with `curl -I https://homegym-sg.vercel.app/bundle-quiz.html`
-before concluding anything else is broken. `X-Frame-Options` should be absent
-from that output, not merely permissive: it has no allowlist form current
-browsers honour, and where both headers are present it wins.
+That permits homegym.sg and **any subdomain of it**, so a staging or shop
+subdomain works without asking us for anything. What it does *not* cover is a
+different domain entirely, or homegym.sg over plain `http` — both are refused
+with an empty box and a console error rather than a warning.
 
-Embedding from a staging host or any other domain is refused the same way. Tell
-us the origin and it goes on the list.
+It previously sent `X-Frame-Options: SAMEORIGIN`, which refuses cross-origin
+framing outright. That header is gone rather than loosened: it has no allowlist
+form current browsers honour, and where both headers are present it wins. So
+when you check, **`X-Frame-Options` should be absent from the output, not merely
+permissive**:
+
+```
+curl -I https://homegym-sg.vercel.app/bundle-quiz.html
+```
+
+Worth running once before you conclude anything else is broken. `npm run verify`
+fails the build if either half regresses — the header returning, or
+`frame-ancestors` ceasing to cover homegym.sg.
 
 ### What you are depending on
 

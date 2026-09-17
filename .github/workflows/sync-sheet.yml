@@ -1,11 +1,18 @@
-name: Sync bundle data from the Google Sheet
+name: Sync bundle data and photography
 
-# Keeps src/quiz/sheet-data.js in step with the spreadsheet that owns the bundle
-# data, so adding a bundle is a spreadsheet edit rather than a code change.
+# Keeps the quiz in step with the two things that change without anyone
+# touching this repo:
+#
+#   the DATA, from the Google Sheet, into src/quiz/sheet-data.js, so adding a
+#   bundle is a spreadsheet edit rather than a code change
+#
+#   the PHOTOGRAPHY, from HomeGym's Instagram feed, into src/quiz/bundles.js,
+#   because posts scroll out of that feed on their own and a pinned image can
+#   keep loading long after nothing proves what it shows
 #
 # The commit this pushes to main triggers ci.yml, which is what actually
 # deploys. Nothing reaches the live quiz without passing the test suite and the
-# 112,875-combination sweep first: that is the whole reason the data is committed
+# 112,875-combination sweep first: that is the whole reason both are committed
 # rather than fetched in the browser on every page load.
 #
 # REQUIRES the sheet to be readable without signing in:
@@ -61,7 +68,7 @@ env:
 
 jobs:
   sync:
-    name: Pull the sheet and commit any change
+    name: Pull the sheet and the photography, commit any change
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,17 +82,27 @@ jobs:
           echo "Sync started $(date '+%a %d %b %Y, %H:%M') Singapore time"
           npm run sync
 
+      # The photographs come from a different place than the data and go stale
+      # differently: Instagram posts scroll out of the feed on their own, and a
+      # pinned URL can keep returning 200 long after nothing proves what it
+      # shows. This refreshes what it can prove and reports what needs an eye.
+      # It must not fail the run: HomeGym's feed is a third party, and it being
+      # slow or down should leave the sheet sync alone.
+      - name: Pull the photography
+        continue-on-error: true
+        run: npm run sync:images
+
       - name: Stop unless something actually changed
         id: diff
         run: |
-          if git diff --quiet -- src/quiz/sheet-data.js; then
+          if git diff --quiet -- src/quiz/sheet-data.js src/quiz/bundles.js; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "The sheet matches what is committed. Nothing to do."
+            echo "Sheet and photography both match what is committed. Nothing to do."
             echo "### No change" >> "$GITHUB_STEP_SUMMARY"
-            echo "The sheet matches the live quiz as at $(date '+%d %b %Y, %H:%M') SGT." >> "$GITHUB_STEP_SUMMARY"
+            echo "Data and photography match the live quiz as at $(date '+%d %b %Y, %H:%M') SGT." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git --no-pager diff --stat -- src/quiz/sheet-data.js
+            git --no-pager diff --stat -- src/quiz/sheet-data.js src/quiz/bundles.js
           fi
 
       # The gate. A sheet edit that breaks the quiz stops here rather than on a
@@ -95,15 +112,25 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: npm run check
 
+      # Reported, never gating. Both read a third party and both are advisory:
+      # every photo still has to resolve, and every hero still has to show its
+      # own bundle's machine. Their output lands in the run log.
+      - name: Report on photography and footprints
+        if: steps.diff.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          npm run check:heroes
+          npm run check:images
+
       - name: Commit
         if: steps.diff.outputs.changed == 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/quiz/sheet-data.js
+          git add src/quiz/sheet-data.js src/quiz/bundles.js
           # Dated in Singapore time so the history reads in the editor's own
           # clock rather than eight hours behind it.
-          git commit -m "Sync bundle data from the Google Sheet, $(date '+%d %b %Y')"
+          git commit -m "Sync bundle data and photography, $(date '+%d %b %Y')"
           git push
 
           # Shown at the top of the run in the Actions tab, so someone who does
@@ -113,6 +140,11 @@ jobs:
             echo "Synced $(date '+%a %d %b %Y, %H:%M') Singapore time."
             echo ""
             echo "Live bundles: $(grep -c '^    id:' src/quiz/sheet-data.js)"
+            echo "Install photos: $(grep -c 'heroSource: \"instagram\"' src/quiz/bundles.js) of 10 from Instagram"
+            echo ""
+            echo "A photo the sync picked on its own is captioned \"From our Instagram\""
+            echo "rather than \"A real install\" until someone has looked at it. Run"
+            echo "\`npm run check:heroes\` to see which."
             echo ""
             echo "The deploy runs automatically from this commit."
           } >> "$GITHUB_STEP_SUMMARY"

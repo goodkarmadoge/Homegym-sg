@@ -38,7 +38,7 @@ They are deliberately **not** the same answer. "I want everything" and "I don't 
 The same code ships twice from one source:
 
 1. **The page:** `dist/bundle-quiz.html`, fully self-contained with the component inlined.
-2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 109 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 73% of the 150 KB budget the build enforces, and **27.1 KB over the wire** once the host serves it gzipped, which any Magento install already does.
+2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 111 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 74% of the 150 KB budget the build enforces, and **27.6 KB over the wire** once the host serves it gzipped, which any Magento install already does.
 
 ## Embedding it
 
@@ -106,6 +106,7 @@ nearest heading above the quiz on the host page: under an `<h1>` page title use
 | `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
 | `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
 | `heading-level` | `1` to `6`, default `1`. Where the quiz's own headings sit in the host page's outline. Anything outside that range, or unparseable, falls back to `1` |
+| `booking-url` | Target for the **Schedule a visit** CTA on the result. Defaults to the appointment page baked in at build time; set it to point a campaign or a second showroom somewhere else |
 | `start-step` | Deep-link straight to a step, 1 to 4 |
 | `sheet-live` | Present, no value. Re-read the Google Sheet after first paint so sheet edits appear without a redeploy. Needs the tab gids in `config/sheet.json`. Falls back silently to the built-in data on any failure |
 | `sheet-id` | Override which spreadsheet `sheet-live` reads. Defaults to the one baked in at sync time |
@@ -175,12 +176,29 @@ content instead of scrolling inside a fixed box:
   var origin = new URL(f.src).origin;
   window.addEventListener('message', function (e) {
     if (e.origin !== origin) return;                     // only trust the quiz
-    if (!e.data || e.data.type !== 'homegym-quiz:height') return;
-    f.style.height = e.data.height + 'px';
+    if (!e.data) return;
+
+    // Grow and shrink the frame with its content.
+    if (e.data.type === 'homegym-quiz:height') {
+      f.style.height = e.data.height + 'px';
+    }
+
+    // Put the top of the quiz back in view on a step change. The quiz cannot
+    // do this itself: the iframe fits its content, so the child has nothing
+    // to scroll, and the page that does scroll is this one.
+    if (e.data.type === 'homegym-quiz:scroll-to-top') {
+      f.scrollIntoView({ block: 'start' });
+    }
   });
 }());
 </script>
 ```
+
+**Both messages matter on a phone.** Without the height one the frame is a
+fixed box the quiz scrolls inside. Without the scroll one, tapping Continue
+leaves the visitor looking at the middle of the next question with its heading
+above the fold, which is exactly what makes step two feel broken: the floor
+plan fills the screen and the sliders under it are never seen.
 
 The `height` in the style attribute is only what shows before the first message
 arrives; pick something close to a first question so the page does not jump.
@@ -197,7 +215,7 @@ this deployment, not something the embedding page can grant itself. `vercel.json
 sends:
 
 ```
-Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://www.homegym.sg
+Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://*.homegym.sg
 ```
 
 Embedding from any other origin, a staging host or a different domain, is
@@ -576,6 +594,8 @@ dist/        generated site (gitignored, produced by the build)
 
 ```bash
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
+npm run sync:images  # refresh install photos from the Instagram feed, report the rest
+npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
 npm run sweep    # assert every bundle is reachable across 112,875 combinations

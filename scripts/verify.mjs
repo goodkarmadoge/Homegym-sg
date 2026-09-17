@@ -124,6 +124,30 @@ if (!existsSync(embedPath)) {
 // the only header that can express "homegym.sg may frame this" is CSP
 // frame-ancestors, and XFO must be absent rather than merely permissive.
 const EMBED_HOSTS = ['https://homegym.sg', 'https://www.homegym.sg'];
+
+/**
+ * Does one CSP host-source permit `host`?
+ *
+ * Substring matching is not good enough, and this is not hypothetical: the
+ * allowlist now reads `https://*.homegym.sg`, which permits www but contains
+ * the literal "https://www.homegym.sg" nowhere, so a plain `includes` failed
+ * the build on a config that was strictly MORE permissive than the one it
+ * replaced.
+ *
+ * A wildcard covers subdomains only, never the apex, which is why homegym.sg
+ * still has to be listed in its own right. That asymmetry is the whole reason
+ * this is a function rather than a regex.
+ */
+function covers(source, host) {
+  if (source === host) return true;
+  const star = source.indexOf('://*.');
+  if (star === -1) return false;
+  const scheme = source.slice(0, star + 3);   // "https://"
+  const suffix = source.slice(star + 4);      // ".homegym.sg"
+  if (!host.startsWith(scheme)) return false;
+  const name = host.slice(scheme.length);
+  return name.endsWith(suffix) && name.length > suffix.length;
+}
 const vercelPath = join(ROOT, 'vercel.json');
 if (!existsSync(vercelPath)) {
   fail('vercel.json: missing, cannot verify the quiz stays framable');
@@ -146,7 +170,8 @@ if (!existsSync(vercelPath)) {
     fail('vercel.json: no Content-Security-Policy frame-ancestors, so nothing states who may embed the quiz');
   } else {
     const allowed = ancestors[1].trim();
-    const missing = EMBED_HOSTS.filter((h) => !allowed.includes(h));
+    const sources = allowed.split(/\s+/).filter(Boolean);
+    const missing = EMBED_HOSTS.filter((host) => !sources.some((src) => covers(src, host)));
     if (allowed.includes("'none'")) {
       fail("vercel.json: frame-ancestors 'none' forbids the embed this page exists for");
     } else if (missing.length) {

@@ -355,10 +355,16 @@ export const STYLES = css`
 
   /* ── Step 2: space ──────────────────────────────────────────────────────── */
 
-  /* The handoff puts the plan left and the sliders right. Source order is
-     reversed here so the controls come first when the columns wrap on a phone,
-     which is what was asked for. The plan panel holds nothing focusable, so
-     visual order and tab order cannot disagree. */
+  /* The handoff puts the plan left and the sliders right, and the source order
+     now matches it, so desktop reads the way the handoff drew it.
+
+     On a phone the columns wrap and that puts the PLAN FIRST, with the sliders
+     under it. That is deliberate, asked for on 17 Sep 2026: the drawing is what
+     makes the numbers mean something, so it goes first and the controls follow.
+     The sliders then sit below the fold on a small screen, which is why every
+     step change now pulls the top of the quiz back into view. The plan panel
+     holds nothing focusable, so visual order and tab order still cannot
+     disagree. */
   .space {
     display: flex;
     flex-wrap: wrap;
@@ -562,6 +568,21 @@ export const STYLES = css`
     color: var(--text);
     border: 2px solid var(--text);
   }
+
+  /* Solid ink. The second CTA on the result page, sitting next to the green
+     WhatsApp button: an outline there read as a lesser, optional thing when
+     booking a showroom slot is the strongest intent a visitor can show.
+
+     Built from the two tokens rather than literal black and white so it
+     inverts with the theme: on a dark placement --text is near-white and --bg
+     near-black, and the button stays a solid block of ink against its ground
+     either way. #FFFFFF on #201e1d is 15.8:1, well past AA. */
+  .btn--ink {
+    background: var(--text);
+    color: var(--bg);
+    border: 2px solid var(--text);
+  }
+  .btn--ink:hover { background: var(--n800); border-color: var(--n800); }
   .btn--outline:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
 
   /* WhatsApp keeps its own brand green: it is the single call to action, and the
