@@ -539,6 +539,21 @@ export const STYLES = css`
     color: var(--text);
     border: 2px solid var(--text);
   }
+
+  /* Solid ink. The second CTA on the result page, sitting next to the green
+     WhatsApp button: an outline there read as a lesser, optional thing when
+     booking a showroom slot is the strongest intent a visitor can show.
+
+     Built from the two tokens rather than literal black and white so it
+     inverts with the theme: on a dark placement --text is near-white and --bg
+     near-black, and the button stays a solid block of ink against its ground
+     either way. #FFFFFF on #201e1d is 15.8:1, well past AA. */
+  .btn--ink {
+    background: var(--text);
+    color: var(--bg);
+    border: 2px solid var(--text);
+  }
+  .btn--ink:hover { background: var(--n800); border-color: var(--n800); }
   .btn--outline:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
 
   /* WhatsApp keeps its own brand green: it is the single call to action, and the

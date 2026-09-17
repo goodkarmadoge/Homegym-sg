@@ -896,8 +896,8 @@ class HomegymBundleQuiz extends HTMLElement {
             ? `<button class="btn btn--wa" data-action="whatsapp" type="button">${WA_SVG} Send this to a specialist ${ARROW}</button>`
             : `<a class="btn btn--primary" href="${esc(this.contactUrl)}" target="_blank" rel="noopener"
                   data-action="cta-contact">Enquire about this bundle ${ARROW}</a>`}
-          <a class="btn btn--outline" href="${esc(this.bookingUrl)}" target="_blank" rel="noopener"
-             data-action="book">Book a visit ${ARROW}</a>
+          <a class="btn btn--ink" href="${esc(this.bookingUrl)}" target="_blank" rel="noopener"
+             data-action="book">Schedule a visit ${ARROW}</a>
           ${this.cartEndpoint ? `<button class="btn btn--primary" data-action="cta" type="button">Add all to cart ${ARROW}</button>` : ''}
         </div>
         <p class="note cta-note">
