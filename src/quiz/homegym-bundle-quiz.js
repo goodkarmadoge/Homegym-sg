@@ -862,14 +862,22 @@ class HomegymBundleQuiz extends HTMLElement {
   installShot(bundle) {
     if (!bundle.hero) return '';
     const fromInstagram = bundle.heroSource === 'instagram';
-    const alt = fromInstagram
+    // Three states, not two, and the middle one is why the nightly image sync
+    // can run unattended. A caption on the feed proves WHICH MACHINE is in a
+    // photo; it cannot prove the photo is a room rather than a studio repost.
+    // So a hero the sync picked on its own says only where it came from, and
+    // earns the stronger line once a human has actually looked at it.
+    const verified = bundle.heroVerified !== false;
+    const alt = fromInstagram && verified
       ? `${bundle.name} installed in a customer's home`
       : `${bundle.name}`;
     return `
       <figure class="install">
         <img src="${esc(bundle.hero)}" alt="${esc(alt)}" loading="lazy" decoding="async" data-fallback>
         <div class="card__fallback" hidden aria-hidden="true">Photo to follow</div>
-        <figcaption>${fromInstagram ? 'A real install, from our Instagram' : 'The anchor machine in this build'}</figcaption>
+        <figcaption>${fromInstagram
+          ? (verified ? 'A real install, from our Instagram' : 'From our Instagram')
+          : 'The anchor machine in this build'}</figcaption>
       </figure>`;
   }
 

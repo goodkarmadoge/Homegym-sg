@@ -66,6 +66,8 @@ const SIGNATURE = {
  * product shot.
  */
 const EYE_VERIFIED = {
+  "https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg":
+    "bundle 5, Vigor Xpress Pro. Checked against the catalogue photo on 17 Sep 2026: same column, seat and back pad, same leg rollers, same pulldown geometry, in a real room. The post has left the feed.",
   'https://d101vd00cis701.cloudfront.net/ox_instagram/627627547_18407289532131119_4104113445378468616_n.jpg':
     'bundle 9, Ironmaster IM2000. Checked against the catalogue photo on 11 Sep 2026: ' +
     'same uprights, same chrome guide rods, same bench. The post has left the feed.'

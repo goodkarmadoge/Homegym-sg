@@ -424,6 +424,8 @@ dist/        generated site (gitignored, produced by the build)
 
 ```bash
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
+npm run sync:images  # refresh install photos from the Instagram feed, report the rest
+npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
 npm run sweep    # assert every bundle is reachable across 107,625 combinations
