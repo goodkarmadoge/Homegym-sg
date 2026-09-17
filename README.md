@@ -237,6 +237,51 @@ question one leaves a screen of empty space. Measured against the real page:
 growing worked, shrinking silently did not. Verified both ways, 978px at
 question one, 7,662px at a result, and back.
 
+### iframe-resizer
+
+The quiz page also loads **iframe-resizer v4's in-frame script**, added 17 Sep
+2026 to help with mobile resizing:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.contentWindow.min.js"></script>
+```
+
+**On its own it does nothing.** iframe-resizer is a two-part library: the script
+above sits silent inside the frame until a parent page running the *other* half
+calls `iframeResize()` on it. Adding it to the quiz page and changing nothing on
+homegym.sg changes nothing on homegym.sg. The host side is:
+
+```html
+<iframe id="homegym-quiz" src="https://homegym-sg.vercel.app/bundle-quiz.html"
+        title="Build your bundle" style="width:100%;border:0;display:block"></iframe>
+
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.min.js"></script>
+<script>iFrameResize({ log: false, checkOrigin: ['https://homegym-sg.vercel.app'] }, '#homegym-quiz');</script>
+```
+
+**Drive the frame from one mechanism or the other, never both.** The page still
+posts `homegym-quiz:height` as before, so a host that has not adopted
+iframe-resizer keeps working unchanged. But a host that runs iframe-resizer
+*and* the height listener has two writers setting the same `style.height`, which
+is how you get a frame that oscillates instead of settling. Adopt iframe-resizer
+and you drop the height branch from the listener — keep the `homegym-quiz:event`
+branch, since analytics forwarding is unrelated and iframe-resizer does not
+carry it.
+
+**The `@4` is doing licensing work.** v4 is MIT; v5 relicensed to GPLv3 with a
+paid commercial exception. A one-character bump in that URL would put a
+commercial site under a copyleft licence with nothing failing and nobody
+noticing, so `npm run verify` fails the build if the major is ever not 4.
+
+Two things worth deciding rather than inheriting: `@4` floats to the newest 4.x
+on every page load, which is a third party able to change what runs inside the
+client's page, and pinning an exact version with an `integrity` hash closes that
+at the cost of manual updates. And the script is fetched from a CDN at runtime,
+so an ad blocker, a corporate proxy or a jsDelivr outage means it never arrives.
+That last case is tested rather than assumed: with the CDN blocked the quiz
+still resized correctly at 390px, growing 1,627px to 6,507px through the
+built-in reporter, with no console errors.
+
 ### Design language
 
 The quiz follows the **Modernist design system**, per the design handoff of 30 Aug 2026 (`design_handoff_gym_builder_quiz`):

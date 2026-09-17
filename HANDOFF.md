@@ -317,6 +317,48 @@ Worth running once before you conclude anything else is broken. `npm run verify`
 fails the build if either half regresses — the header returning, or
 `frame-ancestors` ceasing to cover homegym.sg.
 
+### iframe-resizer: the half you have to add
+
+The quiz page now loads iframe-resizer v4's in-frame script. **It does nothing
+until you add the other half.** The library is two parts, and the part on our
+side just waits to be spoken to:
+
+```html
+<iframe id="homegym-quiz" src="https://homegym-sg.vercel.app/bundle-quiz.html"
+        title="Build your bundle" style="width:100%;border:0;display:block"></iframe>
+
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.min.js"></script>
+<script>iFrameResize({ log: false, checkOrigin: ['https://homegym-sg.vercel.app'] }, '#homegym-quiz');</script>
+```
+
+**Then drop the height branch from the §6 listener.** Keep the
+`homegym-quiz:event` branch — analytics forwarding is a separate job and
+iframe-resizer does not do it. But leaving the height branch in alongside
+`iFrameResize()` gives you two scripts writing the same `style.height`, and a
+frame with two writers oscillates rather than settling. One or the other.
+
+If you would rather not add anything to homegym.sg, **do nothing**: the page's
+own reporter is unchanged and still grows and shrinks the frame through the §6
+listener. iframe-resizer is an upgrade path, not a repair.
+
+Three things to know before you commit to it:
+
+- **`@4` is a licence, not just a version.** v4 is MIT; v5 relicensed to GPLv3
+  with a paid commercial exception. Do not bump it casually — `npm run verify`
+  fails the build if the major ever stops being 4.
+- **`@4` floats** to the newest 4.x on every load, so a third party can change
+  what runs inside your page. Pinning an exact version with an `integrity` hash
+  closes that, at the cost of updating it by hand.
+- **It is fetched at runtime from a CDN**, so an ad blocker, a corporate proxy
+  or a jsDelivr outage means it simply never arrives. Tested rather than
+  assumed: with the CDN blocked the quiz still resized correctly at 390px wide,
+  growing 1,627px to 6,507px, with no console errors.
+
+One honest limit: this sandbox's egress blocks jsDelivr, so the integration was
+verified **inert-safe** (nothing breaks when the library is absent) but not
+**live** (the two halves talking to each other). Load a page with both halves
+once and watch the frame track a step change before you call it done.
+
 ### What you are depending on
 
 That URL is the pro bono review deployment. It is served `noindex`, nobody has

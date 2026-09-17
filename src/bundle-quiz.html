@@ -206,3 +206,28 @@ homegym-bundle-quiz:not(:defined){min-height:620px}
   report();
 }());
 </script>
+
+<!-- IFRAME-RESIZER, CHILD HALF.
+     ─────────────────────────────────────────────────────────────────────────
+     Requested 17 Sep 2026 to help with mobile resizing. It is the in-frame
+     half of a TWO-PART library and does nothing on its own: it sits silent
+     until a parent page running iframeResizer.min.js calls iframeResize() on
+     the frame. Dropping this file in and changing nothing on homegym.sg
+     changes nothing on homegym.sg. README.md, "Embedding it", has the parent
+     snippet.
+
+     It is additive, not a replacement. The reporter above still posts
+     homegym-quiz:height, so a host that has not adopted iframe-resizer keeps
+     working exactly as before and this tag is inert weight. Once the parent
+     DOES run iframe-resizer, the host must drive the frame from one mechanism
+     or the other and never both: two writers setting the same height is how
+     you get a frame that oscillates instead of settling.
+
+     Pinned to major 4 as specified. Two things follow from that and are worth
+     knowing rather than discovering: v4 is MIT, while v5 moved to GPLv3 with a
+     paid exception, so the `@4` is doing real licensing work and a casual bump
+     to `@5` is a licence change; and `@4` floats to the newest 4.x on every
+     load, which is a third party able to change what runs inside the client's
+     page. Pinning an exact version with an integrity hash closes that, at the
+     cost of updating it by hand. -->
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.contentWindow.min.js"></script>

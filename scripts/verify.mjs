@@ -88,6 +88,20 @@ if (!existsSync(embedPath)) {
 
   if (!/<homegym-bundle-quiz\b/.test(page)) fail('bundle-quiz.html: the component is never mounted');
 
+  // iframe-resizer's major version is a LICENCE, not just a number. v4 is MIT;
+  // v5 relicensed to GPLv3 with a paid exception. A one-character bump in a URL
+  // would put the client's commercial site under a copyleft licence with
+  // nothing failing and nobody noticing, which is exactly the class of change
+  // that should not be silent.
+  const ifr = page.match(/iframe-resizer@(\d+)/);
+  if (ifr && ifr[1] !== '4') {
+    fail(
+      `bundle-quiz.html: iframe-resizer is pinned to major ${ifr[1]}, not 4. ` +
+      'v5 and later are GPLv3 with a paid commercial exception, where v4 is MIT. ' +
+      'If the bump is deliberate, clear the licence first and then update this check'
+    );
+  }
+
   // The analytics bridge must run BEFORE the bundle. quiz:start is emitted
   // during element upgrade, which happens the moment the bundle calls
   // customElements.define, so a bridge registered after it never hears the
