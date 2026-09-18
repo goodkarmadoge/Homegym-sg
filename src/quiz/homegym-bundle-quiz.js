@@ -47,6 +47,14 @@ const TOTAL_STEPS = 4;
  */
 const ALL_FUNCTIONS = '_all';
 
+/* How many install photos the strip carries. The feed holds 22 and every one
+   of them used to render, which made a wall of twenty-odd tiles the longest
+   thing on the result page — below the bundle the visitor actually came for.
+   Seven is what was asked for, and it is a good number for a scroller: enough
+   that it plainly continues past the edge, few enough that reaching the end is
+   a short flick rather than a commitment. */
+const ROOMS_SHOWN = 7;
+
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
    it renders as "$7,500+", so anyone with more to spend still lands on the
    most capable bundle rather than being told their number is out of range. */
@@ -1020,7 +1028,11 @@ class HomegymBundleQuiz extends HTMLElement {
     // The hero is drawn from the same feed as this strip, so for most bundles
     // its photo was appearing twice on one page: once large at the top and
     // again as a tile down here. Drop the repeat rather than the strip.
-    const tiles = ROOMS.filter((r) => !bundle || r.image !== bundle.hero);
+    // Filter FIRST, then take seven, so dropping the hero never leaves a short
+    // strip: the eighth photo moves up to fill its place.
+    const tiles = ROOMS
+      .filter((r) => !bundle || r.image !== bundle.hero)
+      .slice(0, ROOMS_SHOWN);
     if (!tiles.length) return '';
     return `
       <section class="section">
@@ -1029,7 +1041,7 @@ class HomegymBundleQuiz extends HTMLElement {
           Real installs from our Instagram, not showroom mock-ups. Every one links
           to the machine in the picture.
         </p>
-        <div class="rooms">
+        <div class="rooms" role="region" aria-label="Rooms we've built, scroll for more" tabindex="0">
           ${tiles.map((r) => `
             <a class="room" href="${esc(r.href)}" target="_blank" rel="noopener"
                data-action="cta-room" data-title="${esc(r.title)}">
