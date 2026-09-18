@@ -1043,9 +1043,47 @@ export const STYLES = css`
 
      Snap points rather than free scrolling, so a flick lands on a tile edge
      and never halfway through a photograph. */
+  /* The arrows sit over the photographs, so the strip needs something to be
+     positioned against. */
+  .rooms-wrap { position: relative; }
+
+  .rooms__arrow {
+    position: absolute;
+    /* Centred on the PHOTOGRAPH, not on the strip. The tile is a square image
+       with a caption under it, so the strip's own midpoint lands low, near the
+       text. Backing off by roughly half the caption puts the arrow on the
+       picture, which is where the reference has it and where a thumb expects
+       it. */
+    top: calc(50% - 46px);
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--n300);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    transition: background .15s, transform .15s;
+  }
+  /* display:grid above beats the hidden attribute on its own, and an arrow that
+     stays on screen at the end of the strip is a control that does nothing. */
+  .rooms__arrow[hidden] { display: none; }
+  .rooms__arrow:hover { background: #fff; }
+  .rooms__arrow:focus-visible { outline: 2px solid var(--accent-700); outline-offset: 2px; }
+  .rooms__arrow svg { display: block; }
+  /* Inside the edge rather than outside it: an arrow hanging off the strip
+     would be clipped by a host page that constrains the embed. */
+  .rooms__arrow--prev { left: 6px; }
+  .rooms__arrow--next { right: 6px; }
+
   .rooms {
     display: flex;
-    gap: 12px;
+    gap: 12px;   /* ROOMS_GAP in homegym-bundle-quiz.js — keep the two in step */
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
