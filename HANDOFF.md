@@ -244,6 +244,22 @@ They travel on one channel and one listener handles all three; adding a second
 `message` listener alongside this one is how you end up with two pieces of code
 reacting to the same event.
 
+**Do not scroll on the height message.** It is the obvious shortcut and it is
+wrong: height fires whenever the content changes size, which is far more often
+than a step change. Counted across one real session — four steps, the result,
+and one phone rotation — height fired **11 times** against `scroll-to-top`'s
+**4**. Driving the scroll from height would have yanked the page to the top
+**seven** extra times, including while the visitor was reading their result and
+again when a product image finished loading. The two messages are separate
+precisely so the frequent one can stay silent.
+
+**The page must not post anything to itself.** A line like
+`window.parent.postMessage({type:'resize', height: height}, ...)` belongs inside
+the iframe, not on homegym.sg. On a top-level page `window.parent` *is* the
+window, so it talks to itself, and `height` is not defined there — it throws a
+`ReferenceError` that takes out the rest of the script in that file, listener
+included. The quiz already sends its own height; the host only listens.
+
 Verified end to end in a browser against a real cross-document iframe, not
 assumed: `quiz_start`, three `quiz_step`s and `quiz_complete` all arrive in the
 parent's `dataLayer` with their payloads intact, and the frame scrolls back to
