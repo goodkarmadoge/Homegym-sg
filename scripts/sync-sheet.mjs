@@ -10,7 +10,7 @@
 //
 // WHY A COMMITTED FILE RATHER THAN A LIVE FETCH ON EVERY PAGE LOAD.
 //   The quiz ships as one static script with no runtime dependencies, and the
-//   64,575-combination sweep in scripts/sweep.mjs only means something if the
+//   112,875-combination sweep in scripts/sweep.mjs only means something if the
 //   data it swept is the data that ships. Syncing at build time keeps both
 //   properties: bad sheet data fails CI instead of reaching customers. The
 //   component can still be pointed at a live CSV with the sheet-src attribute
@@ -103,8 +103,19 @@ function readLocal(dir, name) {
 async function loadTabs() {
   if (CSV_DIR) {
     console.log(`reading CSV from ${CSV_DIR}\n`);
+    // THE RECORDED SOURCE IS THE SPREADSHEET, NOT THIS DIRECTORY. Those CSVs
+    // are an export of it, so the data's origin is the same whichever way the
+    // bytes arrived. Naming the directory instead puts a path that exists on
+    // one machine into the generated file, and the very next `npm run sync
+    // --check` in CI, which fetches over the network, rejects the file it just
+    // wrote as out of date.
+    let source = `local CSV, ${CSV_DIR}`;
+    try {
+      const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'));
+      if (cfg.sheetId) source = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}`;
+    } catch { /* no config to read, fall back to naming the directory */ }
     return {
-      source: `local CSV, ${CSV_DIR}`,
+      source,
       rules: readLocal(CSV_DIR, 'rules'),
       products: readLocal(CSV_DIR, 'products'),
       personas: readLocal(CSV_DIR, 'personas')

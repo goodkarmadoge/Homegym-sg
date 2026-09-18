@@ -12,7 +12,7 @@ name: Sync bundle data and photography
 #
 # The commit this pushes to main triggers ci.yml, which is what actually
 # deploys. Nothing reaches the live quiz without passing the test suite and the
-# 107,625-combination sweep first: that is the whole reason both are committed
+# 112,875-combination sweep first: that is the whole reason both are committed
 # rather than fetched in the browser on every page load.
 #
 # REQUIRES the sheet to be readable without signing in:

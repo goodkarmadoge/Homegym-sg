@@ -23,7 +23,7 @@
 import { BUNDLES, PRODUCTS, ROOMS, FUNCTION_OPTIONS, PERSONA_OPTIONS, FUNCTION_SHORT, composeBundles } from './bundles.js';
 import { buildSheetBundles } from './sheet-parse.js';
 import { SHEET_ID, SHEET_TABS } from './sheet-data.js';
-import { match, FALLBACK } from './matcher.js';
+import { match, FALLBACK, ANY_FUNCTION } from './matcher.js';
 import { STYLES } from './styles.js';
 
 const STORAGE_KEY = 'homegym-bundle-quiz-v1';
@@ -35,6 +35,17 @@ const BOOKING_URL =
   'https://calendar.google.com/calendar/u/0/appointments/schedules/' +
   'AcZssZ2BmuRqTOVu8viZ_wPj95NB_Ul1tIRrx2nDnqdFAlrgpAJ2f_5ZangLeANXnaiJQp7LfRldGKKG';
 const TOTAL_STEPS = 4;
+
+/**
+ * The "all of the above" checkbox's value.
+ *
+ * UI ONLY, and unlike ANY_FUNCTION it is never stored. "All of the above" is a
+ * shortcut for ticking the six real boxes, not a seventh answer, so its own
+ * checked state is DERIVED from whether all six are selected. That is what
+ * makes ticking the six by hand light it up, and unticking one turn it off,
+ * with no extra state to keep in step.
+ */
+const ALL_FUNCTIONS = '_all';
 
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
    it renders as "$7,500+", so anyone with more to spend still lands on the
@@ -152,7 +163,7 @@ function inkOn(accent) {
 class HomegymBundleQuiz extends HTMLElement {
   static get observedAttributes() {
     return ['theme', 'accent', 'currency', 'cart-endpoint', 'contact-url', 'whatsapp', 'start-step',
-            'sheet-live', 'sheet-id', 'booking-url'];
+            'sheet-live', 'sheet-id', 'heading-level', 'booking-url'];
   }
 
   constructor() {
@@ -197,10 +208,29 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
      mount, so a bundle added to the spreadsheet appears without a redeploy.
      Without it the quiz uses the committed snapshot, which is the data that
-     every test and the 64,575-combination sweep actually checked. */
+     every test and the 112,875-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
   get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }
+
+  /* Where the quiz's headings sit in the HOST page's outline.
+     ─────────────────────────────────────────────────────────────────────────
+     A shadow root scopes styles, not the accessibility tree: an <h1> in here
+     is an <h1> in the host document's outline, however deeply nested the
+     component is. The standalone page is its own document, so 1 is right
+     there and stays the default. Dropped into a larger page that already has
+     an <h1>, that is a second one and the outline stops making sense, so a
+     host embedding the component sets heading-level="2" and every tier moves
+     down with it. */
+  get headingLevel() {
+    const n = parseInt(this.getAttribute('heading-level'), 10);
+    return n >= 1 && n <= 6 ? n : 1;
+  }
+
+  /** Tag name for a heading `depth` tiers below this component's top heading. */
+  _h(depth) {
+    return 'h' + Math.min(6, this.headingLevel + depth);
+  }
 
   /** Format a number as SGD. Falls back to Intl for any other currency code. */
   money(n) {
@@ -367,10 +397,28 @@ class HomegymBundleQuiz extends HTMLElement {
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (saved && saved.answers) {
-        this.state.answers = { ...DEFAULT_ANSWERS, ...saved.answers };
+        // Copy only the answers we still ask for. A session saved before step 3
+        // asked for a persona carries a `level` instead, and spreading it in
+        // wholesale keeps that dead key alive in state.
+        this.state.answers = { ...DEFAULT_ANSWERS };
+        for (const key of Object.keys(DEFAULT_ANSWERS)) {
+          if (saved.answers[key] != null) this.state.answers[key] = saved.answers[key];
+        }
         if (!Array.isArray(this.state.answers.functions)) this.state.answers.functions = [];
+
         const step = parseInt(saved.step, 10);
         if (step >= 1 && step <= TOTAL_STEPS) this.state.step = step;
+
+        // NEVER RESUME PAST AN UNANSWERED STEP 3.
+        //
+        // The step-3 gate only fires while you are standing on step 3, so a
+        // session restored straight to step 4 walks around it. A tab left open
+        // across the deploy that replaced the level question does exactly that:
+        // it comes back at the budget slider with no persona, and Continue
+        // submits. personaScore(null, ...) is 0 for every bundle, so the whole
+        // 15-point axis silently contributes nothing and the visitor is matched
+        // on a question they were never shown.
+        if (!this.state.answers.persona && this.state.step > 3) this.state.step = 3;
       }
     } catch {
       /* Corrupt payload, start clean rather than crash. */
@@ -412,6 +460,14 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   _afterRender() {
+    // The progress fill's width is set here rather than in a style="" attribute
+    // on the markup. Magento 2.4 ships a Content-Security-Policy, and a host
+    // that enforces style-src-attr would strip that attribute and leave the bar
+    // reading 0% on every step. A CSSOM write is not governed by CSP at all, so
+    // the bar survives whatever policy the host page runs.
+    const fill = this.shadowRoot.querySelector('[data-fill]');
+    if (fill) fill.style.width = fill.getAttribute('data-fill') + '%';
+
     // Product images: swap in an initial-letter tile if the CloudFront path 404s.
     this.shadowRoot.querySelectorAll('img[data-fallback]').forEach((img) => {
       img.addEventListener('error', () => {
@@ -447,7 +503,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="progress__track" role="progressbar"
              aria-valuenow="${this.state.step}" aria-valuemin="1" aria-valuemax="${TOTAL_STEPS}"
              aria-label="Quiz progress">
-          <div class="progress__fill" style="width:${pct}%"></div>
+          <div class="progress__fill" data-fill="${pct}"></div>
         </div>
       </div>`;
   }
@@ -492,9 +548,12 @@ class HomegymBundleQuiz extends HTMLElement {
 
   /** "2 of 6 selected", so the multi-select nature is visible not just implied. */
   _countLabel() {
-    const n = this.state.answers.functions.length;
+    const picked = this.state.answers.functions;
     const total = FUNCTION_OPTIONS.length;
-    return n === 0 ? `None chosen yet, pick as many as you like` : `${n} of ${total} selected`;
+    if (picked.includes(ANY_FUNCTION)) return 'No preference, matching on space and budget';
+    if (picked.length === 0) return 'None chosen yet, pick as many as you like';
+    if (picked.length === total) return `All ${total} selected`;
+    return `${picked.length} of ${total} selected`;
   }
 
   /** Why Continue is unavailable on this step, or '' when it is available. */
@@ -510,8 +569,21 @@ class HomegymBundleQuiz extends HTMLElement {
 
   step1() {
     const chosen = new Set(this.state.answers.functions);
+    const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+    const allPicked = tags.length > 0 && tags.every((tag) => chosen.has(tag));
+
+    const box = (value, on, label, help) => `
+      <label class="option option--check${on ? ' is-selected' : ''}">
+        <input type="checkbox" name="function" value="${esc(value)}" ${on ? 'checked' : ''}>
+        <span class="option__mark">${CHECK_SVG}</span>
+        <span class="option__body">
+          <span class="option__label">${esc(label)}</span>
+          <span class="option__help">${esc(help)}</span>
+        </span>
+      </label>`;
+
     return `
-      <h1 class="headline" tabindex="-1" data-focus>What do you actually want to train?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>What do you actually want to train?</${this._h(0)}>
       <p class="subhead">Pick everything that matters to you. We'll match the machine that does it all.</p>
       <div class="multi">
         <span class="multi__badge">Select all that apply</span>
@@ -529,6 +601,12 @@ class HomegymBundleQuiz extends HTMLElement {
               <span class="option__help">${esc(o.help)}</span>
             </span>
           </label>`).join('')}
+
+        <p class="options__or">Not sure yet?</p>
+        ${box(ALL_FUNCTIONS, allPicked, 'All of the above',
+          'Everything on the list. We’ll look for the most capable bundle that still fits your room and budget.')}
+        ${box(ANY_FUNCTION, chosen.has(ANY_FUNCTION), 'No preference',
+          'Skip this question. We’ll match on your floor space, your budget and the kind of buyer you are instead.')}
       </fieldset>`;
   }
 
@@ -550,7 +628,7 @@ class HomegymBundleQuiz extends HTMLElement {
     // phone the sliders come first, which is what was asked for. The plan holds
     // nothing focusable, so nothing can read out of order.
     return `
-      <h1 class="headline" tabindex="-1" data-focus>How much floor can you give it?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>How much floor can you give it?</${this._h(0)}>
       <p class="subhead">Drag the room to the size you actually have. We check every bundle against it.</p>
       <div class="space">
         <div class="space__plan">${this.roomPanel(length, depth)}</div>
@@ -693,7 +771,7 @@ class HomegymBundleQuiz extends HTMLElement {
   step3() {
     const current = this.state.answers.persona;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>Which of these sounds most like you?</${this._h(0)}>
       <p class="subhead">This is about what you want out of it, not how hard you train.</p>
       <fieldset class="options options--single">
         <legend class="visually-hidden">What you want from your gym</legend>
@@ -718,7 +796,7 @@ class HomegymBundleQuiz extends HTMLElement {
   step4() {
     const b = this.state.answers.budget;
     return `
-      <h1 class="headline" tabindex="-1" data-focus>What's your budget?</h1>
+      <${this._h(0)} class="headline" tabindex="-1" data-focus>What's your budget?</${this._h(0)}>
       <p class="subhead">All prices in SGD. Installation quoted separately.</p>
       <div class="budget">
       <div class="budget__value" data-budget-value aria-live="polite">${this.budgetLabel(b)}</div>
@@ -777,7 +855,7 @@ class HomegymBundleQuiz extends HTMLElement {
         <div class="view">
         ${this.banner(res)}
         <p class="eyebrow">Your match</p>
-        <h1 class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</h1>
+        <${this._h(0)} class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</${this._h(0)}>
         <p class="result__tagline">${esc(bundle.tagline)}</p>
 
         <div class="chips">
@@ -816,7 +894,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionProducts(bundle) {
     return `
       <section class="section">
-        <h2 class="section__title">What's in the bundle</h2>
+        <${this._h(1)} class="section__title">What's in the bundle</${this._h(1)}>
         <div class="bundle-split">
           ${this.installShot(bundle)}
           <div class="grid">${bundle.products.map((id) => this.productCard(id, bundle)).join('')}</div>
@@ -838,7 +916,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!bundle.trains || !bundle.trains.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">What you'll train</h2>
+        <${this._h(1)} class="section__title">What you'll train</${this._h(1)}>
         <div class="pills">${bundle.trains.map((t) => `<span class="pill">${esc(t)}</span>`).join('')}</div>
       </section>`;
   }
@@ -886,7 +964,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionSpecialist(bundle) {
     return `
       <section class="section">
-        <h2 class="section__title">Send this to a specialist</h2>
+        <${this._h(1)} class="section__title">Send this to a specialist</${this._h(1)}>
         <p class="pitch">
           We will come back with availability, delivery and installation for this exact
           build, and answer anything the quiz could not.
@@ -913,7 +991,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!alternates.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Other bundles</h2>
+        <${this._h(1)} class="section__title">Other bundles</${this._h(1)}>
         <div class="alts">
           ${alternates.map((alt) => `
             <button class="alt" type="button" data-action="alternate" data-bundle="${alt.id}">
@@ -946,7 +1024,7 @@ class HomegymBundleQuiz extends HTMLElement {
     if (!tiles.length) return '';
     return `
       <section class="section">
-        <h2 class="section__title">Rooms we've built</h2>
+        <${this._h(1)} class="section__title">Rooms we've built</${this._h(1)}>
         <p class="pitch">
           Real installs from our Instagram, not showroom mock-ups. Every one links
           to the machine in the picture.
@@ -973,7 +1051,7 @@ class HomegymBundleQuiz extends HTMLElement {
   sectionAdvice() {
     return `
       <section class="section advice">
-        <h2 class="section__title">Not sure yet?</h2>
+        <${this._h(1)} class="section__title">Not sure yet?</${this._h(1)}>
         <p class="pitch">
           Tell us the room and what you want to train and we will tell you what we would
           put in it, whether or not you buy from us. No obligation, no sales pitch.
@@ -1015,7 +1093,7 @@ class HomegymBundleQuiz extends HTMLElement {
           ${p.note ? `<span class="card__badge">${esc(p.note)}</span>` : ''}
         </div>
         <div class="card__body">
-          <h3 class="card__name">${esc(p.name)}</h3>
+          <${this._h(2)} class="card__name">${esc(p.name)}</${this._h(2)}>
           <div class="card__prices">
             <span class="card__price">${this.money(p.price)}</span>
             ${p.was ? `<span class="card__was">${this.money(p.was)}</span><span class="card__sale">SALE</span>` : ''}
@@ -1035,7 +1113,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="quiz">
         <div class="view talk">
           <p class="eyebrow">No honest match</p>
-          <h1 class="headline" tabindex="-1" data-focus>Let's talk</h1>
+          <${this._h(0)} class="headline" tabindex="-1" data-focus>Let's talk</${this._h(0)}>
           <p class="subhead">
             At ${a.length.toFixed(1)} &times; ${a.depth.toFixed(1)} m there is nothing in the range we can
             recommend in good conscience. Rather than sell you something that will not fit, we would
@@ -1058,13 +1136,33 @@ class HomegymBundleQuiz extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (t.name === 'function') {
-      const set = new Set(this.state.answers.functions);
-      t.checked ? set.add(t.value) : set.delete(t.value);
-      // Keep the authored order rather than click order, so the "why this one"
-      // chip reads the same way every time.
-      this.state.answers.functions = FUNCTION_OPTIONS.map((o) => o.tag).filter((tag) => set.has(tag));
-      t.closest('.option')?.classList.toggle('is-selected', t.checked);
-      if (this.state.answers.functions.length) this._refreshGate();
+      const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+
+      if (t.value === ALL_FUNCTIONS) {
+        // Ticking the shortcut selects the six real tags; unticking it clears
+        // them. It never lands in state itself.
+        this.state.answers.functions = t.checked ? tags.slice() : [];
+      } else if (t.value === ANY_FUNCTION) {
+        // "No preference" is exclusive by definition: holding it alongside a
+        // chosen function would be a contradiction, so it replaces everything.
+        this.state.answers.functions = t.checked ? [ANY_FUNCTION] : [];
+      } else {
+        const set = new Set(this.state.answers.functions);
+        // Naming a function IS a preference, so it cannot sit next to having
+        // declined to express one.
+        set.delete(ANY_FUNCTION);
+        t.checked ? set.add(t.value) : set.delete(t.value);
+        // Keep the authored order rather than click order, so the "why this
+        // one" chip reads the same way every time.
+        this.state.answers.functions = tags.filter((tag) => set.has(tag));
+      }
+
+      // One click can change several boxes now, so the whole group is synced
+      // from state rather than the clicked box toggling only itself. Done in
+      // place instead of through render() so the box keeping keyboard focus
+      // does not get replaced under the user mid-interaction.
+      this._syncFunctionBoxes();
+      this._refreshGate();
       this._save();
     }
     if (t.name === 'persona') {
@@ -1135,6 +1233,27 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   /** Keep the Continue button and its hint in step with the current answers. */
+  /**
+   * Drive every function checkbox from state.
+   *
+   * Needed because the three kinds of box are entangled: "all of the above"
+   * ticks six, "no preference" clears everything, and ticking the six by hand
+   * has to light up "all of the above". Reading state once and writing all of
+   * them is the only version of this that cannot drift; toggling just the box
+   * that was clicked cannot express any of those.
+   */
+  _syncFunctionBoxes() {
+    const chosen = new Set(this.state.answers.functions);
+    const tags = FUNCTION_OPTIONS.map((o) => o.tag);
+    const allPicked = tags.length > 0 && tags.every((tag) => chosen.has(tag));
+
+    this.shadowRoot.querySelectorAll('input[name="function"]').forEach((box) => {
+      const on = box.value === ALL_FUNCTIONS ? allPicked : chosen.has(box.value);
+      box.checked = on;
+      box.closest('.option')?.classList.toggle('is-selected', on);
+    });
+  }
+
   _refreshGate() {
     const reason = this._blockedReason();
     const btn = this.shadowRoot.querySelector('[data-action="next"]');
@@ -1414,7 +1533,14 @@ class HomegymBundleQuiz extends HTMLElement {
       lines.push('*My answers*');
     }
 
-    const fns = a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
+    // A salesperson reads this message. "_any" would be noise, and a list of
+    // all six reads as a demand rather than the shrug it actually was, so both
+    // shortcuts are spelled out in the words the visitor saw on screen.
+    const fns = a.functions.includes(ANY_FUNCTION)
+      ? 'No preference'
+      : a.functions.length === FUNCTION_OPTIONS.length && FUNCTION_OPTIONS.length > 0
+        ? 'All of the above'
+        : a.functions.map((f) => FUNCTION_SHORT[f] || f).join(', ') || 'Not specified';
     lines.push(`Training: ${fns}`);
     lines.push(`Space: ${a.length.toFixed(1)} x ${a.depth.toFixed(1)} m`);
     lines.push(`Looking for: ${a.persona || 'Not specified'}`);

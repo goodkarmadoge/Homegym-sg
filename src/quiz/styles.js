@@ -138,7 +138,11 @@ export const STYLES = css`
 
   /* ── Type ───────────────────────────────────────────────────────────────── */
 
-  h1, h2, h3, p { margin: 0; }
+  /* All six levels, not just the three the default rendering uses. The
+     heading-level attribute slides every tier down at once, so a host that
+     sets heading-level="3" gets an h5 card name, and a level missing from
+     this reset arrives carrying the UA's own margin. */
+  h1, h2, h3, h4, h5, h6, p { margin: 0; }
 
   /* Each view's heading takes focus on a step change so screen readers land in
      the right place. That focus is programmatic, so the ring is suppressed for
@@ -200,6 +204,25 @@ export const STYLES = css`
     gap: 12px;
     margin-bottom: 14px;
   }
+  /* Separates the six real functions from the two "not sure" shortcuts under
+     them, so the list does not read as eight equal options. Flush left and a
+     2px rule, per the system. */
+  .options__or {
+    /* .options is an auto-fit grid, so without this the label takes a single
+       cell and the first shortcut sits BESIDE it instead of under it, which
+       reads as a layout bug rather than a divider. Spanning every column is
+       what makes it a rule across the whole list at any width. */
+    grid-column: 1 / -1;
+    margin: 22px 0 10px;
+    padding-top: 18px;
+    border-top: 2px solid var(--divider);
+    color: var(--n700);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
   .multi__badge {
     display: inline-block;
     background: var(--accent-100);

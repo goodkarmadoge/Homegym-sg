@@ -4,8 +4,8 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUNDLES, PRODUCTS } from '../src/quiz/bundles.js';
-import { match, fits, functionScore, budgetScore, personaScore, FALLBACK } from '../src/quiz/matcher.js';
+import { BUNDLES, PRODUCTS, FUNCTION_OPTIONS } from '../src/quiz/bundles.js';
+import { match, fits, functionScore, budgetScore, personaScore, scoreBundle, FALLBACK, ANY_FUNCTION } from '../src/quiz/matcher.js';
 
 const run = (answers) => match(answers, BUNDLES);
 const nameOf = (answers) => run(answers).primary?.name ?? null;
@@ -133,6 +133,40 @@ test('functionScore rewards coverage and caps the capability bonus at +0.15', ()
   assert.ok(Math.abs(capped - 0.65) < 1e-9, `expected 0.65, got ${capped}`);
   // Never exceeds 1
   assert.equal(functionScore(['cable'], ['cable', 'smith', 'power_rack', 'multigym']), 1);
+});
+
+test('"no preference" makes the function axis stop discriminating', () => {
+  // The point of the sentinel is that it cannot separate two bundles. If it
+  // ever scores them differently it has become a preference, which is the one
+  // thing it must not be.
+  const lean = ['cable'];
+  const broad = ['cable', 'smith', 'power_rack', 'multigym', 'leg_press', 'smart'];
+  assert.equal(functionScore([ANY_FUNCTION], lean), 1);
+  assert.equal(functionScore([ANY_FUNCTION], broad), 1);
+  assert.equal(functionScore([ANY_FUNCTION], []), 1, 'even a bundle with no tags ties');
+
+  // It also has to win the tie-break the same way, or the neutrality leaks out
+  // one layer down: coverage is tie-break (a) and must be equal for everyone.
+  const answers = { functions: [ANY_FUNCTION], length: 3, depth: 3, persona: null, budget: 7500 };
+  const coverages = BUNDLES.map((b) => scoreBundle(b, answers).coverage);
+  assert.deepEqual([...new Set(coverages)], [0], 'every bundle must tie on coverage');
+
+  // And the sentinel must never be mistaken for a real tag.
+  assert.ok(!FUNCTION_OPTIONS.some((o) => o.tag === ANY_FUNCTION),
+    'the sentinel must not collide with a function anyone can pick');
+  assert.ok(!BUNDLES.some((b) => b.functions.includes(ANY_FUNCTION)),
+    'no bundle may carry the sentinel as a capability');
+});
+
+test('"all of the above" still ranks by how much a bundle covers', () => {
+  // The other shortcut is the opposite of neutral: selecting all six means the
+  // bundle doing the most of them should score highest.
+  const all = FUNCTION_OPTIONS.map((o) => o.tag);
+  const three = functionScore(all, ['cable', 'smith', 'power_rack']);
+  const one = functionScore(all, ['cable']);
+  assert.ok(three > one, `expected broader to beat narrower, got ${three} vs ${one}`);
+  // No bundle covers all six, so nothing reaches full marks this way.
+  assert.ok(three < 1, `expected under 1, got ${three}`);
 });
 
 test('budgetScore steps down as the bundle leaves money on the table', () => {

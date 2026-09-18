@@ -61,17 +61,137 @@ if (!existsSync(embedPath)) {
 } else if (existsSync(quizPage)) {
   const standalone = readFileSync(embedPath, 'utf8').trim();
   const page = readFileSync(quizPage, 'utf8');
-  const inline = page.slice(page.indexOf('<script>') + 8, page.indexOf('</script>')).trim();
 
-  if (!inline) fail('bundle-quiz.html: no inline quiz bundle found');
+  // Find the bundle by what it IS, not by where it sits.
+  //
+  // This used to take the first <script> on the page, which quietly made script
+  // ORDER part of the contract: the page now carries two more inline scripts,
+  // and the analytics bridge has to run BEFORE the bundle or it misses
+  // quiz:start, which fires during element upgrade. Under the old rule, moving
+  // it there made verify compare the bridge against the bundle and fail with a
+  // length mismatch that said nothing about the real cause.
+  const blocks = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1].trim());
+  const inline = blocks.find((b) => /customElements\.define/.test(b)) || '';
+
+  if (!inline) fail('bundle-quiz.html: no inline quiz bundle found (no inline script defines the element)');
   else if (inline !== standalone) {
     fail(
       'bundle-quiz.html: the inlined bundle does not match dist/homegym-bundle-quiz.min.js ' +
       `(${inline.length} vs ${standalone.length} chars), something mangled it during inlining`
     );
   }
-  if (!/customElements\.define/.test(inline)) fail('bundle-quiz.html: inlined bundle never defines the element');
+  // Exactly one, not merely at least one: two copies of the bundle would each
+  // define the element and each fire quiz:start, double-counting every session
+  // in the client's analytics while the page still looked perfectly fine.
+  const defining = blocks.filter((b) => /customElements\.define/.test(b)).length;
+  if (defining > 1) fail(`bundle-quiz.html: the bundle is inlined ${defining} times, it must appear exactly once`);
+
   if (!/<homegym-bundle-quiz\b/.test(page)) fail('bundle-quiz.html: the component is never mounted');
+
+  // iframe-resizer's major version is a LICENCE, not just a number. v4 is MIT;
+  // v5 relicensed to GPLv3 with a paid exception. A one-character bump in a URL
+  // would put the client's commercial site under a copyleft licence with
+  // nothing failing and nobody noticing, which is exactly the class of change
+  // that should not be silent.
+  const ifr = page.match(/iframe-resizer@(\d+)/);
+  if (ifr && ifr[1] !== '4') {
+    fail(
+      `bundle-quiz.html: iframe-resizer is pinned to major ${ifr[1]}, not 4. ` +
+      'v5 and later are GPLv3 with a paid commercial exception, where v4 is MIT. ' +
+      'If the bump is deliberate, clear the licence first and then update this check'
+    );
+  }
+
+  // The analytics bridge must run BEFORE the bundle. quiz:start is emitted
+  // during element upgrade, which happens the moment the bundle calls
+  // customElements.define, so a bridge registered after it never hears the
+  // event and the client's funnel loses its denominator. Caught in the browser,
+  // not in review: everything else arrived and only quiz:start was missing.
+  //
+  // Compared by SCRIPT BLOCK, not by position in the raw page. Searching the
+  // page text finds these strings inside the HTML comments that explain them,
+  // and the comment sits above the code it describes: the first version of this
+  // check failed the build on a correctly ordered page because it matched its
+  // own documentation.
+  const bridgeIdx = blocks.findIndex((b) => /homegym-quiz:event/.test(b));
+  const bundleIdx = blocks.findIndex((b) => /customElements\.define/.test(b));
+  if (bridgeIdx === -1) fail('bundle-quiz.html: the analytics bridge is missing, the iframe embed would report nothing');
+  else if (bundleIdx !== -1 && bridgeIdx > bundleIdx) {
+    fail('bundle-quiz.html: the analytics bridge runs after the quiz bundle, so it will miss quiz:start');
+  }
+}
+
+// ── The quiz page must stay framable by homegym.sg ─────────────────────────
+//
+// The whole point of bundle-quiz.html is to be embedded, and the README hands
+// the client an iframe snippet pointing at this deployment. A response header
+// that forbids cross-origin framing makes that snippet impossible: the browser
+// refuses to render the frame and shows an empty box with a console error, on
+// the client's live site, with nothing in this repo failing.
+//
+// It shipped that way. `X-Frame-Options: SAMEORIGIN` sat on `/(.*)` while the
+// README told them to iframe it from homegym.sg. This is the guard so it
+// cannot happen twice.
+//
+// X-Frame-Options has no working allowlist: ALLOW-FROM is obsolete and ignored
+// by every current browser, and where both headers are present XFO wins. So
+// the only header that can express "homegym.sg may frame this" is CSP
+// frame-ancestors, and XFO must be absent rather than merely permissive.
+const EMBED_HOSTS = ['https://homegym.sg', 'https://www.homegym.sg'];
+
+/**
+ * Does one CSP host-source permit `host`?
+ *
+ * Substring matching is not good enough, and this is not hypothetical: the
+ * allowlist now reads `https://*.homegym.sg`, which permits www but contains
+ * the literal "https://www.homegym.sg" nowhere, so a plain `includes` failed
+ * the build on a config that was strictly MORE permissive than the one it
+ * replaced.
+ *
+ * A wildcard covers subdomains only, never the apex, which is why homegym.sg
+ * still has to be listed in its own right. That asymmetry is the whole reason
+ * this is a function rather than a regex.
+ */
+function covers(source, host) {
+  if (source === host) return true;
+  const star = source.indexOf('://*.');
+  if (star === -1) return false;
+  const scheme = source.slice(0, star + 3);   // "https://"
+  const suffix = source.slice(star + 4);      // ".homegym.sg"
+  if (!host.startsWith(scheme)) return false;
+  const name = host.slice(scheme.length);
+  return name.endsWith(suffix) && name.length > suffix.length;
+}
+const vercelPath = join(ROOT, 'vercel.json');
+if (!existsSync(vercelPath)) {
+  fail('vercel.json: missing, cannot verify the quiz stays framable');
+} else {
+  const headers = (JSON.parse(readFileSync(vercelPath, 'utf8')).headers || [])
+    .flatMap((rule) => (rule.headers || []).map((h) => [h.key.toLowerCase(), h.value]));
+
+  const xfo = headers.find(([k]) => k === 'x-frame-options');
+  if (xfo) {
+    fail(
+      `vercel.json: X-Frame-Options "${xfo[1]}" blocks the iframe embed the README documents. ` +
+      'It has no allowlist form that browsers honour, so remove it and express the policy ' +
+      'with Content-Security-Policy frame-ancestors instead'
+    );
+  }
+
+  const csp = headers.filter(([k]) => k === 'content-security-policy').map(([, v]) => v).join('; ');
+  const ancestors = /frame-ancestors([^;]*)/.exec(csp);
+  if (!ancestors) {
+    fail('vercel.json: no Content-Security-Policy frame-ancestors, so nothing states who may embed the quiz');
+  } else {
+    const allowed = ancestors[1].trim();
+    const sources = allowed.split(/\s+/).filter(Boolean);
+    const missing = EMBED_HOSTS.filter((host) => !sources.some((src) => covers(src, host)));
+    if (allowed.includes("'none'")) {
+      fail("vercel.json: frame-ancestors 'none' forbids the embed this page exists for");
+    } else if (missing.length) {
+      fail(`vercel.json: frame-ancestors does not permit ${missing.join(' or ')}, so the embed on the live site would be refused`);
+    }
+  }
 }
 
 if (!existsSync(join(OUT, 'robots.txt'))) fail('robots.txt: missing');

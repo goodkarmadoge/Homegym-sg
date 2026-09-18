@@ -28,12 +28,28 @@ The recommendation engine is a rules engine running in the page. All 3,072 possi
 
 Four questions (what you want to train, floor space, which customer you are, budget) matched against the bundles defined in the Google Sheet. The result view shows the bundle, its total, every product inside it with image, price and a link to its live product page, and two next steps.
 
+**Question one has two escape hatches,** because a shopper who does not yet know what they want is the one this quiz is most useful to, and a required multi-select was turning them away at the first screen:
+
+- **All of the above** ticks all six functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
+- **No preference** declines the question. The 40-point function axis stops discriminating entirely and floor space, budget and persona decide the match.
+
+They are deliberately **not** the same answer. "I want everything" and "I don't mind" pull in different directions, and the matcher honours both: across a spread of rooms, budgets and personas the two land on a different bundle about a third of the time. Both are exclusive against the individual options, so no one can hold a contradiction like *barbell lifts* **and** *no preference*.
+
 The same code ships twice from one source:
 
 1. **The page:** `dist/bundle-quiz.html`, fully self-contained with the component inlined.
-2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 66 KB file that registers `<homegym-bundle-quiz>` on any page.
+2. **The embed:** `dist/homegym-bundle-quiz.min.js`, a single 111 KB file that registers `<homegym-bundle-quiz>` on any page. One request, no dependencies, 74% of the 150 KB budget the build enforces, and **27.6 KB over the wire** once the host serves it gzipped, which any Magento install already does.
 
 ## Embedding it
+
+> **Handing this to the client's developer?** [`HANDOFF.md`](HANDOFF.md) is the
+> single page they need: the snippet to paste, the CSP checks, the analytics
+> wiring, and the data questions to settle before launch. This section is the
+> reference behind it.
+>
+> **The client chose the iframe on 14 Sep 2026.** Both paths are documented and
+> supported below, but that is the one being shipped, so the iframe section and
+> [Events through an iframe](#events-through-an-iframe) are the live ones.
 
 This is the quiz's main use. `bundle-quiz.html` is deliberately bare: no
 masthead, no hero, no footer, transparent background. It is the quiz and
@@ -41,18 +57,45 @@ nothing else, so the host page supplies all surrounding chrome. Drop it in an
 iframe, or skip the page entirely and use the component directly:
 
 ```html
+<!-- Archivo is the quiz's typeface. Without it the component falls back to
+     system-ui and still works, it just stops looking like the design system.
+     Skip these three lines if homegym.sg already loads Archivo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap">
+
+<style>
+  /* Hold the space the quiz will occupy, so the page does not jump when the
+     custom element upgrades, then release it so short views are not padded. */
+  homegym-bundle-quiz:not(:defined) { display: block; min-height: 620px; }
+</style>
+
 <script src="/assets/homegym-bundle-quiz.min.js" defer></script>
 
 <homegym-bundle-quiz
-  theme="light"
-  accent="#FF6924"
+  heading-level="2"
   currency="SGD"
   contact-url="https://homegym.sg/contact"
   whatsapp="6580423952"
 ></homegym-bundle-quiz>
+
+<noscript>
+  <p>The quiz needs JavaScript. Browse the range at
+    <a href="https://homegym.sg/strength.html">homegym.sg</a>,
+    or message us on WhatsApp and we will size a build for you.</p>
+</noscript>
 ```
 
-Every attribute is optional; the values above are the defaults.
+Every attribute is optional, and the snippet shows the **production** values
+rather than the defaults: `whatsapp` has no default and is the one that matters
+most, since it is the primary call to action. Leave `theme` and `accent` off
+entirely unless you want to move off the design system, which is what their
+defaults already are.
+
+**`heading-level` is the one to think about.** Set it one level below the
+nearest heading above the quiz on the host page: under an `<h1>` page title use
+`2`, inside a section that already has its own `<h2>` use `3`. See
+[Headings](#headings) for why this is not cosmetic.
 
 | Attribute | Purpose |
 |---|---|
@@ -62,11 +105,58 @@ Every attribute is optional; the values above are the defaults.
 | `cart-endpoint` | Optional. If set, an **Add all to cart** button appears alongside the WhatsApp CTA and POSTs the product list here. Unset by default, so WhatsApp is the only call to action |
 | `contact-url` | Fallback CTA target. Only used when no `whatsapp` number is configured, so a host embedding this can never end up with a result and no way to act on it |
 | `whatsapp` | WhatsApp Business number in E.164 digits, no `+` and no spaces. **This is the primary CTA** |
+| `heading-level` | `1` to `6`, default `1`. Where the quiz's own headings sit in the host page's outline. Anything outside that range, or unparseable, falls back to `1` |
+| `booking-url` | Target for the **Schedule a visit** CTA on the result. Defaults to the appointment page baked in at build time; set it to point a campaign or a second showroom somewhere else |
 | `start-step` | Deep-link straight to a step, 1 to 4 |
 | `sheet-live` | Present, no value. Re-read the Google Sheet after first paint so sheet edits appear without a redeploy. Needs the tab gids in `config/sheet.json`. Falls back silently to the built-in data on any failure |
 | `sheet-id` | Override which spreadsheet `sheet-live` reads. Defaults to the one baked in at sync time |
 
 All styling lives inside a shadow root, so the component cannot be reached by the host page's CSS and cannot leak into it. It drops onto a Bootstrap or Tailwind page with no visual bleed in either direction.
+
+### Headings
+
+**A shadow root scopes styles, not the accessibility tree.** An `<h1>` inside
+the component is an `<h1>` in the host document's outline, however deeply the
+element is nested. Left at the default on a page that already has its own
+`<h1>`, the quiz contributes a second one and the outline stops describing the
+page: a screen-reader user navigating by heading hears two top-level titles,
+and the sections under the result hang off the wrong one.
+
+`heading-level` moves all three tiers at once. At `heading-level="3"`, on a page
+whose own headings run `h1` then `h2`, the flattened outline comes out as:
+
+```
+H1  [page]  Home Gym Equipment Singapore
+H2  [page]  Build your bundle
+H3  [quiz]  The Smart Smith                  <- the view heading
+H4  [quiz]  What's in the bundle             <- result sections
+H5  [quiz]  Vigor BF900 Pro Connected        <- product cards
+H4  [quiz]  Rooms we've built
+```
+
+The tiers stop at `h6` rather than running off the end, so a deliberately deep
+`heading-level="6"` flattens to `h6` throughout instead of emitting invalid
+tags. The standalone `bundle-quiz.html` is its own document with no competing
+title, so it stays at the default `1` and the iframe embed needs no change.
+
+### Content-Security-Policy
+
+Two things to check if homegym.sg enforces a CSP. Magento 2.4 ships one, in
+report-only mode by default, so this is worth a look before launch rather than
+after.
+
+- **`script-src`** has to allow the bundle. Self-hosting it under `/assets/`
+  means `'self'` covers it; hot-linking it from another origin does not.
+- **`style-src`** has to allow the component's stylesheet. It is a `<style>`
+  element created at runtime and injected into the shadow root, which a
+  nonce-based policy without `'unsafe-inline'` will block. The quiz then renders
+  as unstyled markup rather than failing loudly, which is the worse outcome to
+  debug. If the policy is strict, the fix is to serve the styles as their own
+  file and let `style-src 'self'` cover them.
+
+The component deliberately uses **no `style=""` attributes**, so a policy with
+`style-src-attr 'none'` is fine: the one place that needed a computed width, the
+progress bar, sets it through the CSSOM, which CSP does not govern.
 
 ### Or as an iframe
 
@@ -97,7 +187,13 @@ content instead of scrolling inside a fixed box:
     // do this itself: the iframe fits its content, so the child has nothing
     // to scroll, and the page that does scroll is this one.
     if (e.data.type === 'homegym-quiz:scroll-to-top') {
-      f.scrollIntoView({ block: 'start' });
+      // scrollIntoView on the FRAME, not scrollTo(0, 0) on the page. The quiz
+      // is rarely the first thing on a page: scrolling the window to zero
+      // flings the visitor up past the masthead and whatever copy sits above
+      // the embed, on every single step. This puts the top of the quiz at the
+      // top of the viewport, wherever the quiz happens to live.
+      var motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+      f.scrollIntoView({ block: 'start', behavior: motion && motion.matches ? 'auto' : 'smooth' });
     }
   });
 }());
@@ -120,6 +216,25 @@ could post a height at yours.
 If you skip the script entirely the quiz still works, it just sits in a fixed
 box and scrolls internally.
 
+**The frame has to be allowed to load at all,** and that is a response header on
+this deployment, not something the embedding page can grant itself. `vercel.json`
+sends:
+
+```
+Content-Security-Policy: frame-ancestors 'self' https://homegym.sg https://*.homegym.sg
+```
+
+Embedding from any other origin, a staging host or a different domain, is
+refused by the browser: an empty box and a console error, with nothing in this
+repo failing. Add the origin to that list first.
+
+This was wrong until now. The header was `X-Frame-Options: SAMEORIGIN`, which
+made the snippet above impossible on homegym.sg, while the README documented it
+as the supported path. `X-Frame-Options` has no allowlist form that current
+browsers honour, `ALLOW-FROM` having been dropped, and where both headers are
+present it wins, so it is gone rather than loosened. `npm run verify` now fails
+the build if it comes back or if `frame-ancestors` stops naming homegym.sg.
+
 **A note on why it measures what it does.** The reporter measures the content
 element, not the document. `document.scrollHeight` can never report less than
 the iframe's own viewport, so once the parent has grown the frame to fit a
@@ -127,6 +242,51 @@ result page, the document keeps reporting that height forever and returning to
 question one leaves a screen of empty space. Measured against the real page:
 growing worked, shrinking silently did not. Verified both ways, 978px at
 question one, 7,662px at a result, and back.
+
+### iframe-resizer
+
+The quiz page also loads **iframe-resizer v4's in-frame script**, added 17 Sep
+2026 to help with mobile resizing:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.contentWindow.min.js"></script>
+```
+
+**On its own it does nothing.** iframe-resizer is a two-part library: the script
+above sits silent inside the frame until a parent page running the *other* half
+calls `iframeResize()` on it. Adding it to the quiz page and changing nothing on
+homegym.sg changes nothing on homegym.sg. The host side is:
+
+```html
+<iframe id="homegym-quiz" src="https://homegym-sg.vercel.app/bundle-quiz.html"
+        title="Build your bundle" style="width:100%;border:0;display:block"></iframe>
+
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.min.js"></script>
+<script>iFrameResize({ log: false, checkOrigin: ['https://homegym-sg.vercel.app'] }, '#homegym-quiz');</script>
+```
+
+**Drive the frame from one mechanism or the other, never both.** The page still
+posts `homegym-quiz:height` as before, so a host that has not adopted
+iframe-resizer keeps working unchanged. But a host that runs iframe-resizer
+*and* the height listener has two writers setting the same `style.height`, which
+is how you get a frame that oscillates instead of settling. Adopt iframe-resizer
+and you drop the height branch from the listener — keep the `homegym-quiz:event`
+branch, since analytics forwarding is unrelated and iframe-resizer does not
+carry it.
+
+**The `@4` is doing licensing work.** v4 is MIT; v5 relicensed to GPLv3 with a
+paid commercial exception. A one-character bump in that URL would put a
+commercial site under a copyleft licence with nothing failing and nobody
+noticing, so `npm run verify` fails the build if the major is ever not 4.
+
+Two things worth deciding rather than inheriting: `@4` floats to the newest 4.x
+on every page load, which is a third party able to change what runs inside the
+client's page, and pinning an exact version with an `integrity` hash closes that
+at the cost of manual updates. And the script is fetched from a CDN at runtime,
+so an ad blocker, a corporate proxy or a jsDelivr outage means it never arrives.
+That last case is tested rather than assumed: with the CDN blocked the quiz
+still resized correctly at 390px, growing 1,627px to 6,507px through the
+built-in reporter, with no console errors.
 
 ### Design language
 
@@ -177,6 +337,50 @@ document.addEventListener('quiz:complete', e => {
   dataLayer.push({ event: 'bundle_quiz_complete', ...e.detail });
 });
 ```
+
+**`answers.functions` can carry two values that are not training functions.**
+Question one has two shortcuts, and both show up here:
+
+| value in `functions` | what the visitor did |
+|---|---|
+| all six tags | ticked **All of the above** (or all six by hand, which is the same answer) |
+| `["_any"]` | ticked **No preference**, declining the question |
+
+`_any` is a sentinel, never a tag: no bundle carries it and nothing in the sheet
+can define it. Segment on it rather than filtering it out — "didn't know what
+they wanted" is one of the more interesting things this quiz can tell you, and
+it is the cohort most likely to need a salesperson.
+
+### Events through an iframe
+
+Events are fired on the **iframe's** document, not the host page's, so an
+embedded quiz delivers nothing to the host's GTM on its own. `bundle-quiz.html`
+forwards them to the parent; the host listens once and pushes into `dataLayer`:
+
+```js
+window.dataLayer = window.dataLayer || [];
+(function () {
+  var f = document.getElementById('homegym-quiz');
+  var origin = new URL(f.src).origin;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== origin) return;                     // only trust the quiz
+    if (!e.data) return;
+    if (e.data.type === 'homegym-quiz:height') { f.style.height = e.data.height + 'px'; return; }
+    if (e.data.type === 'homegym-quiz:event') {
+      dataLayer.push(Object.assign({ event: e.data.name.replace(':', '_') }, e.data.detail));
+    }
+  });
+}());
+```
+
+That is the same listener as the height snippet with one more branch, so use
+this version and not both.
+
+`quiz:start` is emitted while the custom element upgrades, which is why the
+forwarder is loaded **before** the quiz bundle on that page rather than after
+it. Registered afterwards it hears every other event and misses that one, which
+costs you the denominator of every funnel built on top of it. `npm run verify`
+fails the build if the order is ever reversed.
 
 ## Where the data comes from
 
@@ -353,7 +557,7 @@ If nothing passes both filters, constraints relax in a fixed order and the resul
 
 ### Coverage
 
-`npm run sweep` runs every realistic answer combination (107,625 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
+`npm run sweep` runs every realistic answer combination (112,875 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
 
 | Bundle | Share of matched runs |
 |---|---|
@@ -445,7 +649,7 @@ npm run sync:images  # refresh install photos from the Instagram feed, report th
 npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
-npm run sweep    # assert every bundle is reachable across 107,625 combinations
+npm run sweep    # assert every bundle is reachable across 112,875 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -475,7 +679,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any bundle becomes unreachable, or the matcher throws on any of 107,625 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 112,875 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output

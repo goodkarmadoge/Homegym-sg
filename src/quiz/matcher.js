@@ -12,6 +12,20 @@
 /** Scoring weights. Must total 100. */
 export const WEIGHTS = { fn: 40, budget: 25, space: 20, persona: 15 };
 
+/**
+ * The "no preference" sentinel, stored in `answers.functions` like a tag.
+ *
+ * It is deliberately NOT a member of FUNCTION_OPTIONS: no bundle can carry it,
+ * nothing in the sheet can define it, and it never reaches the product data. It
+ * exists so a visitor who does not want to answer question one can say so in
+ * the one field that question owns, rather than needing a second field that
+ * every consumer of `answers` would then have to know about.
+ *
+ * The leading underscore keeps it out of the namespace a real tag could ever
+ * occupy, so a tag added to the sheet can never collide with it.
+ */
+export const ANY_FUNCTION = '_any';
+
 /** Fallback tiers, in the order the ladder relaxes constraints. */
 export const FALLBACK = {
   NONE: null,
@@ -39,6 +53,17 @@ export function fits(bundle, userLength, userDepth) {
  */
 export function functionScore(selected, bundleFunctions) {
   if (!selected || selected.length === 0) return 0;
+  // "No preference" is not a function anyone can train, so it cannot be scored
+  // like one. It means the visitor has declined to use this axis, and the
+  // honest reading of that is to stop discriminating on it: every bundle scores
+  // the same 40 points and the ranking falls to space, budget and persona.
+  //
+  // Full marks rather than zero, deliberately. Both are neutral for RANKING,
+  // since a constant shifts every bundle equally, but zero also drags the
+  // absolute score down by the whole 40-point axis. Nothing reads the absolute
+  // score today; the moment anything does, a floor of 60 for every visitor who
+  // ticked one box would be a bug laid in advance.
+  if (selected.includes(ANY_FUNCTION)) return 1;
   const set = new Set(bundleFunctions);
   const hits = selected.filter((f) => set.has(f)).length;
   const covered = hits / selected.length;
@@ -117,7 +142,13 @@ export function scoreBundle(bundle, answers) {
     // Raw coverage without the capability bonus, tie-break (a) uses this, so a
     // bundle that genuinely covers more of what you asked for wins over one that
     // merely does more things in general.
-    coverage: answers.functions && answers.functions.length
+    // Tie-break (a). "No preference" has to tie here too, not just in the
+    // score: no bundle contains the sentinel, so this already computes 0 for
+    // every one of them and the chain falls through to price, then footprint,
+    // then bundle number. Spelled out rather than left to coincidence, because
+    // a future tweak that made an unmatched selection score anything other than
+    // 0 would quietly turn "I don't mind" into a preference.
+    coverage: answers.functions && answers.functions.length && !answers.functions.includes(ANY_FUNCTION)
       ? answers.functions.filter((f) => bundle.functions.includes(f)).length / answers.functions.length
       : 0,
     area: bundle.footprint.length * bundle.footprint.depth
