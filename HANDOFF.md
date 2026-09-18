@@ -217,6 +217,11 @@ window.dataLayer = window.dataLayer || [];
     if (e.origin !== origin) return;                     // only trust the quiz
     if (!e.data) return;
     if (e.data.type === 'homegym-quiz:height') { f.style.height = e.data.height + 'px'; return; }
+    if (e.data.type === 'homegym-quiz:scroll-to-top') {
+      var m = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+      f.scrollIntoView({ block: 'start', behavior: m && m.matches ? 'auto' : 'smooth' });
+      return;
+    }
     if (e.data.type === 'homegym-quiz:event') {
       dataLayer.push(Object.assign({ event: e.data.name.replace(':', '_') }, e.data.detail));
     }
@@ -225,9 +230,24 @@ window.dataLayer = window.dataLayer || [];
 </script>
 ```
 
+**`e.origin` is an origin, not a URL.** It is scheme, host and port and nothing
+else — `https://homegym-sg.vercel.app`, never
+`https://homegym-sg.vercel.app/bundle-quiz.html`. Comparing it against anything
+carrying a path is a check that can never pass, so the listener returns on every
+message and silently does nothing at all. Deriving it with
+`new URL(f.src).origin`, as above, makes that mistake impossible: it takes the
+origin from the same `src` the frame is actually loading.
+
+**Three messages, three jobs.** Height grows and shrinks the frame,
+`scroll-to-top` puts the next question back in view, `event` feeds analytics.
+They travel on one channel and one listener handles all three; adding a second
+`message` listener alongside this one is how you end up with two pieces of code
+reacting to the same event.
+
 Verified end to end in a browser against a real cross-document iframe, not
 assumed: `quiz_start`, three `quiz_step`s and `quiz_complete` all arrive in the
-parent's `dataLayer` with their payloads intact.
+parent's `dataLayer` with their payloads intact, and the frame scrolls back to
+its own top on each step rather than to the top of the host page.
 
 *(If you ever switch to the script-tag embed, drop all of this and just listen
 for the events on your own `document` — no forwarding involved. The README's

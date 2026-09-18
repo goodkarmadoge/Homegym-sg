@@ -187,7 +187,13 @@ content instead of scrolling inside a fixed box:
     // do this itself: the iframe fits its content, so the child has nothing
     // to scroll, and the page that does scroll is this one.
     if (e.data.type === 'homegym-quiz:scroll-to-top') {
-      f.scrollIntoView({ block: 'start' });
+      // scrollIntoView on the FRAME, not scrollTo(0, 0) on the page. The quiz
+      // is rarely the first thing on a page: scrolling the window to zero
+      // flings the visitor up past the masthead and whatever copy sits above
+      // the embed, on every single step. This puts the top of the quiz at the
+      // top of the viewport, wherever the quiz happens to live.
+      var motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+      f.scrollIntoView({ block: 'start', behavior: motion && motion.matches ? 'auto' : 'smooth' });
     }
   });
 }());
