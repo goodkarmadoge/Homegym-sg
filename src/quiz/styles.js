@@ -247,7 +247,17 @@ export const STYLES = css`
 
   .options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* min() is load-bearing, not decoration. A bare minmax(320px, 1fr) sets a
+       floor the track can never go under, so in any box narrower than 320px
+       the cards keep their 320px and simply hang off the right-hand edge.
+       Measured in a 320px viewport: the container was 256px and every option
+       ran from x=32 to x=352, putting 32px of each card, and the tap target
+       under it, off the screen. min(320px, 100%) keeps the two-column
+       behaviour on a wide page and lets the track collapse to the container
+       on a narrow one. An embed makes this the common case rather than the
+       edge case: the iframe is whatever width the host's column happens to
+       be, which is routinely less than the phone's own viewport. */
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 12px;
     border: 0;
     padding: 0;
@@ -1023,28 +1033,88 @@ export const STYLES = css`
     font-variant-numeric: tabular-nums;
   }
 
-  /* Rooms strip. Same hairline-as-gap trick as the product grid. */
-  /* Same hairline-by-the-tile rule as the product grid, for the same reason:
-     twenty tiles rarely divide evenly into however many columns fit, so the
-     last row is almost always short and would otherwise end in grey blocks. */
-  .rooms {
+  /* Rooms strip: one row that scrolls sideways, seven tiles long.
+     ─────────────────────────────────────────────────────────────────────────
+     It was a wrapping grid of every photo in the feed, which on a phone meant
+     a couple of dozen tiles stacked two-up: the longest thing on the result
+     page, sitting below the bundle the visitor came for. A single row that
+     scrolls keeps the whole strip to the height of one tile however many it
+     holds, and asks for a flick instead of a scroll past.
+
+     Snap points rather than free scrolling, so a flick lands on a tile edge
+     and never halfway through a photograph. */
+  /* The arrows sit over the photographs, so the strip needs something to be
+     positioned against. */
+  .rooms-wrap { position: relative; }
+
+  .rooms__arrow {
+    position: absolute;
+    /* Centred on the PHOTOGRAPH, not on the strip. The tile is a square image
+       with a caption under it, so the strip's own midpoint lands low, near the
+       text. Backing off by roughly half the caption puts the arrow on the
+       picture, which is where the reference has it and where a thumb expects
+       it. */
+    top: calc(50% - 46px);
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--n300);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text);
     display: grid;
-    /* 150px rather than 190px so a 375px phone gets two tiles across. Twenty
-       posts in a single column is a very long scroll for a strip that is meant
-       to be skimmed. */
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    border-top: 1px solid var(--n300);
-    border-left: 1px solid var(--n300);
-    margin-top: 16px;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    transition: background .15s, transform .15s;
   }
+  /* display:grid above beats the hidden attribute on its own, and an arrow that
+     stays on screen at the end of the strip is a control that does nothing. */
+  .rooms__arrow[hidden] { display: none; }
+  .rooms__arrow:hover { background: #fff; }
+  .rooms__arrow:focus-visible { outline: 2px solid var(--accent-700); outline-offset: 2px; }
+  .rooms__arrow svg { display: block; }
+  /* Inside the edge rather than outside it: an arrow hanging off the strip
+     would be clipped by a host page that constrains the embed. */
+  .rooms__arrow--prev { left: 6px; }
+  .rooms__arrow--next { right: 6px; }
+
+  .rooms {
+    display: flex;
+    gap: 12px;   /* ROOMS_GAP in homegym-bundle-quiz.js — keep the two in step */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;   /* momentum on older iOS */
+    margin-top: 16px;
+    padding-bottom: 10px;                /* clears the scrollbar off the tiles */
+    scrollbar-width: thin;
+    scrollbar-color: var(--n400) transparent;
+  }
+  /* The strip is a tab stop in its own right. Every tile inside it is a link,
+     so tabbing already reaches the content and scrolls it into view; this is
+     for the keyboard user who wants to pan the strip without walking through
+     seven links to do it. */
+  .rooms:focus-visible { outline: 2px solid var(--accent-700); outline-offset: 2px; }
+  .rooms::-webkit-scrollbar { height: 8px; }
+  .rooms::-webkit-scrollbar-thumb { background: var(--n400); border-radius: 4px; }
+  .rooms::-webkit-scrollbar-track { background: transparent; }
+
   .room {
+    /* min() so the tile can never be wider than its container, which would
+       leave a strip that scrolls but shows no second tile to scroll to. The
+       72% is the peek: part of the next photograph is always in view, which is
+       what tells a visitor there is more without a caption saying so. */
+    flex: 0 0 min(200px, 72%);
+    scroll-snap-align: start;
     display: flex;
     flex-direction: column;
     text-decoration: none;
     color: inherit;
     background: #fff;
-    border-right: 1px solid var(--n300);
-    border-bottom: 1px solid var(--n300);
+    border: 1px solid var(--n300);
   }
   .room:hover .room__title, .room:focus-visible .room__title { color: var(--accent-700); }
   .room:focus-visible { outline: 2px solid var(--accent-700); outline-offset: -2px; }

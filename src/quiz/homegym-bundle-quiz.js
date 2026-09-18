@@ -47,6 +47,20 @@ const TOTAL_STEPS = 4;
  */
 const ALL_FUNCTIONS = '_all';
 
+/* How many install photos the strip carries. The feed holds 22 and every one
+   of them used to render, which made a wall of twenty-odd tiles the longest
+   thing on the result page — below the bundle the visitor actually came for.
+   Seven is what was asked for, and it is a good number for a scroller: enough
+   that it plainly continues past the edge, few enough that reaching the end is
+   a short flick rather than a commitment. */
+const ROOMS_SHOWN = 7;
+
+/* The gap between tiles, in px. Mirrored in styles.js as the .rooms gap: the
+   arrow step measures a tile and has to add the same gap back, and a strip that
+   scrolled by a slightly wrong pitch would drift a few pixels per click until
+   a photograph sat under the arrow. */
+const ROOMS_GAP = 12;
+
 /* The budget slider's ends. The top of the range is a floor, not a ceiling:
    it renders as "$7,500+", so anyone with more to spend still lands on the
    most capable bundle rather than being told their number is out of range. */
@@ -98,6 +112,19 @@ const WA_SVG =
 
 const ARROW = '<span aria-hidden="true">&#8594;</span>';
 const BACK_ARROW = '<span aria-hidden="true">&#8592;</span>';
+
+/* Chevrons for the rooms carousel. Drawn rather than typed: the arrow glyphs
+   above are text and inherit the page's font, which on a host that fails to
+   load Archivo renders them at a different weight from everything else. These
+   sit on a photograph and have to hold their shape. */
+const CHEV_LEFT =
+  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' +
+  '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" ' +
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV_RIGHT =
+  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' +
+  '<path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" ' +
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ── Colour: keep a client-supplied accent readable ──────────────────────── */
 
@@ -363,6 +390,7 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   disconnectedCallback() {
+    if (this._roomsRO) { this._roomsRO.disconnect(); this._roomsRO = null; }
     this.shadowRoot.removeEventListener('click', this._onClick);
     this.shadowRoot.removeEventListener('change', this._onChange);
     this.shadowRoot.removeEventListener('input', this._onInput);
@@ -479,6 +507,23 @@ class HomegymBundleQuiz extends HTMLElement {
         }
       }, { once: true });
     });
+
+    // Rooms carousel: set the arrows from the strip's real position, then keep
+    // them in step. The scroll handler covers dragging and the arrows
+    // themselves; the observer covers the strip changing width underneath a
+    // settled scroll position, which is what a phone rotation does — without it
+    // an arrow can sit there pointing at nothing until the visitor scrolls.
+    if (this._roomsRO) { this._roomsRO.disconnect(); this._roomsRO = null; }
+    const strip = this.shadowRoot.querySelector('.rooms');
+    if (strip) {
+      const sync = () => this._syncRoomsArrows();
+      sync();
+      strip.addEventListener('scroll', sync, { passive: true });
+      if (window.ResizeObserver) {
+        this._roomsRO = new ResizeObserver(sync);
+        this._roomsRO.observe(strip);
+      }
+    }
 
     // Move focus to the new view's heading so screen readers and keyboard users
     // land in the right place after a step change, without stealing focus on
@@ -875,8 +920,8 @@ class HomegymBundleQuiz extends HTMLElement {
         ${this.sectionTrain(bundle)}
         ${this.sectionSpecialist(bundle)}
         ${this.sectionAlternates(alternates)}
-        ${this.sectionRooms(bundle)}
         ${this.sectionAdvice()}
+        ${this.sectionRooms(bundle)}
 
         <div class="hr"></div>
         <div class="retake">
@@ -1020,7 +1065,11 @@ class HomegymBundleQuiz extends HTMLElement {
     // The hero is drawn from the same feed as this strip, so for most bundles
     // its photo was appearing twice on one page: once large at the top and
     // again as a tile down here. Drop the repeat rather than the strip.
-    const tiles = ROOMS.filter((r) => !bundle || r.image !== bundle.hero);
+    // Filter FIRST, then take seven, so dropping the hero never leaves a short
+    // strip: the eighth photo moves up to fill its place.
+    const tiles = ROOMS
+      .filter((r) => !bundle || r.image !== bundle.hero)
+      .slice(0, ROOMS_SHOWN);
     if (!tiles.length) return '';
     return `
       <section class="section">
@@ -1029,7 +1078,12 @@ class HomegymBundleQuiz extends HTMLElement {
           Real installs from our Instagram, not showroom mock-ups. Every one links
           to the machine in the picture.
         </p>
-        <div class="rooms">
+        <div class="rooms-wrap">
+          <button class="rooms__arrow rooms__arrow--prev" type="button"
+                  data-action="rooms-prev" aria-label="Previous rooms" hidden>${CHEV_LEFT}</button>
+          <button class="rooms__arrow rooms__arrow--next" type="button"
+                  data-action="rooms-next" aria-label="More rooms" hidden>${CHEV_RIGHT}</button>
+        <div class="rooms" role="region" aria-label="Rooms we've built, scroll for more" tabindex="0">
           ${tiles.map((r) => `
             <a class="room" href="${esc(r.href)}" target="_blank" rel="noopener"
                data-action="cta-room" data-title="${esc(r.title)}">
@@ -1042,6 +1096,7 @@ class HomegymBundleQuiz extends HTMLElement {
                 <span class="room__meta">${esc(r.date)} &middot; ${r.linkKind === 'product' ? 'View product' : 'Browse range'}</span>
               </span>
             </a>`).join('')}
+        </div>
         </div>
       </section>`;
   }
@@ -1063,6 +1118,46 @@ class HomegymBundleQuiz extends HTMLElement {
                   data-action="cta-contact">Ask us for advice ${ARROW}</a>`}
         </div>
       </section>`;
+  }
+
+  /**
+   * Move the rooms strip by whole tiles.
+   *
+   * Whole tiles, not a fixed number of pixels: a click should never leave a
+   * photograph half-crossed under an arrow, and the tile width changes with
+   * the container, so the step has to be measured rather than assumed. As many
+   * tiles as currently fit, so a desktop that shows five moves five and a phone
+   * showing one moves one.
+   */
+  _roomsScroll(dir) {
+    const strip = this.shadowRoot.querySelector('.rooms');
+    if (!strip) return;
+    const tile = strip.querySelector('.room');
+    const pitch = tile ? tile.getBoundingClientRect().width + ROOMS_GAP : strip.clientWidth;
+    const perView = Math.max(1, Math.floor(strip.clientWidth / pitch));
+    strip.scrollBy({
+      left: dir * perView * pitch,
+      behavior: this.reducedMotion ? 'auto' : 'smooth'
+    });
+  }
+
+  /**
+   * Show an arrow only where there is somewhere to go.
+   *
+   * A visible control that does nothing is worse than no control: at either end
+   * of the strip the matching arrow is hidden rather than greyed, so the only
+   * arrows on screen are ones that will move something.
+   */
+  _syncRoomsArrows() {
+    const strip = this.shadowRoot.querySelector('.rooms');
+    if (!strip) return;
+    const prev = this.shadowRoot.querySelector('[data-action="rooms-prev"]');
+    const next = this.shadowRoot.querySelector('[data-action="rooms-next"]');
+    // A pixel of slack: scrollLeft is fractional on a zoomed or scaled page, so
+    // an exact comparison leaves the end arrow showing forever.
+    const end = strip.scrollWidth - strip.clientWidth;
+    if (prev) prev.hidden = strip.scrollLeft <= 1;
+    if (next) next.hidden = strip.scrollLeft >= end - 1;
   }
 
   /** Honest banner for each rung of the fallback ladder. */
@@ -1227,6 +1322,8 @@ class HomegymBundleQuiz extends HTMLElement {
       case 'whatsapp':  e.preventDefault(); this._whatsapp('bundle'); break;
       case 'book':      this._bookingClick(); break;   // let the link open naturally
       case 'advice':    e.preventDefault(); this._whatsapp('advice'); break;
+      case 'rooms-prev': e.preventDefault(); this._roomsScroll(-1); break;
+      case 'rooms-next': e.preventDefault(); this._roomsScroll(1); break;
       case 'product':   this._productClick(el); break;   // let the link open naturally
       default: break;
     }
@@ -1300,6 +1397,26 @@ class HomegymBundleQuiz extends HTMLElement {
         window.parent.postMessage({ type: 'homegym-quiz:scroll-to-top' }, '*');
       }
     } catch { /* a parent that cannot be posted to is not an error here */ }
+
+    // SECOND ROUTE, because the first one depends on the host writing code.
+    // The message above is only a request: it does nothing at all unless the
+    // host page registered a listener for it, and a listener written by hand
+    // against a remembered message name is exactly where this has already
+    // failed once in the field.
+    //
+    // iframe-resizer is the escape from that. When the host runs its parent
+    // half, the in-frame script this page already loads exposes parentIFrame,
+    // and scrollToOffset(0, 0) puts the top-left of THIS frame at the top of
+    // the host's viewport, performed by the library on the host's side with
+    // no listener of theirs involved. Undefined whenever the host has not run
+    // iframe-resizer, which is why it is a supplement and not a replacement.
+    //
+    // Both routes ending in the same scroll is harmless: they agree on the
+    // destination, so the worst case is arriving there twice.
+    try {
+      const pif = window.parentIFrame;
+      if (pif && typeof pif.scrollToOffset === 'function') pif.scrollToOffset(0, 0);
+    } catch { /* iframe-resizer absent or not yet initialised */ }
 
     try {
       // Only pull the page if the top of the quiz is actually out of view.

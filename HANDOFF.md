@@ -253,6 +253,23 @@ and one phone rotation — height fired **11 times** against `scroll-to-top`'s
 again when a product image finished loading. The two messages are separate
 precisely so the frequent one can stay silent.
 
+**If the scroll is the only thing you want, there is a route with no listener
+at all.** Run iframe-resizer's parent half on the frame:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4/js/iframeResizer.min.js"></script>
+<script>iFrameResize({ checkOrigin: ['https://homegym-sg.vercel.app'] }, '#homegym-quiz');</script>
+```
+
+The quiz already loads the in-frame half, so with the parent half running it
+calls `parentIFrame.scrollToOffset(0, 0)` itself on every step change and the
+library performs the scroll on your side. No `message` handler of yours is
+involved, which matters because a hand-written handler is precisely where this
+has already gone wrong once. It also takes over the height, so if you adopt it,
+**delete the height branch from the listener above** and keep only the `event`
+branch for analytics — two things setting `style.height` on one frame is how a
+frame oscillates instead of settling.
+
 **The page must not post anything to itself.** A line like
 `window.parent.postMessage({type:'resize', height: height}, ...)` belongs inside
 the iframe, not on homegym.sg. On a top-level page `window.parent` *is* the
