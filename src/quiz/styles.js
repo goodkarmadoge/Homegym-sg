@@ -247,7 +247,17 @@ export const STYLES = css`
 
   .options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* min() is load-bearing, not decoration. A bare minmax(320px, 1fr) sets a
+       floor the track can never go under, so in any box narrower than 320px
+       the cards keep their 320px and simply hang off the right-hand edge.
+       Measured in a 320px viewport: the container was 256px and every option
+       ran from x=32 to x=352, putting 32px of each card, and the tap target
+       under it, off the screen. min(320px, 100%) keeps the two-column
+       behaviour on a wide page and lets the track collapse to the container
+       on a narrow one. An embed makes this the common case rather than the
+       edge case: the iframe is whatever width the host's column happens to
+       be, which is routinely less than the phone's own viewport. */
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 12px;
     border: 0;
     padding: 0;
@@ -1032,7 +1042,7 @@ export const STYLES = css`
     /* 150px rather than 190px so a 375px phone gets two tiles across. Twenty
        posts in a single column is a very long scroll for a strip that is meant
        to be skimmed. */
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
     border-top: 1px solid var(--n300);
     border-left: 1px solid var(--n300);
     margin-top: 16px;

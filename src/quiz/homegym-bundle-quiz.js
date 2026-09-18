@@ -1301,6 +1301,26 @@ class HomegymBundleQuiz extends HTMLElement {
       }
     } catch { /* a parent that cannot be posted to is not an error here */ }
 
+    // SECOND ROUTE, because the first one depends on the host writing code.
+    // The message above is only a request: it does nothing at all unless the
+    // host page registered a listener for it, and a listener written by hand
+    // against a remembered message name is exactly where this has already
+    // failed once in the field.
+    //
+    // iframe-resizer is the escape from that. When the host runs its parent
+    // half, the in-frame script this page already loads exposes parentIFrame,
+    // and scrollToOffset(0, 0) puts the top-left of THIS frame at the top of
+    // the host's viewport, performed by the library on the host's side with
+    // no listener of theirs involved. Undefined whenever the host has not run
+    // iframe-resizer, which is why it is a supplement and not a replacement.
+    //
+    // Both routes ending in the same scroll is harmless: they agree on the
+    // destination, so the worst case is arriving there twice.
+    try {
+      const pif = window.parentIFrame;
+      if (pif && typeof pif.scrollToOffset === 'function') pif.scrollToOffset(0, 0);
+    } catch { /* iframe-resizer absent or not yet initialised */ }
+
     try {
       // Only pull the page if the top of the quiz is actually out of view.
       // Scrolling when it is already visible fights a host that deliberately
