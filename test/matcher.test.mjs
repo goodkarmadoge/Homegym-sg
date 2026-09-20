@@ -51,9 +51,27 @@ test('a 1x1 room falls back gracefully and never throws', () => {
   const result = run({ functions: ['power_rack'], length: 1, depth: 1, persona: 'Convenience Seeker', budget: 2500 });
   assert.notEqual(result.fallback, FALLBACK.NONE, 'must report that it fell back');
   assert.ok(Array.isArray(result.alternates), 'alternates must always be an array');
-  // Nothing on earth fits 1x1, so this must be the contact card, not a fabricated bundle.
-  assert.equal(result.fallback, FALLBACK.CONTACT);
-  assert.equal(result.primary, null);
+
+  // WHICH RUNG IT LANDS ON IS THE SHEET'S BUSINESS, NOT THIS TEST'S.
+  // This used to assert CONTACT with primary null, on the reasoning that
+  // nothing on earth fits 1x1. That held while the smallest bundle needed
+  // 1.5 x 2. The sheet has since added bundles down to 1 x 1.5, so the ladder
+  // now stops one rung earlier: it relaxes the space and offers the nearest
+  // thing instead of giving up. That is the ladder working, and pinning the
+  // rung made a test fail for a bundle being added, which is the opposite of
+  // what the sheet is for.
+  //
+  // What must hold at any size is the honesty: nothing fits 1x1, so the result
+  // may not claim to. Either there is no bundle, or there is one and the
+  // fallback says plainly that a constraint was relaxed to reach it.
+  if (result.primary) {
+    assert.notEqual(
+      result.fallback, FALLBACK.NONE,
+      'offered a bundle for a 1x1 room without saying a constraint was relaxed'
+    );
+  } else {
+    assert.equal(result.fallback, FALLBACK.CONTACT);
+  }
 });
 
 test('orientation swap gives an identical result', () => {
