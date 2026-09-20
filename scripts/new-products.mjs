@@ -61,6 +61,20 @@ if (!missing.size) {
 console.log(`${missing.size} product(s) in the sheet are not in the catalogue.\n`);
 
 /** First capture of the first pattern that matches, or null. */
+/* Magento escapes its own product names, so og:title arrives as
+   "Vigor&#x20;Titan&#x20;G9". Left alone that string reaches a customer
+   verbatim, spaces and all. */
+function decode(s) {
+  if (s == null) return null;
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+
 const first = (html, patterns) => {
   for (const re of patterns) {
     const m = re.exec(html);
