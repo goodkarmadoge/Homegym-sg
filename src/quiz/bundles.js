@@ -169,6 +169,111 @@ export const PRODUCTS = {
     was: 250,
     url: 'https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-bars/1-83m-olympic-bar.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/1/6/1628933011587.jpg'
+  },
+
+  /* ── Bundles 11-16 ─────────────────────────────────────────────────────
+     Added when the sheet gained those rows. Every field below was read off
+     the product page by scripts/new-products.mjs and then checked by hand,
+     which is the part that mattered: the axis order is not consistent across
+     these listings. Five of the six machines state L x W x H, where the L is
+     the DEPTH on the floor; the Cube Smith Pro labels its own axes in words
+     and is Width x depth x height. Reading them all the same way would have
+     swapped width and depth on five of them.
+
+     Centimetre figures that do not land on a whole centimetre are rounded UP
+     (190.5 -> 1.91, 117.5 -> 1.18). Rounding up claims slightly more floor
+     than the machine needs, which hides a bundle that would just have fitted;
+     rounding down tells someone a machine fits a room it does not. */
+
+  'titan-g9': {
+    // Published machine footprint, metres, from the product page:
+    //   150 x 178 x 213cm (L x W x H)
+    footprint: { w: 1.78, d: 1.5 },
+    name: 'Vigor Titan G9 All-in-1 Trainer V3',
+    price: 3499,
+    url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-g9-all-in-1-trainer.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/g/9/g9-v3-5.jpg'
+  },
+  'cube-smith-pro': {
+    // Published machine footprint, metres, from the product page:
+    //   190.5 x 153 x 224.2cm (Width x depth x height)
+    // the one listing here that names its axes in words rather than L x W x H
+    footprint: { w: 1.91, d: 1.53 },
+    name: 'Bodyx Cube Smith Pro All-in-1 Trainer (Connected Smith System)',
+    price: 4299,
+    url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/bodyx-cube-smith-pro-all-in-1-trainer.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/c/u/cubesmith-pro.jpg'
+  },
+  'pt360': {
+    // Published machine footprint, metres, from the product page:
+    //   98 x 117.5 x 213cm (L x W x H)
+    footprint: { w: 1.18, d: 0.98 },
+    name: 'Bodyx PT360 Dual Adjustable Pulley',
+    price: 2599,
+    url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-pt360-dual-adjustable-pulley.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/4/2/4260_magnify_013.jpg'
+  },
+  'leg-press': {
+    // Published machine footprint, metres, from the product page:
+    //   122 x 95 x 147cm (L x W x H)
+    footprint: { w: 0.95, d: 1.22 },
+    name: 'Vigor Leg Press / Hack Squat Machine',
+    price: 999,
+    url: 'https://homegym.sg/strength/multi-functional.html/others/vigor-leg-press-hack-squat-machine.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/l/e/leg_press_1.jpg'
+  },
+  'squat-stand': {
+    // NO FOOTPRINT, DELIBERATELY. The page publishes one dimension triple and
+    // it is the wrong one:
+    //   Storage Dimension: 51.5 x 82 x 106cm (L x W x H)
+    // That is the size FOLDED AND PUT AWAY, beside the line "It takes less
+    // than 1 minute to fold or unfold". The in-use footprint, which is what
+    // the room filter needs, is not published anywhere on the page.
+    //
+    // Recording the folded size as the footprint would claim this stand needs
+    // half a square metre, so it would pass every room check ever entered and
+    // the quiz would recommend it into a cupboard. Absent, it reports as
+    // "unknown" in check:fit -- the same as the folding rack -- which is the
+    // honest answer until someone measures it set up.
+    name: 'Vigor Folding Adjustable Squat Stand',
+    price: 299,
+    url: 'https://homegym.sg/strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/f/a/fass-1.jpg'
+  },
+  'dht-bench': {
+    // Published machine footprint, metres, from the product page:
+    //   126 x 42 x 46cm, Folded: 136 x 42 x 12cm (L x W x H)
+    // the unfolded triple, since a bench in use is not a bench folded flat
+    footprint: { w: 0.42, d: 1.26 },
+    name: 'DHT Ultraslim Folding Bench',
+    price: 292,
+    url: 'https://homegym.sg/strength/weight-benches/folding-bench.html/zxch-ultraslim-folding-bench.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/z/x/zx-bench-1.jpg'
+  },
+  'olympic-set-rubber': {
+    // No footprint, like every other loose weight here: plates stack in a
+    // corner and the anchor machine is what the room has to hold.
+    //
+    // A SECOND OLYMPIC SET, not a duplicate of 'olympic-set'. Different page,
+    // different product ("Recycled rubber"), different price: $400 against
+    // $450. Bundles 14 and 15 point at this one while eight others point at
+    // the original, which may be deliberate or may be a mis-paste in the
+    // sheet -- worth HomeGym confirming, but not something to guess at here.
+    name: 'Olympic Weight Set (Recycled rubber)',
+    price: 400,
+    url: 'https://homegym.sg/strength/weights/barbell.html/olympic-set-1.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/s/e/set_discos_general_2.jpg'
+  },
+  'smartlock-dumbbell': {
+    // No footprint: a pair of dumbbells on the floor, not a machine.
+    //
+    // No was-price either. The page offers 175 beside a selling price of 580,
+    // which is not a discount and would have rendered as a strikethrough
+    // reading "was $175, now $580".
+    name: 'Vigor 23.5kg Smartlock Adjustable Dumbbell (4 to 23.5kg Pair)',
+    price: 580,
+    url: 'https://homegym.sg/strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/a6ce66133903ca2f04cf70ed120904eb/4/-/4-235_dumbbell_2_.jpg'
   }
 };
 

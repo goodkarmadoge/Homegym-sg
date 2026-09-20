@@ -76,9 +76,15 @@ test('every bundle total equals the sum of its products', () => {
 
 // ── Data integrity ─────────────────────────────────────────────────────────
 
-test('catalogue has 15 products, each with a URL and an image', () => {
+// Not pinned to an exact count, for the same reason the bundle count below is
+// not. The sheet decides which machines the quiz needs, and a row naming one
+// the catalogue lacks already fails loudly in composeBundles, naming the URL.
+// Pinning the number meant every catalogue addition also failed here with
+// "23 !== 15", which says nothing the real guard has not already said better.
+// A floor still catches a catastrophic deletion.
+test('every catalogue product has a URL, an image, a name and a price', () => {
   const ids = Object.keys(PRODUCTS);
-  assert.equal(ids.length, 15);
+  assert.ok(ids.length >= 15, `catalogue has shrunk to ${ids.length} products`);
   for (const id of ids) {
     const p = PRODUCTS[id];
     assert.match(p.url, /^https:\/\/homegym\.sg\//, `${id} has a bad product URL`);
