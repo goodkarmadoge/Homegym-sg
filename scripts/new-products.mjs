@@ -69,24 +69,33 @@ const first = (html, patterns) => {
   return null;
 };
 
-/** Every distinct line mentioning cm alongside a dimension separator. */
+/**
+ * Every dimension-shaped run of numbers on the page, with its surrounding
+ * words.
+ *
+ * The first version of this split the de-tagged page into LINES and kept the
+ * ones mentioning cm. It found nothing on any of the eight pages, because
+ * Magento puts the spec in a table and each cell is its own element: by the
+ * time tags became newlines, "209 x 92 x 225cm" had been cut into three
+ * pieces. So this matches the numbers wherever they sit and carries the
+ * neighbouring text along, which is what names the axes.
+ */
 function dimensionLines(html) {
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, '\n')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&');
+    .replace(/<[^>]+>/g, ' ');
+  const flat = decode(text);
+  const re = /(\d{1,3}(?:\.\d+)?)\s*[x×*]\s*(\d{1,3}(?:\.\d+)?)(?:\s*[x×*]\s*(\d{1,3}(?:\.\d+)?))?\s*(cm|mm|m\b)/gi;
   const out = new Set();
-  for (const line of text.split('\n')) {
-    const s = line.trim().replace(/\s+/g, ' ');
-    if (s.length < 6 || s.length > 200) continue;
-    if (!/\d/.test(s)) continue;
-    if (!/\bcm\b|\bmm\b|\bm\b/i.test(s)) continue;
-    if (!/[x×*]/i.test(s)) continue;
-    out.add(s);
+  let m;
+  while ((m = re.exec(flat)) !== null) {
+    const from = Math.max(0, m.index - 90);
+    const to = Math.min(flat.length, m.index + m[0].length + 90);
+    out.add(('...' + flat.slice(from, to) + '...').replace(/\s+/g, ' '));
+    if (out.size >= 8) break;
   }
-  return [...out].slice(0, 6);
+  return [...out];
 }
 
 const money = (s) => (s == null ? null : Number(String(s).replace(/[^0-9.]/g, '')) || null);
@@ -106,23 +115,29 @@ for (const [url, ids] of missing) {
     console.log(`  FETCH FAILED: ${err.message}. Fill this one in by hand.\n`); continue;
   }
 
-  const name = first(html, [
+  const name = decode(first(html, [
     /<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i,
     /<span[^>]+itemprop="name"[^>]*>([^<]+)</i,
     /<h1[^>]*class="[^"]*page-title[^"]*"[^>]*>\s*(?:<span[^>]*>)?([^<]+)/i,
     /<title>([^<]+)<\/title>/i
-  ]);
+  ]));
   const price = money(first(html, [
     /<meta[^>]+itemprop="price"[^>]+content="([^"]+)"/i,
     /data-price-type="finalPrice"[^>]*data-price-amount="([^"]+)"/i,
     /data-price-amount="([^"]+)"/i,
     /"final_price"\s*:\s*"?([0-9.]+)/i
   ]));
-  const was = money(first(html, [
+  // A "was" that is not ABOVE the selling price is a mis-read, not a discount.
+  // Both showed up on the real pages: one product reported was === price, and
+  // the dumbbell reported 175 against a price of 580, picked up from a related
+  // item's markup. Either would have rendered a nonsense strikethrough.
+  const wasRaw = money(first(html, [
     /data-price-type="oldPrice"[^>]*data-price-amount="([^"]+)"/i,
     /"oldPrice"\s*:\s*\{[^}]*"amount"\s*:\s*"?([0-9.]+)/i,
     /"regular_price"\s*:\s*"?([0-9.]+)/i
   ]));
+  const was = (wasRaw != null && price != null && wasRaw > price) ? wasRaw : null;
+  const wasRejected = wasRaw != null && was == null;
   const image = first(html, [
     /<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i,
     /"(https:\/\/[^"]*cloudfront\.net\/catalog\/product\/cache\/[^"]+\.(?:jpg|jpeg|png|webp))"/i
@@ -141,6 +156,7 @@ for (const [url, ids] of missing) {
   console.log(`    name: ${JSON.stringify(name || 'TODO')},`);
   console.log(`    price: ${price ?? 'null /* TODO */'},`);
   if (was) console.log(`    was: ${was},`);
+  else if (wasRejected) console.log(`    // no was-price: the page offered ${wasRaw}, which is not above ${price}`);
   console.log(`    url: '${url}',`);
   console.log(`    image: ${image ? `'${image}'` : "'TODO'"}`);
   console.log(`  },`);
