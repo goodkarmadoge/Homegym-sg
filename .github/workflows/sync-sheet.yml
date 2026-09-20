@@ -112,6 +112,29 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: npm run check
 
+      # WHEN THE CHECK FAILS, SAY WHAT TO DO ABOUT IT.
+      #
+      # The commonest way for this job to go red is a sheet row naming a
+      # machine the catalogue has never seen: composeBundles throws with "no
+      # product in the catalogue matches ...", and the fix is a hand-written
+      # PRODUCTS entry per product. That happened for bundles 11-16, and
+      # writing those entries means opening each product page and copying five
+      # fields out of it.
+      #
+      # This step opens them. It runs only on failure, writes nothing, and
+      # prints a ready-to-paste entry per missing product with the page's own
+      # dimension lines quoted, so whoever picks this up starts from a draft
+      # rather than from a stack of browser tabs. homegym.sg is reachable from
+      # the runner, which is the whole reason this belongs here rather than in
+      # a checkout on someone's laptop behind a proxy.
+      #
+      # continue-on-error so the run still reports the real failure: this is a
+      # note pinned to the red X, not a second verdict.
+      - name: What the new sheet rows need
+        if: failure()
+        continue-on-error: true
+        run: node scripts/new-products.mjs
+
       # Reported, never gating. Both read a third party and both are advisory:
       # every photo still has to resolve, and every hero still has to show its
       # own bundle's machine. Their output lands in the run log.
