@@ -235,13 +235,36 @@ export function match(answers, bundles) {
     };
   };
 
+  /**
+   * RELEVANCE FLOOR.
+   *
+   * A pool only counts if something in it does at least one of the things the
+   * customer asked for. Without this, the ladder answers "I want a machine
+   * circuit" with a leg press, purely because the leg press is small and cheap
+   * enough to clear the space and budget gates while every actual machine
+   * circuit is filtered out a few centimetres short.
+   *
+   * functionScore already discounts a bundle that covers nothing to 0.05, so it
+   * loses every time it is ranked ALONGSIDE a relevant bundle. The gap this
+   * closes is the case where it is the only thing left in the pool and so wins
+   * by default. A relaxed tier that answers the question beats an exact tier
+   * that does not, and the page already labels a relaxed result "Nearest match".
+   *
+   * Only applies when the customer named specific functions. "No preference"
+   * and "all of the above" leave every pool exactly as it was.
+   */
+  const named = a.functions.length && !a.functions.includes(ANY_FUNCTION);
+  const relevant = (pool) =>
+    named ? pool.filter((b) => a.functions.some((fn) => b.functions.includes(fn))) : pool;
+
   // ── Normal path ────────────────────────────────────────────────────────────
   const exact = eligible(bundles, a.length, a.depth, a.budget);
-  if (exact.length) return finish(exact, FALLBACK.NONE);
+  const exactRelevant = relevant(exact);
+  if (exactRelevant.length) return finish(exactRelevant, FALLBACK.NONE);
 
   // ── Tier 1: relax budget by 10% ────────────────────────────────────────────
   const relaxedBudget = a.budget * 1.1;
-  const tier1 = eligible(bundles, a.length, a.depth, relaxedBudget);
+  const tier1 = relevant(eligible(bundles, a.length, a.depth, relaxedBudget));
   if (tier1.length) {
     const res = finish(tier1, FALLBACK.BUDGET);
     res.debug.overBudgetBy = res.primary ? Math.max(0, res.primary.price - a.budget) : 0;
@@ -254,12 +277,19 @@ export function match(answers, bundles) {
   // recommend a machine that cannot physically enter the room.
   const relaxL = a.length <= a.depth ? a.length + 0.5 : a.length;
   const relaxD = a.depth < a.length ? a.depth + 0.5 : a.depth;
-  const tier2 = eligible(bundles, relaxL, relaxD, a.budget);
+  const tier2 = relevant(eligible(bundles, relaxL, relaxD, a.budget));
   if (tier2.length) {
     const res = finish(tier2, FALLBACK.SPACE);
     res.debug.relaxedSpace = { length: relaxL, depth: relaxD };
     return res;
   }
+
+  // ── Tier 2b: nothing relevant anywhere, so take the exact pool as it is ────
+  // The floor above is a preference, not a veto. If no tier holds a bundle that
+  // covers what was asked for, an in-budget bundle that fits the room is still
+  // a better answer than skipping to the cheapest thing on the list, and far
+  // better than the contact card.
+  if (exact.length) return finish(exact, FALLBACK.NONE);
 
   // ── Tier 3: space fit only, budget ignored ─────────────────────────────────
   // Ranked cheapest-first, then smallest. That yields The Fast Track wherever it

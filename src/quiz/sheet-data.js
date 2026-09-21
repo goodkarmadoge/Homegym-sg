@@ -168,6 +168,88 @@ export const SHEET_BUNDLES = [
       "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
       "https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-weights/olympic-set.html",
     ]
+  },
+  {
+    id: 11,
+    name: null,
+    label: "G9",
+    functions: ["smith","power_rack","cable","leg_press"],
+    footprint: { length: 2.5, depth: 2 },
+    personas: ["Practical / Value Seeker"],
+    budgetCeiling: 4500,
+    productUrls: [
+      "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-g9-all-in-1-trainer.html",
+      "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
+      "https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-weights/olympic-set.html",
+    ]
+  },
+  {
+    id: 12,
+    name: null,
+    label: "Cube pro",
+    functions: ["smith","power_rack","cable"],
+    footprint: { length: 2.5, depth: 2 },
+    personas: ["Maximum Function User","Convenience Seeker"],
+    budgetCeiling: 5500,
+    productUrls: [
+      "https://homegym.sg/strength/multi-functional.html/cable-machine/bodyx-cube-smith-pro-all-in-1-trainer.html",
+      "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
+      "https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-weights/olympic-set.html",
+    ]
+  },
+  {
+    id: 13,
+    name: null,
+    label: "PT360",
+    functions: ["cable"],
+    footprint: { length: 1.5, depth: 1.5 },
+    personas: ["Convenience Seeker"],
+    budgetCeiling: 3000,
+    productUrls: [
+      "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-pt360-dual-adjustable-pulley.html",
+      "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
+    ]
+  },
+  {
+    id: 14,
+    name: null,
+    label: "Leg Press",
+    functions: ["leg_press"],
+    footprint: { length: 1, depth: 1.5 },
+    personas: ["Practical / Value Seeker"],
+    budgetCeiling: 1500,
+    productUrls: [
+      "https://homegym.sg/strength/multi-functional.html/others/vigor-leg-press-hack-squat-machine.html",
+      "https://homegym.sg/strength/weights/barbell.html/olympic-set-1.html",
+    ]
+  },
+  {
+    id: 15,
+    name: null,
+    label: "FASS",
+    functions: ["power_rack"],
+    footprint: { length: 2, depth: 2 },
+    personas: ["Practical / Value Seeker"],
+    budgetCeiling: 1500,
+    productUrls: [
+      "https://homegym.sg/strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html",
+      "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
+      "https://homegym.sg/strength/weights/barbell.html/olympic-set-1.html",
+      "https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-bars/1-83m-olympic-bar.html",
+    ]
+  },
+  {
+    id: 16,
+    name: null,
+    label: "DHT",
+    functions: ["power_rack"],
+    footprint: { length: 1, depth: 1.5 },
+    personas: ["Practical / Value Seeker"],
+    budgetCeiling: 1000,
+    productUrls: [
+      "https://homegym.sg/strength/weight-benches/folding-bench.html/zxch-ultraslim-folding-bench.html",
+      "https://homegym.sg/strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html",
+    ]
   }
 ];
 

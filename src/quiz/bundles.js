@@ -169,6 +169,106 @@ export const PRODUCTS = {
     was: 250,
     url: 'https://homegym.sg/strength/weights.html/build-your-own-dumbbell-barbell/olympic-bars/1-83m-olympic-bar.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/1/6/1628933011587.jpg'
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Added 21 Sep 2026, when bundles 11-16 appeared in the sheet and the sync
+  // failed because none of their products existed here. Prices, images and
+  // dimensions are a 21 Sep 2026 read of the live product pages. Same two
+  // caveats as everything above: the prices are sale prices and will drift,
+  // and the image paths carry a Magento cache hash. Note the hash on these is
+  // `d11b41fa...`, not the `c0dcb29e...` the older entries use. Both resolve
+  // today; the site simply regenerated its cache between the two snapshots.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  'titan-g9': {
+    // Published figures disagree with each other, checked 21 Sep 2026. The spec
+    // table says 150 x 178 x 213cm (L x W x H); the description says "Depth of
+    // feet: 124cm" and "Width with smith bar: 205cm". Taken widest on each axis,
+    // because a machine that does not fit is the more expensive mistake: the
+    // 205cm width includes the smith bar, the 150cm the spec table's length.
+    footprint: { w: 2.05, d: 1.5 },
+    name: 'Vigor Titan G9 All-in-1 Trainer V3',
+    price: 3499,
+    was: null,
+    url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-g9-all-in-1-trainer.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/g/9/g9-v3-5.jpg',
+    // Out of stock on the product page on 21 Sep 2026, and it anchors bundle 11.
+    // Delete this line once it is back; see the note under BUNDLE_COPY.
+    note: 'Out of stock'
+  },
+  'cube-smith-pro': {
+    // Published machine footprint, metres, from the product page:
+    //   190.5 x 153 x 224.2cm (Width x depth x height)
+    footprint: { w: 1.91, d: 1.53 },
+    name: 'Bodyx Cube Smith Pro All-in-1 Trainer (Connected Smith System)',
+    price: 4299,
+    was: 4599,
+    url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/bodyx-cube-smith-pro-all-in-1-trainer.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/c/u/cubesmith-pro.jpg',
+    // Out of stock on the product page on 21 Sep 2026, and it anchors bundle 12.
+    note: 'Out of stock'
+  },
+  'pt360': {
+    // Published machine footprint, metres, from the product page:
+    //   98 x 117.5 x 213cm (L x W x H)
+    footprint: { w: 1.18, d: 0.98 },
+    name: 'Bodyx PT360 Dual Adjustable Pulley',
+    price: 2599,
+    was: 2899,
+    url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-pt360-dual-adjustable-pulley.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/2/4260_magnify_013.jpg'
+  },
+  'leg-press': {
+    // Published machine footprint, metres, from the product page:
+    //   122 x 95 x 147cm (L x W x H)
+    footprint: { w: 0.95, d: 1.22 },
+    name: 'Vigor Leg Press / Hack Squat Machine',
+    price: 999,
+    was: null,
+    url: 'https://homegym.sg/strength/multi-functional.html/others/vigor-leg-press-hack-squat-machine.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/l/e/leg_press_1.jpg'
+  },
+  'fass-stand': {
+    // Published machine footprint, metres, from the product page:
+    //   Width: 82 to 124cm (~6cm increment), Depth: 89cm (unfold), 51.5cm (folded)
+    // widest width setting and the unfolded depth, since that is the stand in use
+    footprint: { w: 1.24, d: 0.89 },
+    name: 'Vigor Folding Adjustable Squat Stand',
+    price: 299,
+    was: 399,
+    url: 'https://homegym.sg/strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/f/a/fass-1.jpg'
+  },
+  'dht-bench': {
+    // Published footprint, metres, from the product page:
+    //   126 x 42 x 46cm, Folded: 136 x 42 x 12cm (L x W x H)
+    // A bench would not normally carry dimensions here, but this one ANCHORS
+    // bundle 16, and check-fit.mjs measures the anchor. Without them that bundle
+    // reports "no dimensions published" and nothing checks its Size column.
+    footprint: { w: 0.42, d: 1.26 },
+    name: 'DHT Ultraslim Folding Bench',
+    price: 292,
+    was: null,
+    url: 'https://homegym.sg/strength/weight-benches/folding-bench.html/zxch-ultraslim-folding-bench.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/z/x/zx-bench-1.jpg'
+  },
+  'olympic-set-recycled': {
+    // The cheaper recycled-rubber set. Distinct from 'olympic-set' above, which
+    // is the 107.5kg virgin-rubber set at $450; the sheet uses both, in
+    // different bundles, so neither can be folded into the other.
+    name: 'Olympic Weight Set (Recycled rubber)',
+    price: 400,
+    was: null,
+    url: 'https://homegym.sg/strength/weights/barbell.html/olympic-set-1.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/s/e/set_discos_general_2.jpg'
+  },
+  'smartlock-db': {
+    name: 'Vigor 23.5kg Smartlock Adjustable Dumbbell (4 to 23.5kg Pair)',
+    price: 580,
+    was: 699,
+    url: 'https://homegym.sg/strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html',
+    image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/-/4-235_dumbbell_2_.jpg'
   }
 };
 
@@ -276,6 +376,53 @@ export const BUNDLE_COPY = {
     trains: ["Squat", "Bench press", "Deadlift", "Chin-ups", "Dips", "Lat pulldown", "Landmine"],
     hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
     heroSource: "instagram"
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Bundles 11-16, added to the sheet and first synced on 21 Sep 2026.
+  //
+  // DRAFT NAMES, NOT YET SIGNED OFF BY THE CLIENT. Every name above was agreed
+  // with HomeGym; these six were written here so the six new bundles did not go
+  // live calling themselves "Bundle 11". They are the one field with no honest
+  // fallback, which is why they are filled in and the rest are not.
+  //
+  // `tagline` and `pitch` are deliberately ABSENT. autoTagline and autoPitch
+  // generate both from the sheet's own rules and the product names, which is
+  // accurate but plain. Marketing claims are the client's to make, so nothing
+  // here invents one. Fill them in when the copy is written.
+  //
+  // `trains` is NOT optional: the data-integrity test asserts every bundle has
+  // one. These lists are read off the product pages, not composed, so they are
+  // safe to ship as they stand.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  11: {
+    name: "The Full House",
+    trains: ["Squat", "Bench press", "Deadlift", "Smith press", "Lat pulldown", "Cable rows", "Chin-ups", "Dips", "Landmine"]
+  },
+  12: {
+    name: "The Connected Cube",
+    trains: ["Smith squat", "Smith bench", "Lat pulldown", "Low row", "Cable flys", "Chin-ups"]
+  },
+  13: {
+    name: "The Cable Corner",
+    trains: ["Cable press", "Cable flys", "Lat pulldown", "Low row", "Woodchops", "Bicep curls", "Tricep pushdown"]
+  },
+  14: {
+    name: "The Leg Station",
+    trains: ["Leg press", "Hack squat", "Calf raises"]
+  },
+  15: {
+    name: "The Starting Barbell",
+    trains: ["Squat", "Bench press", "Overhead press", "Deadlift", "Barbell row"]
+  },
+  16: {
+    // The sheet tags this bundle "Barbell", but it holds a folding bench and a
+    // pair of adjustable dumbbells: no barbell, no rack. The trains list below
+    // describes what is actually in the box. See the note in README about the
+    // Function cell for bundle 16 needing correcting in the sheet.
+    name: "The Dumbbell Corner",
+    trains: ["Dumbbell press", "Dumbbell flys", "Dumbbell rows", "Goblet squats", "Lunges", "Shoulder press", "Curls"]
   }
 };
 
