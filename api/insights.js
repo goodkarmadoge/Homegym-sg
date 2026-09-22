@@ -48,8 +48,20 @@ export const MIN_PASSWORD_LENGTH = 12;
  * Compared as SHA-256 digests through timingSafeEqual: digests are always 32
  * bytes, so this takes the same time for a wrong password of any length, and
  * timingSafeEqual throws on a length mismatch if fed the raw strings.
+ *
+ * `expected` IS A REQUIRED ARGUMENT AND MUST NOT BE GIVEN A DEFAULT.
+ *   It had `= PASSWORD` for about an hour, and that default made the test for
+ *   the most important behaviour here silently vacuous: passing `undefined` to
+ *   mean "nothing is configured" instead picked up process.env, so the test
+ *   asserted the unset case only on a machine where the variable happened to be
+ *   unset. It passed locally and failed on Vercel, where it is set, which is the
+ *   good outcome only because the deploy gates on the tests.
+ *
+ *   Reading the environment is the caller's job. This function is then pure:
+ *   the same two arguments give the same answer on every machine, which is the
+ *   only way a test of it means anything.
  */
-export function authorise(provided, expected = PASSWORD) {
+export function authorise(provided, expected) {
   if (!expected || expected.length < MIN_PASSWORD_LENGTH) {
     return { ok: false, status: 503, error: 'not configured' };
   }
@@ -68,7 +80,7 @@ export default async function handler(req, res) {
 
   // A header, not a cookie: nothing here should be sent automatically by the
   // browser on a cross-site request, which is what makes CSRF a non-topic.
-  const auth = authorise(req.headers['x-insights-key']);
+  const auth = authorise(req.headers['x-insights-key'], PASSWORD);
   if (!auth.ok) {
     if (auth.status === 503) {
       console.error('[insights] INSIGHTS_PASSWORD is unset or under ' + MIN_PASSWORD_LENGTH +
