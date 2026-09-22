@@ -221,3 +221,33 @@ test('a password that is a prefix of the real one is refused', () => {
   assert.equal(authorise(GOOD.slice(0, -1), GOOD).ok, false);
   assert.equal(authorise(GOOD + 'x', GOOD).ok, false);
 });
+
+// THE TEST ABOVE ONCE PASSED FOR THE WRONG REASON. THIS IS WHY IT CANNOT AGAIN.
+//
+// authorise() briefly had `expected = PASSWORD` as a default parameter, reading
+// process.env at call time. That made "an unset password refuses everyone"
+// assert nothing whenever INSIGHTS_PASSWORD happened to be set: passing
+// undefined for `expected` quietly picked up the real password instead, and the
+// unset branch was never reached. Green on a laptop with no env var, red on
+// Vercel where there is one, and red only because the deploy runs the tests.
+//
+// This sets the variable first and then asserts the unset case anyway. If the
+// default ever comes back, this fails everywhere rather than only in CI.
+test('an unset password is judged unset even when the environment has one', () => {
+  const before = process.env.INSIGHTS_PASSWORD;
+  process.env.INSIGHTS_PASSWORD = 'a-real-password-that-is-set';
+  try {
+    for (const expected of [undefined, null, '']) {
+      const r = authorise('a-real-password-that-is-set', expected);
+      assert.equal(r.ok, false, 'the environment leaked into a pure function');
+      assert.equal(
+        r.status, 503,
+        'authorise() read process.env instead of its argument, so the fail-closed ' +
+        'test is vacuous on any machine where INSIGHTS_PASSWORD is set'
+      );
+    }
+  } finally {
+    if (before === undefined) delete process.env.INSIGHTS_PASSWORD;
+    else process.env.INSIGHTS_PASSWORD = before;
+  }
+});
