@@ -21,9 +21,10 @@ export const PAGES = [
   { file: 'prototype.html', emoji: '🏋️',
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
   // INTERNAL, AND DELIBERATELY UNLINKED. Nothing customer-facing points at this
-  // page and verify.mjs fails the build if anything ever does. The protection
-  // that matters is Vercel's deployment password; not publishing the URL is the
-  // cheap second lock. See the header comment in src/insights.html.
+  // page and verify.mjs fails the build if anything ever does. The page itself
+  // is only markup: the password sits on /api/insights, because deployment-level
+  // protection would also lock the customer-facing quiz served beside it. See
+  // the header comment in src/insights.html.
   { file: 'insights.html', emoji: '📊',
     desc: 'Internal dashboard: quiz sessions, screen dropoff, bundles viewed and CTA taps.' },
   { file: 'bundle-quiz.html', emoji: '🎯',

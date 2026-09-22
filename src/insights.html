@@ -6,9 +6,16 @@
    NOT LINKED FROM ANYWHERE, AND THAT IS A REQUIREMENT, NOT AN OVERSIGHT.
    Nothing in the customer-facing site points here: not the cover page, not the
    quiz, not the teardown. scripts/verify.mjs fails the build if a link to this
-   page appears on any of them. The protection that actually matters is Vercel's
-   deployment password (README, "The insights dashboard"), but a URL that is
-   never published is a URL that never gets shared by accident either.
+   page appears on any of them. A URL that is never published is a URL that
+   never gets shared by accident.
+
+   THE LOCK IS ON THE DATA, NOT ON THIS PAGE, and this page being public is
+   therefore fine. Vercel's deployment password cannot be used here: protection
+   covers a whole deployment, not a path, and this deployment also serves
+   bundle-quiz.html, the customer embed that has to stay public. So
+   /api/insights holds the password and this file is just markup. Without that
+   endpoint it renders a prompt and no numbers, which is the entire point.
+   README, "Why the password is in the app and not on the deployment".
 
    Visual language is index.html's, deliberately: near-black ground, hairline
    borders, mono labels, "//" markers, HomeGym orange. It is a different job but
@@ -477,16 +484,78 @@ caption{text-align:left;color:var(--fg-60);font-size:.85rem;padding-bottom:8px}
 
   function showNote(html) { els.state.innerHTML = '<div class="note">' + html + '</div>'; }
 
+  /* THE PASSWORD.
+     ─────────────────────────────────────────────────────────────────────────
+     Held in localStorage so this is a once-per-browser question rather than a
+     once-per-visit one, and sent as a header on every read. It is never in the
+     URL: a query string lands in browser history, in bookmarks, and in the
+     referrer header of anything this page ever links out to.
+
+     Wrapped because storage throws rather than returning null in a private
+     window and wherever site data is blocked, and a dashboard that white-
+     screened in private browsing would be a silly way to lose an afternoon. */
+  var KEY_STORE = 'hg-insights-key';
+
+  function savedKey() {
+    try { return localStorage.getItem(KEY_STORE) || ''; } catch (err) { return memoryKey; }
+  }
+  var memoryKey = '';
+  function rememberKey(v) {
+    memoryKey = v;
+    try { localStorage.setItem(KEY_STORE, v); } catch (err) { /* memory will do */ }
+  }
+  function forgetKey() {
+    memoryKey = '';
+    try { localStorage.removeItem(KEY_STORE); } catch (err) { /* nothing to clear */ }
+  }
+
+  function askForPassword(message) {
+    els.app.hidden = true;
+    showNote(
+      '<h2>Password</h2>' +
+      '<p>' + esc(message) + '</p>' +
+      '<form id="pw-form" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">' +
+        '<label for="pw" style="position:absolute;left:-9999px">Dashboard password</label>' +
+        '<input id="pw" type="password" autocomplete="current-password" ' +
+          'style="flex:1 1 220px;background:var(--bg-deep);border:1px solid var(--line);' +
+          'color:var(--fg);padding:10px 12px;font:inherit">' +
+        '<button type="submit" style="appearance:none;border:0;background:var(--accent);' +
+          'color:#1a0c00;padding:10px 20px;cursor:pointer;font-family:var(--f-mono);' +
+          'font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase">' +
+          'Unlock</button>' +
+      '</form>'
+    );
+    var form = document.getElementById('pw-form');
+    var input = document.getElementById('pw');
+    input.focus();
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!input.value) return;
+      rememberKey(input.value);
+      load();
+    });
+  }
+
   function load() {
+    var key = savedKey();
+    if (!key) return askForPassword('This dashboard is not public. Enter the password to read the numbers.');
+
     els.state.innerHTML = '<div class="note">Reading&hellip;</div>';
     els.app.hidden = true;
 
-    fetch('/api/insights?days=' + days, { headers: { accept: 'application/json' } })
+    fetch('/api/insights?days=' + days, { headers: { accept: 'application/json', 'x-insights-key': key } })
       .then(function (r) {
         return r.json().then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
       })
       .then(function (res) {
         if (!res.ok) {
+          if (res.status === 401) {
+            // Wrong or stale password. Drop it rather than retrying with it
+            // forever, and say so, because "unauthorised" with no way to fix it
+            // is the least useful screen a dashboard can show.
+            forgetKey();
+            return askForPassword('That password was not accepted. Try again.');
+          }
           if (res.status === 503) {
             showNote('<h2>Not connected yet</h2><p>' + esc(res.body.hint || '') + '</p>');
           } else {

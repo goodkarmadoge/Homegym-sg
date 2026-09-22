@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toRow, EVENTS } from '../api/collect.js';
+import { authorise, MIN_PASSWORD_LENGTH } from '../api/insights.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SID = 'a'.repeat(32);
@@ -152,4 +153,71 @@ test('every event the quiz page sends is one this endpoint accepts', () => {
   for (const name of sent) {
     assert.ok(EVENTS.has(name), `the quiz page sends "${name}" but api/collect.js drops it`);
   }
+});
+
+// ── The dashboard's password ───────────────────────────────────────────────
+//
+// WHY THIS IS TESTED HARDER THAN ANYTHING ELSE IN THE REPO.
+//   Vercel's deployment password cannot protect this page: protection covers a
+//   whole deployment, and this one also serves bundle-quiz.html, the customer
+//   embed that has to stay public. So /api/insights protects itself, and these
+//   assertions are the only thing standing between "internal dashboard" and
+//   "the client's traffic, published".
+//
+//   The nastiest failure is not a wrong answer, it is a permissive one: an
+//   unset variable that falls through to "allow" looks exactly like a working
+//   dashboard from the inside, and nobody discovers it by using the thing.
+
+const GOOD = 'a-long-enough-password';
+
+test('the right password is accepted', () => {
+  assert.equal(authorise(GOOD, GOOD).ok, true);
+});
+
+test('a wrong password is refused with 401', () => {
+  const r = authorise('not-the-password-at-all', GOOD);
+  assert.equal(r.ok, false);
+  assert.equal(r.status, 401);
+});
+
+test('an unset password refuses EVERYONE rather than letting everyone in', () => {
+  // The whole point. Read the assertions as: there is no value of
+  // INSIGHTS_PASSWORD, and no value of the supplied password, that opens this
+  // door when the variable has not been configured.
+  for (const expected of [undefined, null, '']) {
+    for (const provided of ['', 'anything', GOOD, undefined, null]) {
+      const r = authorise(provided, expected);
+      assert.equal(r.ok, false, `unset password allowed "${provided}" through`);
+      assert.equal(r.status, 503, 'an unconfigured dashboard must say so, not open');
+    }
+  }
+});
+
+test('a password shorter than the floor is treated as unset', () => {
+  const short = 'x'.repeat(MIN_PASSWORD_LENGTH - 1);
+  const r = authorise(short, short);
+  assert.equal(r.ok, false, 'a guessable password is not a password');
+  assert.equal(r.status, 503);
+
+  // And the boundary itself is allowed, so the floor is a floor and not an
+  // off-by-one that quietly rejects a valid 12-character password.
+  const atFloor = 'y'.repeat(MIN_PASSWORD_LENGTH);
+  assert.equal(authorise(atFloor, atFloor).ok, true);
+});
+
+test('a missing or non-string header cannot be mistaken for a password', () => {
+  // req.headers[...] is undefined when absent, and an array when the header is
+  // sent twice. Neither may be coerced into a comparison that could pass.
+  for (const provided of [undefined, null, 0, false, [], {}, [GOOD], Buffer.from(GOOD)]) {
+    const r = authorise(provided, GOOD);
+    assert.equal(r.ok, false, `${JSON.stringify(provided)} was accepted as a password`);
+    assert.equal(r.status, 401);
+  }
+});
+
+test('a password that is a prefix of the real one is refused', () => {
+  // Guards the shape of the comparison: hashing both sides means length tells
+  // an attacker nothing and a prefix is as wrong as anything else.
+  assert.equal(authorise(GOOD.slice(0, -1), GOOD).ok, false);
+  assert.equal(authorise(GOOD + 'x', GOOD).ok, false);
 });

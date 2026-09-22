@@ -9,20 +9,79 @@
  * add them up in a lambda, and it would put the definition of "a session" in a
  * different file from the table it is a fact about.
  *
- * THIS IS NOT THE THING KEEPING THE NUMBERS PRIVATE.
- *   Deployment protection is, set on the Vercel project, which covers this
- *   route and the page that calls it with one password and no code. This
- *   function assumes it is already behind that. It is still worth knowing that
- *   the function it calls returns counts and never rows, so the worst case if
- *   protection is ever switched off is that someone reads aggregate traffic
- *   numbers, not that they read anybody's answers.
+ * THIS ROUTE IS THE THING KEEPING THE NUMBERS PRIVATE, AND IT HAS TO BE.
+ *   The original plan was Vercel's deployment password. That cannot work here:
+ *   deployment protection covers a WHOLE deployment, not a path, and this
+ *   deployment also serves bundle-quiz.html, which is the customer-facing embed
+ *   on homegym.sg and must stay public. Turning it on for production would have
+ *   taken the quiz down with it. Checked on the live project rather than
+ *   assumed: password protection was off, SSO covered only the generated
+ *   deployment URLs, and the production domain answered 200 to anyone.
+ *
+ *   So the lock moved to where the data actually is. insights.html is just
+ *   markup; leaking it costs nothing, because without this route it renders a
+ *   password prompt and no numbers. That is the whole point of protecting the
+ *   endpoint rather than the page.
  */
+
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+const PASSWORD = process.env.INSIGHTS_PASSWORD;
+
+/** Short enough to guess is the same as no password at all, given this runs on
+ *  a public URL with no rate limit worth the name. */
+export const MIN_PASSWORD_LENGTH = 12;
+
+/**
+ * Is this request allowed to read the numbers?
+ *
+ * FAILS CLOSED, AND THAT IS THE ENTIRE DESIGN CONSTRAINT.
+ *   Every other "not configured" path in this repo degrades to something
+ *   harmless. This one cannot: an unset INSIGHTS_PASSWORD that fell through to
+ *   "allow" would publish the client's traffic to anyone who typed the URL, and
+ *   it would do it silently, looking exactly like a working dashboard. So a
+ *   missing or too-short password refuses everybody, including whoever set it
+ *   up, which is a bad afternoon rather than a quiet leak.
+ *
+ * Compared as SHA-256 digests through timingSafeEqual: digests are always 32
+ * bytes, so this takes the same time for a wrong password of any length, and
+ * timingSafeEqual throws on a length mismatch if fed the raw strings.
+ */
+export function authorise(provided, expected = PASSWORD) {
+  if (!expected || expected.length < MIN_PASSWORD_LENGTH) {
+    return { ok: false, status: 503, error: 'not configured' };
+  }
+  if (typeof provided !== 'string' || !provided) {
+    return { ok: false, status: 401, error: 'password required' };
+  }
+  const a = createHash('sha256').update(provided).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b)
+    ? { ok: true }
+    : { ok: false, status: 401, error: 'wrong password' };
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  // A header, not a cookie: nothing here should be sent automatically by the
+  // browser on a cross-site request, which is what makes CSRF a non-topic.
+  const auth = authorise(req.headers['x-insights-key']);
+  if (!auth.ok) {
+    if (auth.status === 503) {
+      console.error('[insights] INSIGHTS_PASSWORD is unset or under ' + MIN_PASSWORD_LENGTH +
+                    ' characters; refusing every request rather than serving the numbers unprotected');
+      return res.status(503).json({
+        error: 'not configured',
+        hint: `Set INSIGHTS_PASSWORD (at least ${MIN_PASSWORD_LENGTH} characters) on the Vercel project, then redeploy.`
+      });
+    }
+    // The same body whether the password was absent or wrong. Telling an
+    // attacker which of the two they got is free information.
+    return res.status(401).json({ error: 'unauthorised' });
+  }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(503).json({
