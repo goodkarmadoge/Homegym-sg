@@ -48,16 +48,20 @@ test('smith + cable, 1.5x2, intermediate, $4,000 picks The Foldaway Beast', () =
 });
 
 test('a 1x1 room falls back gracefully and never throws', () => {
-  // Asks for Smith work, not barbell work, and the difference matters as of
-  // 21 Sep 2026. Bundle 16 is a folding bench and a pair of adjustable
-  // dumbbells, but the sheet's Function cell tags it "Barbell", and its
-  // 1 x 1.5m footprint reaches a 1x1 room once tier 2 relaxes the shorter side.
-  // So a power_rack query here now returns that bundle rather than the contact
-  // card. That is a SHEET DATA ERROR, not a matcher one: there is no dumbbell
-  // option in the Function vocabulary for whoever added the row to have picked
-  // instead. Correct the cell (and add the tag) and this test can go back to
-  // asking for 'power_rack'. Every other function still answers honestly.
-  const result = run({ functions: ['smith'], length: 1, depth: 1, persona: 'Convenience Seeker', budget: 2500 });
+  // BACK TO ASKING FOR power_rack, 22 Sep 2026, which is the whole point.
+  //
+  // This test asked for 'smith' for a day, with a comment explaining that it
+  // could not ask for 'power_rack' any more: bundle 16 is a folding bench and a
+  // pair of adjustable dumbbells, the sheet's Function cell tagged it as a rack
+  // because there was no other option in the vocabulary, and its 1 x 1.5 m
+  // footprint reaches a 1x1 room once tier 2 relaxes the shorter side. So asking
+  // to squat inside a rack in the smallest room we model returned a pair of
+  // dumbbells instead of the contact card.
+  //
+  // `free_weight` now exists and bundle 16 carries that instead, so the honest
+  // question works again: nothing in the catalogue is a rack that fits 1 x 1 m,
+  // and the right answer is to say so rather than to offer something else.
+  const result = run({ functions: ['power_rack'], length: 1, depth: 1, persona: 'Convenience Seeker', budget: 2500 });
   assert.notEqual(result.fallback, FALLBACK.NONE, 'must report that it fell back');
   assert.ok(Array.isArray(result.alternates), 'alternates must always be an array');
   // Nothing on earth fits 1x1, so this must be the contact card, not a fabricated bundle.
@@ -173,13 +177,13 @@ test('"no preference" makes the function axis stop discriminating', () => {
 });
 
 test('"all of the above" still ranks by how much a bundle covers', () => {
-  // The other shortcut is the opposite of neutral: selecting all six means the
+  // The other shortcut is the opposite of neutral: selecting all seven means the
   // bundle doing the most of them should score highest.
   const all = FUNCTION_OPTIONS.map((o) => o.tag);
   const three = functionScore(all, ['cable', 'smith', 'power_rack']);
   const one = functionScore(all, ['cable']);
   assert.ok(three > one, `expected broader to beat narrower, got ${three} vs ${one}`);
-  // No bundle covers all six, so nothing reaches full marks this way.
+  // No bundle covers all seven, so nothing reaches full marks this way.
   assert.ok(three < 1, `expected under 1, got ${three}`);
 });
 
@@ -202,6 +206,111 @@ test('personaScore is 1 for a bundle built for that persona and 0 otherwise', ()
   assert.equal(personaScore('guided/accountability user', ['Guided / Accountability User']), 1);
   assert.equal(personaScore(null, ['Convenience Seeker']), 0);
   assert.equal(personaScore('Convenience Seeker', []), 0);
+});
+
+// ── Every option on question one has to be answerable ──────────────────────
+
+// THIS IS THE GUARD ON A GENERATED FILE.
+//
+// src/quiz/sheet-data.js is rewritten every night from the Google Sheet, so a
+// tag that exists only because someone edited that file by hand disappears on
+// the next sync without a word. `free_weight` was added to question one on
+// 22 Sep 2026 and applied to bundles 3, 6, 7, 15 and 16 in exactly that way,
+// pending the sheet's own Function column being corrected to match.
+//
+// If the sheet comes back without it, this fails. The sync workflow runs
+// `npm run check` before it commits, so the failure stops the push rather than
+// reaching a customer, and the quiz keeps serving the last good data. Without
+// this test the option would simply go quiet: still offered on question one,
+// still tickable, carried by nothing, so every visitor who picked it would be
+// told we do not build it.
+test('every option on question one is carried by at least one bundle', () => {
+  for (const o of FUNCTION_OPTIONS) {
+    assert.ok(
+      BUNDLES.some((b) => b.functions.includes(o.tag)),
+      `nothing carries "${o.tag}", so ticking "${o.label}" can only ever produce a no-match. ` +
+      'If the nightly sheet sync caused this, the sheet\'s Function column has lost the tag; ' +
+      'see README.md, "The free-weight split".'
+    );
+  }
+});
+
+test('no bundle carries a tag question one cannot offer', () => {
+  const offered = new Set(FUNCTION_OPTIONS.map((o) => o.tag));
+  for (const b of BUNDLES) {
+    for (const fn of b.functions) {
+      assert.ok(offered.has(fn), `bundle ${b.id} carries "${fn}", which nothing on question one can select`);
+    }
+  }
+});
+
+// ── Saying so when we cannot answer the question ───────────────────────────
+
+test('a bundle covering nothing that was asked for reports a gap', () => {
+  // A 1 x 1.5 m room rules out The Fast Track (1.6 x 2.0 m), the only machine
+  // circuit in the catalogue. The ladder still returns something real, which is
+  // right, but the result has to admit what it could not do.
+  const r = run({ functions: ['multigym'], length: 1, depth: 1.5, persona: 'Convenience Seeker', budget: 2500 });
+  assert.ok(r.primary, 'the ladder should still produce a bundle');
+  assert.ok(!r.primary.functions.includes('multigym'), 'this case only means something if the answer misses');
+  assert.equal(r.gaps.length, 1);
+  assert.equal(r.gaps[0].fn, 'multigym');
+  assert.equal(r.gaps[0].blocked, 'space', 'the room is what rules it out, not the money');
+  assert.equal(r.gaps[0].smallest.name, 'The Fast Track', 'the page quotes this one back at them');
+});
+
+test('a budget too small for the only smart machine reports a budget gap', () => {
+  // The Silent Operator is the only `smart` bundle and costs $5,899. It fits a
+  // 2 x 2 m room, so space is not the obstacle here and the message must not
+  // claim it is.
+  const r = run({ functions: ['smart'], length: 2, depth: 2, persona: 'Convenience Seeker', budget: 2500 });
+  assert.equal(r.gaps.length, 1);
+  assert.equal(r.gaps[0].fn, 'smart');
+  assert.equal(r.gaps[0].blocked, 'budget');
+  assert.equal(r.gaps[0].cheapest.price, 5899);
+});
+
+test('a bundle that does everything asked reports no gaps', () => {
+  const r = run({ functions: ['power_rack', 'cable'], length: 3, depth: 3, persona: 'Serious Strength Trainer', budget: 7500 });
+  assert.deepEqual(r.gaps, [], 'a clean match must not apologise for anything');
+});
+
+test('"no preference" can never produce a gap', () => {
+  // The sentinel means the visitor declined to use this axis. There is nothing
+  // they asked for, so there is nothing we can have failed to give them.
+  for (const length of [1, 2, 3]) {
+    for (const budget of [2500, 5000, 7500]) {
+      const r = run({ functions: [ANY_FUNCTION], length, depth: 1.5, persona: 'Convenience Seeker', budget });
+      assert.deepEqual(r.gaps, [], `sentinel produced a gap at ${length}m / $${budget}`);
+    }
+  }
+});
+
+test('a partly-covered ask reports only the part that is missing', () => {
+  const r = run({ functions: ['cable', 'smart'], length: 2, depth: 2, persona: 'Convenience Seeker', budget: 3000 });
+  assert.ok(r.primary.functions.includes('cable'), 'cable is reachable at this size and price');
+  assert.equal(r.gaps.length, 1, 'only the unmet half should be reported');
+  assert.equal(r.gaps[0].fn, 'smart');
+});
+
+test('every gap names a real bundle to quote back at the customer', () => {
+  // The banner prints smallest.name and cheapest.price. A gap reaching the page
+  // with either one missing would render the word "undefined" at a customer.
+  for (const tag of FUNCTION_OPTIONS.map((o) => o.tag)) {
+    for (const length of [1, 1.5, 2, 2.5, 3]) {
+      for (const budget of [2500, 4000, 7500]) {
+        const r = run({ functions: [tag], length, depth: 1.5, persona: 'Convenience Seeker', budget });
+        for (const g of r.gaps) {
+          assert.ok(g.smallest && g.smallest.name, `gap on ${g.fn} has no smallest bundle`);
+          assert.ok(g.cheapest && typeof g.cheapest.price === 'number', `gap on ${g.fn} has no cheapest price`);
+          assert.ok(
+            ['space', 'budget', 'both', 'combination'].includes(g.blocked),
+            `gap on ${g.fn} has no reason the banner knows how to phrase: "${g.blocked}"`
+          );
+        }
+      }
+    }
+  }
 });
 
 // ── Contract guarantees ────────────────────────────────────────────────────

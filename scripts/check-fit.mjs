@@ -107,6 +107,12 @@ if (unknown.length) {
   console.log('');
 }
 
+// The convention this whole report measures against, stated where whoever reads
+// the report will see it. Confirmed with the client 22 Sep 2026: the sheet's
+// Size column is the floor the EQUIPMENT stands on, not the room it is used in.
+// Read the other way, every TIGHT line above would be a failure rather than a
+// note, and bundle 16's 1 x 1.5 m would be claiming a corner to train in.
+console.log('The Size column is the floor the equipment occupies, not the room it is used in.');
 console.log('Reminder: this checks the anchor machine only. Every bundle above with a');
 console.log('bench and plates in it needs floor for those too, and for a person to lift.');
 

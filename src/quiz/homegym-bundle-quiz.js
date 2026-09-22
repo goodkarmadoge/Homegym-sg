@@ -41,7 +41,7 @@ const TOTAL_STEPS = 4;
  *
  * UI ONLY, and unlike ANY_FUNCTION it is never stored. "All of the above" is a
  * shortcut for ticking the six real boxes, not a seventh answer, so its own
- * checked state is DERIVED from whether all six are selected. That is what
+ * checked state is DERIVED from whether all seven are selected. That is what
  * makes ticking the six by hand light it up, and unticking one turn it off,
  * with no extra state to keep in step.
  */
@@ -235,7 +235,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
      mount, so a bundle added to the spreadsheet appears without a redeploy.
      Without it the quiz uses the committed snapshot, which is the data that
-     every test and the 112,875-combination sweep actually checked. */
+     every test and the 170,625-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
   get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }
@@ -899,7 +899,7 @@ class HomegymBundleQuiz extends HTMLElement {
       <div class="quiz quiz--result">
         <div class="view">
         ${this.banner(res)}
-        <p class="eyebrow">Your match</p>
+        <p class="eyebrow">${this.resultEyebrow(res)}</p>
         <${this._h(0)} class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</${this._h(0)}>
         <p class="result__tagline">${esc(bundle.tagline)}</p>
 
@@ -1160,8 +1160,100 @@ class HomegymBundleQuiz extends HTMLElement {
     if (next) next.hidden = strip.scrollLeft >= end - 1;
   }
 
-  /** Honest banner for each rung of the fallback ladder. */
+  /**
+   * The label above the bundle name.
+   *
+   * "Your match" is a claim, and when the banner immediately above it has just
+   * said we have no match, it is a claim the page has already contradicted.
+   * Reading the two together, "NO EXACT MATCH / YOUR MATCH / THE FAST TRACK"
+   * takes the admission back in the next breath.
+   *
+   * Only demoted when the bundle covers NOTHING that was asked for. A partial
+   * match is still a match, and the banner beneath it is already specific about
+   * which part is missing.
+   */
+  resultEyebrow(res) {
+    const gaps = Array.isArray(res.gaps) ? res.gaps : [];
+    const asked = this.state.answers.functions.filter((f) => f !== ANY_FUNCTION);
+    return gaps.length && gaps.length === asked.length ? 'Closest we have' : 'Your match';
+  }
+
+  /**
+   * One sentence naming a thing the customer asked for that this bundle does
+   * not do, the constraint that ruled it out, and the figure that would have
+   * changed the answer.
+   *
+   * The figure is the part that matters. "We don't have a machine circuit that
+   * fits" invites the reply "well, what would?", and the visitor is not in a
+   * position to ask. Quoting the smallest one we make, with its footprint, turns
+   * a dead end into something they can act on: measure again, or stop looking.
+   */
+  gapSentence(g) {
+    const what = (FUNCTION_SHORT[g.fn] || g.fn).toLowerCase();
+    const dims = (b) => `${b.footprint.length.toFixed(1)} &times; ${b.footprint.depth.toFixed(1)} m`;
+
+    if (g.blocked === 'none') {
+      return `We don&rsquo;t currently build anything with ${esc(what)}.`;
+    }
+    if (g.blocked === 'space') {
+      return `Nothing we build with ${esc(what)} fits your space. The smallest is ${esc(g.smallest.name)}, ` +
+             `which needs ${dims(g.smallest)}.`;
+    }
+    if (g.blocked === 'budget') {
+      return `Nothing we build with ${esc(what)} comes in under your budget. The cheapest is ` +
+             `${esc(g.cheapest.name)}, at ${this.money(g.cheapest.price)}.`;
+    }
+    if (g.blocked === 'both') {
+      return `Nothing we build with ${esc(what)} fits both your space and your budget. The smallest is ` +
+             `${esc(g.smallest.name)} at ${dims(g.smallest)}, and the cheapest is ${this.money(g.cheapest.price)}.`;
+    }
+    // 'combination': each gate is clearable on its own, just not by one bundle.
+    return `We do build ${esc(what)}, but nothing that fits your space and your budget at the same time.`;
+  }
+
+  /**
+   * Honest banner for each rung of the fallback ladder, and for the case the
+   * ladder had no rung for.
+   *
+   * TWO DIFFERENT APOLOGIES, AND THEY ARE NOT INTERCHANGEABLE.
+   *   A fallback rung means "we stretched a constraint to reach the right
+   *   machine" — the bundle still does what was asked, it is just over budget or
+   *   needs half a metre more. That is a footnote, and "Nearest match" covers it.
+   *
+   *   A gap means "we could not reach the right machine at all" and the bundle
+   *   shown does something else. Dressing that up as a near miss is the thing
+   *   this banner exists to stop: before 22 Sep 2026, tier 2b returned
+   *   FALLBACK.NONE, so someone who asked for app-guided digital resistance and
+   *   was shown a leg press got no banner whatsoever, and nothing on the page
+   *   admitted the substitution. Measured across the sweep space that was 58.7%
+   *   of visitors who asked for smart resistance alone.
+   *
+   *   So gaps are checked FIRST and get their own label. When the bundle covers
+   *   nothing that was asked for, the label stops claiming to be a match.
+   */
   banner(res) {
+    const gaps = Array.isArray(res.gaps) ? res.gaps : [];
+    const asked = this.state.answers.functions.filter((f) => f !== ANY_FUNCTION);
+
+    if (gaps.length) {
+      // Covers none of it, versus covers some of it. The first is a different
+      // message, not a stronger adjective on the same one.
+      const coversNothing = gaps.length === asked.length;
+      const label = coversNothing ? 'No exact match' : 'Partial match';
+      const lead = coversNothing
+        ? 'Here&rsquo;s the closest we have.'
+        : 'It covers the rest of what you asked for.';
+
+      // Every unmet function gets its own sentence. Picking one to report would
+      // mean choosing which half of the answer to hide, and someone who ticked
+      // two boxes we cannot fill is exactly the person owed both reasons.
+      return `<div class="banner" role="status">` +
+             `<span class="banner__label">${label}</span>` +
+             gaps.map((g) => `<p class="banner__line">${this.gapSentence(g)}</p>`).join('') +
+             `<p class="banner__line">${lead}</p>` +
+             `</div>`;
+    }
+
     if (!res.fallback) return '';
     const over = res.debug?.overBudgetBy || 0;
     const text =
@@ -1425,6 +1517,34 @@ class HomegymBundleQuiz extends HTMLElement {
       const top = this.getBoundingClientRect().top;
       if (top < 0 || top > (window.innerHeight || 0) * 0.5) {
         this.scrollIntoView({ block: 'start', behavior: 'auto' });
+
+        // CHECK THAT IT WORKED, because sometimes it does not.
+        //
+        // scrollIntoView is the right call to make first: it walks every
+        // scrolling ancestor, so it still works when a host has dropped the quiz
+        // inside an overflow container rather than on the page itself. But it is
+        // allowed to decide there is nothing to do, and it makes that decision
+        // from the viewport. Measured in a preview pane reporting
+        // window.innerHeight as 0, it returned having moved nothing while an
+        // explicit scroll to the same place worked. Silently doing nothing is
+        // the exact failure this whole method exists to prevent, so it does not
+        // get to fail quietly a second time.
+        //
+        // TEST THE GOAL, NOT A SIDE EFFECT. The obvious check is whether
+        // scrollY changed, and it is wrong: render() has just swapped the view
+        // for one of a different height, which shifts scrollY on its own. That
+        // reads as "it worked" when nothing has moved deliberately at all,
+        // measured here as a 16px drift that suppressed the fallback. Asking
+        // where the top of the quiz actually ended up cannot be fooled that way.
+        const after = this.getBoundingClientRect().top;
+        if (Math.abs(after) > 4) {
+          // The element's own document position, not 0. Those coincide only when
+          // the quiz is at the top of the page; on a host with a masthead and
+          // half a landing page above it, scrollTo(0, 0) would fling the visitor
+          // past content they were reading. That is a different bug, not a fix
+          // for this one.
+          window.scrollTo(0, Math.max(0, (window.scrollY || 0) + after));
+        }
       }
     } catch { /* older engines without smooth scrolling */ }
   }
@@ -1515,6 +1635,10 @@ class HomegymBundleQuiz extends HTMLElement {
     this._shouldFocus = true;
     this._save();
     this.render();
+    // Leaving the result is a bigger jump than stepping between questions: the
+    // result view is the tallest in the quiz, so whoever clicked this is a long
+    // way down a page that is about to become a short one.
+    this._scrollToTop();
     this.emit('quiz:step', { step: TOTAL_STEPS, answers: this._answersOut() });
   }
 
@@ -1523,6 +1647,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this.state.step = 1;
     this._shouldFocus = true;
     this.render();
+    this._scrollToTop();
     this.emit('quiz:step', { step: 1, answers: this._answersOut() });
   }
 
@@ -1537,6 +1662,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this._clearStorage();
     this._shouldFocus = true;
     this.render();
+    this._scrollToTop();
     this.emit('quiz:restart', { completedBefore });
   }
 
@@ -1555,6 +1681,14 @@ class HomegymBundleQuiz extends HTMLElement {
     this.state.shownBundleId = id;
     this._shouldFocus = true;
     this.render();
+    // THE SWAP HAPPENS ABOVE THE FOLD AND THE READER IS BELOW IT.
+    // "See this bundle" sits at the bottom of the other-bundles strip, which is
+    // most of a screen below the bundle name, the photograph and the price. The
+    // new bundle renders into the top of the view, so without this the whole
+    // answer changes off-screen and the visitor is left looking at the strip
+    // they just clicked, apparently unchanged. Same reasoning, and the same
+    // call, as stepping between questions.
+    this._scrollToTop();
     this.emit('quiz:alternate-view', { fromBundleId: from, toBundleId: id });
   }
 
@@ -1651,7 +1785,7 @@ class HomegymBundleQuiz extends HTMLElement {
     }
 
     // A salesperson reads this message. "_any" would be noise, and a list of
-    // all six reads as a demand rather than the shrug it actually was, so both
+    // all seven reads as a demand rather than the shrug it actually was, so both
     // shortcuts are spelled out in the words the visitor saw on screen.
     const fns = a.functions.includes(ANY_FUNCTION)
       ? 'No preference'

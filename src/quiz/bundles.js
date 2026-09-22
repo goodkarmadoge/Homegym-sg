@@ -397,8 +397,21 @@ export const BUNDLE_COPY = {
   // ───────────────────────────────────────────────────────────────────────────
 
   11: {
+    // THE LEG PRESS ON THIS ONE IS AN ACCESSORY, NOT A STATION.
+    //
+    // The sheet tags bundle 11 `leg_press` and the anchor is the Vigor Titan G9,
+    // which takes a leg press as a bolt-on attachment. Confirmed with the client
+    // on 22 Sep 2026: the capability is real, so the tag stays. What is NOT true
+    // is that a leg press arrives in this box. The three products priced below
+    // are the G9, a bench and a set of plates.
+    //
+    // So the movement is listed, and it is listed as the add-on it is. A visitor
+    // who ticks "Leg press & hack squat" and is shown this bundle is reading
+    // these words to find out whether they can do the thing they asked for, and
+    // a bare "Leg press" here would answer yes to a question they meant more
+    // literally than that. Bundles 3 and 14 include one outright and say so.
     name: "The Full House",
-    trains: ["Squat", "Bench press", "Deadlift", "Smith press", "Lat pulldown", "Cable rows", "Chin-ups", "Dips", "Landmine"]
+    trains: ["Squat", "Bench press", "Deadlift", "Smith press", "Lat pulldown", "Cable rows", "Chin-ups", "Dips", "Landmine", "Leg press (add-on)"]
   },
   12: {
     name: "The Connected Cube",
@@ -417,10 +430,25 @@ export const BUNDLE_COPY = {
     trains: ["Squat", "Bench press", "Overhead press", "Deadlift", "Barbell row"]
   },
   16: {
-    // The sheet tags this bundle "Barbell", but it holds a folding bench and a
-    // pair of adjustable dumbbells: no barbell, no rack. The trains list below
-    // describes what is actually in the box. See the note in README about the
-    // Function cell for bundle 16 needing correcting in the sheet.
+    // FIXED 22 SEP 2026, AND THE FIX IS NOT FINISHED UNTIL THE SHEET IS EDITED.
+    //
+    // This bundle is a folding bench and a pair of adjustable dumbbells: no
+    // barbell, no rack. It was tagged `power_rack` anyway, because that tag used
+    // to mean free weights as well as the frame and there was nothing else to
+    // put. So it introduced itself to customers as "Barbell in 1 x 1.5 m" and
+    // was offered to people who had asked to squat inside a rack.
+    //
+    // Question one now has a separate `free_weight` option and this bundle
+    // carries that instead. src/quiz/sheet-data.js has been corrected by hand so
+    // the quiz is right today, but THAT FILE IS GENERATED: the nightly sync
+    // rewrites it from the Google Sheet, so the sheet's Function cell for
+    // bundle 16 has to say "Free Weight" or this reverts. README.md, "The
+    // free-weight split", lists every cell that needs changing.
+    //
+    // The guard is in test/matcher.test.mjs: every option on question one must
+    // be carried by at least one bundle. If the sheet comes back without it the
+    // sync fails its own check step and refuses to push, and the quiz keeps
+    // serving the last good data rather than an option nothing can answer.
     name: "The Dumbbell Corner",
     trains: ["Dumbbell press", "Dumbbell flys", "Dumbbell rows", "Goblet squats", "Lunges", "Shoulder press", "Curls"]
   }
@@ -550,14 +578,34 @@ function autoPitch(products) {
     : `${last}, priced and linked below.`;
 }
 
-/** Step 1 options. `tag` is the value stored in answers.functions. */
+/**
+ * Step 1 options. `tag` is the value stored in answers.functions.
+ *
+ * POWER RACK AND FREE WEIGHT ARE TWO QUESTIONS, NOT ONE.
+ *   Until 22 Sep 2026 `power_rack` carried both: its help line read "Free-weight
+ *   barbell work in a rack", so a visitor who owned no rack and wanted a pair of
+ *   dumbbells had nothing to tick, and bundle 16, which is a bench and a pair of
+ *   dumbbells, had to be tagged "Power Rack" to be reachable at all.
+ *
+ *   Splitting them lets each option mean one thing. `power_rack` is now the
+ *   FRAME: uprights, J-cups, safeties, something to fail a rep inside.
+ *   `free_weight` is the LOOSE IRON: a bar and plates, or dumbbells. Most
+ *   bundles carry both tags, because a rack with nothing to load it is
+ *   furniture, and the two options are deliberately adjacent in the list so the
+ *   difference between them is read rather than guessed at.
+ *
+ *   The help lines do the separating and have to keep doing it. If one of them
+ *   drifts back to describing free weights "in a rack", the two options collapse
+ *   into each other again and the split has bought nothing.
+ */
 export const FUNCTION_OPTIONS = [
-  { tag: 'power_rack', label: 'Barbell lifts: squat, bench, deadlift', help: 'Free-weight barbell work in a rack' },
-  { tag: 'smith',      label: 'Guided pressing, safe to do solo',       help: 'Smith machine bar on fixed rails' },
-  { tag: 'cable',      label: 'Cable work: lat pulldown, rows, flys',  help: 'Dual weight-stack functional trainer' },
-  { tag: 'leg_press',  label: 'Leg press & hack squat',                 help: 'Dedicated leg press station' },
-  { tag: 'multigym',   label: 'Simple pin-loaded machine circuit',      help: 'One station, seated, easy to learn' },
-  { tag: 'smart',      label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }
+  { tag: 'power_rack',  label: 'Barbell lifts: squat, bench, deadlift',  help: 'A rack to lift inside, with safeties' },
+  { tag: 'free_weight', label: 'Free weight - barbell / dumbbell lifts', help: 'Loose barbell, plates or dumbbells' },
+  { tag: 'smith',       label: 'Guided pressing, safe to do solo',       help: 'Smith machine bar on fixed rails' },
+  { tag: 'cable',       label: 'Cable work: lat pulldown, rows, flys',   help: 'Dual weight-stack functional trainer' },
+  { tag: 'leg_press',   label: 'Leg press & hack squat',                 help: 'Dedicated leg press station' },
+  { tag: 'multigym',    label: 'Simple pin-loaded machine circuit',      help: 'One station, seated, easy to learn' },
+  { tag: 'smart',       label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }
 ];
 
 /**
@@ -583,7 +631,12 @@ export const PERSONA_OPTIONS = PERSONAS.map((p) => ({
 
 /** Short human labels for the "why this one" chips on the result view. */
 export const FUNCTION_SHORT = {
-  power_rack: 'Barbell',
+  // "Rack", not "Barbell", since 22 Sep 2026. This label is what autoTagline
+  // prints, and while power_rack meant both the frame and the iron, bundle 16
+  // introduced itself to customers as "Barbell in 1 x 1.5 m" while containing
+  // no barbell. The tag now means the frame, so the label has to say frame.
+  power_rack: 'Rack',
+  free_weight: 'Free weight',
   smith: 'Smith',
   cable: 'Cable',
   leg_press: 'Leg press',
