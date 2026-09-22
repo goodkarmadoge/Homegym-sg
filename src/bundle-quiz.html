@@ -145,6 +145,135 @@ homegym-bundle-quiz:not(:defined){min-height:620px}
 }());
 </script>
 
+<script>
+/* TELEMETRY COLLECTOR.
+   ─────────────────────────────────────────────────────────────────────────
+   Feeds the insights dashboard. Listens to the same seven events the bridge
+   above forwards to the host, batches them, and posts them to /api/collect on
+   this deployment, which writes them to Supabase. db/001_quiz_events.sql has
+   the table and the reasoning behind what it does and does not store.
+
+   SAME ORIGIN, ON PURPOSE. This page is always served from the deployment that
+   owns /api/collect, because being the src of an iframe is its whole job, so
+   the post is same-origin and there is no CORS preflight to go wrong on a
+   customer's connection. The endpoint still sends CORS headers, for the case
+   where someone embeds the COMPONENT on homegym.sg directly instead of framing
+   this page. That path does not load this script and reports nothing: a
+   collector for it belongs inside the bundle, and is not written yet.
+
+   IT MUST RUN BEFORE THE BUNDLE, for exactly the reason the comment above the
+   bridge gives: quiz:start fires while the element upgrades. scripts/verify.mjs
+   fails the build if this ends up below the bundle.
+
+   NOTHING HERE MAY BREAK THE QUIZ. Every call is wrapped, storage is treated as
+   something that can throw, and a dead endpoint costs a queued array and
+   nothing else. A quiz that broke because its analytics broke would be a worse
+   outcome than having no analytics at all. */
+(function () {
+  var ENDPOINT = '/api/collect';
+  var EVENTS = [
+    'quiz:start', 'quiz:step', 'quiz:complete',
+    'quiz:product-click', 'quiz:cta-click', 'quiz:alternate-view', 'quiz:restart'
+  ];
+
+  /* PER TAB, NOT PER PERSON, and that is the whole privacy posture in one
+     choice. sessionStorage dies with the tab, so this cannot join a visitor to
+     a second visit, to another device, or to the name and number they hand over
+     on WhatsApp a moment later. It exists to turn seven loose events into one
+     funnel row and is useless for anything else.
+
+     crypto.getRandomValues where it exists, because Math.random collides more
+     often than people expect once there is real traffic, and two visitors
+     sharing an id would silently merge two funnels into one. */
+  function newId() {
+    try {
+      var a = new Uint8Array(16);
+      crypto.getRandomValues(a);
+      return Array.prototype.map.call(a, function (b) {
+        return ('0' + b.toString(16)).slice(-2);
+      }).join('');
+    } catch (err) {
+      return String(Date.now()) + Math.random().toString(36).slice(2, 12);
+    }
+  }
+
+  var sessionId;
+  try {
+    sessionId = sessionStorage.getItem('hg-quiz-sid');
+    if (!sessionId) { sessionId = newId(); sessionStorage.setItem('hg-quiz-sid', sessionId); }
+  } catch (err) {
+    /* Private mode, blocked storage, a sandboxed frame. An in-memory id still
+       joins this page-load's events correctly, which is most of the value. */
+    sessionId = newId();
+  }
+
+  var queue = [];
+  var timer = null;
+
+  function send(useBeacon) {
+    if (!queue.length) return;
+    var body = JSON.stringify({ session_id: sessionId, events: queue.splice(0, 50) });
+
+    /* sendBeacon survives the page being closed, which a fetch does not: the
+       browser cancels in-flight requests on unload, and the most valuable event
+       in the set is the last one before someone leaves. It cannot report
+       success, which is why the endpoint never answers with an error status. */
+    if (useBeacon) {
+      try {
+        if (navigator.sendBeacon && navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' }))) return;
+      } catch (err) { /* fall through to fetch */ }
+    }
+    try {
+      fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body,
+        keepalive: true
+      }).catch(function () {});
+    } catch (err) { /* offline, blocked, CSP. Nothing to do and nothing to say. */ }
+  }
+
+  function flushSoon() {
+    if (timer) return;
+    /* Batched rather than one request per click. A visitor who opens four
+       product links would otherwise make four round trips from a phone on
+       mobile data, to record something nobody will read until tomorrow. */
+    timer = setTimeout(function () { timer = null; send(false); }, 2000);
+  }
+
+  EVENTS.forEach(function (name) {
+    document.addEventListener(name, function (e) {
+      var detail;
+      try {
+        detail = JSON.parse(JSON.stringify(e.detail == null ? {} : e.detail));
+      } catch (err) {
+        detail = {};
+      }
+      queue.push({ name: name, detail: detail });
+
+      /* quiz:complete is the conversion. Everything before it is funnel, and a
+         funnel that loses its last step has lost the number the rest is
+         measured against, so this one does not wait for the batch window. */
+      if (name === 'quiz:complete') {
+        if (timer) { clearTimeout(timer); timer = null; }
+        send(false);
+      } else {
+        flushSoon();
+      }
+    });
+  });
+
+  /* pagehide, not unload: unload is ignored on iOS and blocks the back-forward
+     cache everywhere else. visibilitychange catches the phone being locked or
+     the tab being switched away from and never returned to, which on mobile is
+     how most sessions actually end. */
+  window.addEventListener('pagehide', function () { send(true); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') send(true);
+  });
+}());
+</script>
+
 <script type="module" src="quiz/homegym-bundle-quiz.js"></script>
 
 <script>

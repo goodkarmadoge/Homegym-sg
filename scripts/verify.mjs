@@ -194,6 +194,84 @@ if (!existsSync(vercelPath)) {
   }
 }
 
+// ── The insights dashboard must stay unlinked ──────────────────────────────
+//
+// It reports the client's traffic, and it is protected by a password set on the
+// Vercel project rather than by anything in this repo. A link to it from a page
+// a customer can reach would not defeat that password, but it would put the URL
+// in front of everyone who reads the site, into browser history, into a
+// referrer header, and eventually into somebody's shared screenshot.
+//
+// Asked for explicitly on 22 Sep 2026: "ensure the URL for the metrics is not
+// linked in the customer-facing form". This is that requirement, enforced.
+//
+// Note the direction. This catches a link FROM a customer page TO the
+// dashboard. The dashboard linking back out would be harmless and is not what
+// this is about.
+const INTERNAL_PAGES = ['insights.html'];
+for (const p of PAGES) {
+  if (INTERNAL_PAGES.includes(p.file)) continue;
+  const path = join(OUT, p.file);
+  if (!existsSync(path)) continue;
+  const h = readFileSync(path, 'utf8');
+  for (const internal of INTERNAL_PAGES) {
+    if (h.includes(internal)) {
+      fail(
+        `${p.file}: mentions ${internal}, the internal dashboard, which must not be reachable ` +
+        'from anything customer-facing. Remove the link: that page is opened by URL, by people ' +
+        'who already have it'
+      );
+    }
+  }
+}
+
+// ── The telemetry collector must run before the quiz bundle ────────────────
+//
+// The same failure as the analytics bridge above, for the same reason:
+// quiz:start fires during element upgrade, so a collector registered after the
+// bundle records every step of the funnel except the one all the others are a
+// percentage of. The dashboard would then report a completion rate over a
+// denominator of zero, which reads as "nobody finishes" rather than as a bug.
+{
+  const quizPage = join(OUT, 'bundle-quiz.html');
+  if (existsSync(quizPage)) {
+    const page = readFileSync(quizPage, 'utf8');
+    const blocks = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1].trim());
+    // Found by something only the CODE can contain. The first version of this
+    // looked for "/api/collect", which is also the endpoint named in the
+    // comment above the collector explaining what it is for, so deleting the
+    // collector and leaving its documentation behind passed the check. Caught
+    // by trying it: the guard has to fail when the thing is genuinely gone, and
+    // the only way to know it does is to take the thing away and watch.
+    const collectorIdx = blocks.findIndex((b) => /navigator\.sendBeacon\(/.test(b) && /\/api\/collect/.test(b));
+    const bundleIdx = blocks.findIndex((b) => /customElements\.define/.test(b));
+
+    if (collectorIdx === -1) {
+      fail('bundle-quiz.html: the telemetry collector is missing, so the insights dashboard would record nothing');
+    } else if (bundleIdx !== -1 && collectorIdx > bundleIdx) {
+      fail('bundle-quiz.html: the telemetry collector runs after the quiz bundle, so it will miss quiz:start');
+    }
+
+    // The collector and the table share one event vocabulary, in two files that
+    // nothing else joins up. If they drift, Postgres rejects the unknown name
+    // at insert time under a CHECK constraint, the collector cannot see the
+    // rejection because it posts with sendBeacon, and the metric that event
+    // feeds quietly reads zero forever.
+    const sql = join(ROOT, 'db', '001_quiz_events.sql');
+    if (collectorIdx !== -1 && existsSync(sql)) {
+      const schema = readFileSync(sql, 'utf8');
+      const named = [...blocks[collectorIdx].matchAll(/'(quiz:[a-z-]+)'/g)].map((m) => m[1]);
+      const missing = [...new Set(named)].filter((n) => !schema.includes(`'${n}'`));
+      if (missing.length) {
+        fail(
+          `bundle-quiz.html: the collector sends ${missing.join(', ')}, which db/001_quiz_events.sql ` +
+          'does not allow. Postgres would reject those rows and the dashboard would read zero for them'
+        );
+      }
+    }
+  }
+}
+
 if (!existsSync(join(OUT, 'robots.txt'))) fail('robots.txt: missing');
 else if (!/Disallow: \//.test(readFileSync(join(OUT, 'robots.txt'), 'utf8')))
   fail('robots.txt: does not disallow crawling');

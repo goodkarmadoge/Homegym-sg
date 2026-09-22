@@ -1,0 +1,539 @@
+<title>Quiz Insights | HomeGym.sg</title>
+
+<style>
+/* INSIGHTS DASHBOARD. Internal, not customer-facing.
+   ─────────────────────────────────────────────────────────────────────────
+   NOT LINKED FROM ANYWHERE, AND THAT IS A REQUIREMENT, NOT AN OVERSIGHT.
+   Nothing in the customer-facing site points here: not the cover page, not the
+   quiz, not the teardown. scripts/verify.mjs fails the build if a link to this
+   page appears on any of them. The protection that actually matters is Vercel's
+   deployment password (README, "The insights dashboard"), but a URL that is
+   never published is a URL that never gets shared by accident either.
+
+   Visual language is index.html's, deliberately: near-black ground, hairline
+   borders, mono labels, "//" markers, HomeGym orange. It is a different job but
+   the same engagement, and a dashboard that looked like a stock admin template
+   would read as somebody else's tool.
+
+   CHART COLOUR IS COMPUTED, NOT CHOSEN.
+   Every chart here but one is a single series, so it is a magnitude and takes
+   one hue. Only "Bundles viewed" carries two series, and that pair was run
+   through the palette validator against this page's own surface rather than
+   picked by eye: #d96a03 / #008ac7, worst-case colour-blind separation dE 22.8
+   against a floor of 8, both inside the dark-mode lightness band. The site
+   accent (L 0.735) is too light for that band, which is why the bars are a
+   half-step darker than the buttons and headings around them. */
+:root{
+  --bg:        oklch(0.145 0 0);
+  --bg-deep:   oklch(0.112 0 0);
+  --bg-card:   oklch(0.175 0 0);
+  --fg:        oklch(0.985 0 0);
+  --fg-60:     oklch(1 0 0 / 0.60);
+  --fg-40:     oklch(1 0 0 / 0.40);
+  --fg-25:     oklch(1 0 0 / 0.25);
+  --line:      oklch(1 0 0 / 0.10);
+  --line-soft: oklch(1 0 0 / 0.055);
+  --accent:    oklch(0.735 0.175 52);
+
+  /* The two validated series colours. Named for the JOB, not the hue, so a
+     rebrand changes the value here and nothing downstream has to be reread. */
+  --series-matched:  #d96a03;
+  --series-explored: #008ac7;
+
+  --f-sans: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --f-mono: ui-monospace,"SF Mono","Cascadia Mono","Geist Mono","Roboto Mono",Menlo,monospace;
+  --gut:    clamp(1.15rem,4vw,3rem);
+}
+
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:var(--f-sans); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1140px;margin:0 auto;padding:var(--gut)}
+
+.mono{font-family:var(--f-mono);font-size:.72rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+.mark::before{content:"//";color:var(--accent);margin-right:.5em}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;
+     padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:28px}
+h1{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:300;letter-spacing:-0.03em;line-height:1.05;margin:6px 0 0}
+.top .sub{color:var(--fg-40);font-size:.85rem;margin-top:6px}
+
+/* Filters in one row above the charts, which is where people look for them. */
+.range{display:flex;gap:0;border:1px solid var(--line);background:var(--bg-deep)}
+.range button{
+  appearance:none;background:none;border:0;border-right:1px solid var(--line);
+  color:var(--fg-60);padding:9px 15px;cursor:pointer;
+  font-family:var(--f-mono);font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+}
+.range button:last-child{border-right:0}
+.range button[aria-pressed="true"]{background:var(--accent);color:#1a0c00}
+.range button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── Stat tiles ──────────────────────────────────────────────────────────── */
+/* A bare number, no plot. Four things that are each one fact, and a sparkline
+   on the one that has a shape worth seeing. */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+       background:var(--line-soft);border:1px solid var(--line);margin-bottom:34px}
+.tile{background:var(--bg-card);padding:20px}
+.tile .k{color:var(--fg-40);margin-bottom:10px}
+.tile .n{font-family:var(--f-mono);font-size:clamp(1.8rem,3.2vw,2.5rem);font-weight:700;
+         letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums}
+.tile .foot{color:var(--fg-40);font-size:.8rem;margin-top:8px}
+.spark{display:block;width:100%;height:34px;margin-top:12px;overflow:visible}
+
+section{margin-bottom:38px}
+h2{font-size:1.05rem;font-weight:600;letter-spacing:-0.01em;margin:0 0 4px}
+.lede{color:var(--fg-40);font-size:.85rem;margin:0 0 18px;max-width:64ch}
+
+/* ── Bars ────────────────────────────────────────────────────────────────── */
+.rows{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:minmax(120px,1.1fr) 3fr minmax(84px,auto);
+     gap:14px;align-items:center}
+.row .lab{color:var(--fg-60);font-size:.87rem;min-width:0;overflow-wrap:anywhere}
+/* Text wears text tokens. The bar beside it carries the identity. */
+.row .val{font-family:var(--f-mono);font-size:.82rem;font-weight:700;text-align:right;
+          font-variant-numeric:tabular-nums;color:var(--fg)}
+.row .val i{font-style:normal;color:var(--fg-40);font-weight:400}
+
+.track{position:relative;height:16px;background:var(--line-soft)}
+/* 4px rounded data-end, anchored to the baseline at the left. */
+.bar{position:absolute;inset:0 auto 0 0;border-radius:0 4px 4px 0;min-width:2px;
+     background:var(--series-matched);transition:width .35s cubic-bezier(.22,1,.36,1)}
+.bar--explored{background:var(--series-explored)}
+
+/* Two series on one row, split with a 2px gap of the surface colour so the
+   join between them never reads as a single mark. */
+.track--split{height:16px;display:flex;gap:2px;background:none}
+.track--split .seg{position:relative;height:100%;border-radius:0 4px 4px 0;min-width:0;
+                   transition:width .35s cubic-bezier(.22,1,.36,1)}
+.track--split .rest{flex:1 1 auto;background:var(--line-soft)}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:7px;color:var(--fg-60);font-size:.82rem}
+.swatch{width:11px;height:11px;border-radius:2px;flex:none}
+
+/* ── Funnel ──────────────────────────────────────────────────────────────── */
+.funnel .row{grid-template-columns:minmax(130px,1.1fr) 3fr minmax(96px,auto)}
+.drop{display:flex;justify-content:flex-end;gap:8px;align-items:center;
+      color:var(--fg-40);font-size:.76rem;font-family:var(--f-mono);
+      padding:1px 0 1px;margin-right:2px}
+/* The number this page exists to surface, so it is allowed to shout once it is
+   genuinely bad. Under a fifth leaving a screen is normal; over is not. */
+.drop.bad{color:#ff8b6b}
+.drop::before{content:"↓";opacity:.5}
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+.note{border:1px solid var(--line);background:var(--bg-card);padding:22px 24px;color:var(--fg-60)}
+.note h2{color:var(--fg);margin-bottom:8px}
+.note code{font-family:var(--f-mono);font-size:.82rem;background:var(--bg-deep);
+           padding:2px 6px;border:1px solid var(--line);overflow-wrap:anywhere}
+.note ol{margin:12px 0 0;padding-left:20px}
+.note li{margin-bottom:6px}
+
+/* ── Table view ──────────────────────────────────────────────────────────── */
+/* Identity is never colour alone, and a chart nobody can read with a screen
+   reader is a chart that excludes somebody. Every number above is also here. */
+details{border-top:1px solid var(--line);padding-top:18px}
+summary{cursor:pointer;color:var(--fg-60);font-size:.85rem}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.84rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line-soft)}
+th{color:var(--fg-40);font-family:var(--f-mono);font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+td.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+caption{text-align:left;color:var(--fg-60);font-size:.85rem;padding-bottom:8px}
+
+.foot-note{color:var(--fg-25);font-size:.78rem;margin-top:34px;
+           border-top:1px solid var(--line-soft);padding-top:16px;max-width:76ch}
+
+[hidden]{display:none !important}
+
+@media (prefers-reduced-motion:reduce){
+  .bar,.track--split .seg{transition:none}
+}
+@media (max-width:560px){
+  .row{grid-template-columns:1fr;gap:5px}
+  .row .val{text-align:left}
+  .drop{justify-content:flex-start}
+}
+</style>
+
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <p class="mono mark" style="color:var(--fg-40)">Internal</p>
+      <h1>Quiz insights</h1>
+      <p class="sub" id="sub">Loading&hellip;</p>
+    </div>
+    <div class="range" role="group" aria-label="Time range">
+      <button type="button" data-days="7">7 days</button>
+      <button type="button" data-days="30" aria-pressed="true">30 days</button>
+      <button type="button" data-days="90">90 days</button>
+    </div>
+  </div>
+
+  <div id="state" role="status"></div>
+
+  <main id="app" hidden>
+
+    <div class="tiles">
+      <div class="tile">
+        <p class="k mono">Sessions</p>
+        <p class="n" id="t-sessions">&mdash;</p>
+        <p class="foot" id="t-sessions-foot">people who opened the quiz</p>
+        <svg class="spark" id="spark" viewBox="0 0 300 34" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+      <div class="tile">
+        <p class="k mono">Reached a bundle</p>
+        <p class="n" id="t-done">&mdash;</p>
+        <p class="foot" id="t-rate">&mdash;</p>
+      </div>
+      <div class="tile">
+        <p class="k mono">Clicks</p>
+        <p class="n" id="t-clicks">&mdash;</p>
+        <p class="foot" id="t-clicks-foot">products, CTAs and other bundles</p>
+      </div>
+      <div class="tile">
+        <p class="k mono">CTA taps</p>
+        <p class="n" id="t-cta">&mdash;</p>
+        <p class="foot" id="t-cta-foot">&mdash;</p>
+      </div>
+    </div>
+
+    <section class="funnel">
+      <h2>Screen dropoff</h2>
+      <p class="lede">How many sessions reached each screen. The figure under each bar is
+        the share of people who got that far and went no further.</p>
+      <div class="rows" id="funnel"></div>
+    </section>
+
+    <section>
+      <h2>CTA buttons</h2>
+      <p class="lede">Taps on each call to action, and what share of the people who reached
+        a bundle tapped it.</p>
+      <div class="rows" id="cta"></div>
+    </section>
+
+    <section>
+      <h2>Bundles viewed</h2>
+      <p class="lede">Which bundles people actually see. <b>Matched</b> is what the quiz chose
+        for them; <b>explored</b> is a bundle they opened themselves from the alternates strip,
+        which is the visitor quietly disagreeing with the match.</p>
+      <ul class="legend">
+        <li><span class="swatch" style="background:var(--series-matched)"></span>Matched to them</li>
+        <li><span class="swatch" style="background:var(--series-explored)"></span>Explored themselves</li>
+      </ul>
+      <div class="rows" id="bundles"></div>
+    </section>
+
+    <section id="products-section">
+      <h2>Product links opened</h2>
+      <p class="lede">Clicks through to a product page from inside a bundle.</p>
+      <div class="rows" id="products"></div>
+    </section>
+
+    <details>
+      <summary>Show every number as a table</summary>
+      <div id="tables"></div>
+    </details>
+
+    <p class="foot-note" id="privacy"></p>
+  </main>
+</div>
+
+<!-- "Bundle 14" and "tinytitan" are how the DATA talks about itself, not how a
+     person does, and a dashboard that made its reader translate its own labels
+     in their head would be doing half a job. scripts/build.mjs replaces the {}
+     below with the real names, read from the same src/quiz/bundles.js the quiz
+     is built from, so the two can never disagree about what bundle 14 is called.
+
+     Injected rather than imported: the quiz bundle is a side-effecting script
+     that registers a custom element, not a module with exports, so importing it
+     here would boot an entire quiz off-screen to read a few dozen strings. An
+     empty map is a valid state and every row falls back to its raw id. -->
+<script id="quiz-names" type="application/json">{}</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var els = {
+    state: document.getElementById('state'),
+    app: document.getElementById('app'),
+    sub: document.getElementById('sub'),
+    funnel: document.getElementById('funnel'),
+    cta: document.getElementById('cta'),
+    bundles: document.getElementById('bundles'),
+    products: document.getElementById('products'),
+    productsSection: document.getElementById('products-section'),
+    tables: document.getElementById('tables'),
+    spark: document.getElementById('spark'),
+    privacy: document.getElementById('privacy')
+  };
+
+  var NAMES = { bundles: {}, products: {} };
+  try {
+    var parsed = JSON.parse(document.getElementById('quiz-names').textContent) || {};
+    NAMES.bundles = parsed.bundles || {};
+    NAMES.products = parsed.products || {};
+  } catch (err) { /* names are a nicety, not a dependency */ }
+
+  var bundleName = function (id) { return NAMES.bundles[id] || ('Bundle ' + id); };
+  var productName = function (id) { return NAMES.products[id] || id; };
+
+  var days = 30;
+
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var num = function (n) { return (n || 0).toLocaleString('en-SG'); };
+  var pct = function (a, b) { return !b ? '0%' : Math.round((a / b) * 100) + '%'; };
+
+  /* A label the client would recognise. The quiz's own vocabulary is internal
+     ("book-visit", "add-to-cart"), and a dashboard that made someone translate
+     its own labels in their head would be doing half a job. */
+  var CTA_LABELS = {
+    'whatsapp':    'Send to a specialist',
+    'advice':      'Ask us for advice',
+    'book-visit':  'Schedule a visit',
+    'add-to-cart': 'Add to cart'
+  };
+
+  function bar(label, value, max, valueText, cls) {
+    var w = max > 0 ? Math.max(0.6, (value / max) * 100) : 0;
+    return '<div class="row">' +
+             '<div class="lab">' + esc(label) + '</div>' +
+             '<div class="track"><div class="bar ' + (cls || '') + '" style="width:' + w.toFixed(1) + '%"></div></div>' +
+             '<div class="val">' + valueText + '</div>' +
+           '</div>';
+  }
+
+  /* ── Screen dropoff ────────────────────────────────────────────────────── */
+  function renderFunnel(funnel) {
+    var start = (funnel[0] && funnel[0].sessions) || 0;
+    var html = '';
+    funnel.forEach(function (s, i) {
+      html += bar(
+        s.screen, s.sessions, start,
+        num(s.sessions) + ' <i>' + pct(s.sessions, start) + '</i>'
+      );
+      var next = funnel[i + 1];
+      if (next) {
+        var lost = s.sessions - next.sessions;
+        // Only worth a line when somebody actually left.
+        if (lost > 0) {
+          var share = s.sessions ? lost / s.sessions : 0;
+          html += '<div class="drop' + (share >= 0.2 ? ' bad' : '') + '">' +
+                    num(lost) + ' left (' + Math.round(share * 100) + '%)' +
+                  '</div>';
+        }
+      }
+    });
+    els.funnel.innerHTML = html;
+  }
+
+  /* ── CTAs ──────────────────────────────────────────────────────────────── */
+  function renderCta(cta, opportunities) {
+    if (!cta.length) {
+      els.cta.innerHTML = '<p class="lede">No CTA taps yet in this window.</p>';
+      return;
+    }
+    var max = Math.max.apply(null, cta.map(function (c) { return c.clicks; }));
+    els.cta.innerHTML = cta.map(function (c) {
+      return bar(
+        CTA_LABELS[c.action] || c.action,
+        c.clicks, max,
+        num(c.clicks) + ' <i>' + pct(c.clicks, opportunities) + '</i>'
+      );
+    }).join('');
+  }
+
+  /* ── Bundles ───────────────────────────────────────────────────────────── */
+  /* Two series, so both are labelled in the legend AND written out in the value
+     column: the colours separate them at a glance, the numbers settle it. */
+  function renderBundles(bundles) {
+    if (!bundles.length) {
+      els.bundles.innerHTML = '<p class="lede">No bundles have been shown yet in this window.</p>';
+      return;
+    }
+    var max = Math.max.apply(null, bundles.map(function (b) { return b.matched + b.explored; }));
+    els.bundles.innerHTML = bundles.map(function (b) {
+      var name = bundleName(b.bundle_id);
+      var mw = max > 0 ? (b.matched / max) * 100 : 0;
+      var ew = max > 0 ? (b.explored / max) * 100 : 0;
+      return '<div class="row">' +
+               '<div class="lab">' + esc(name) + '</div>' +
+               '<div class="track track--split">' +
+                 (b.matched ? '<div class="seg" style="width:' + mw.toFixed(1) + '%;background:var(--series-matched)"></div>' : '') +
+                 (b.explored ? '<div class="seg" style="width:' + ew.toFixed(1) + '%;background:var(--series-explored)"></div>' : '') +
+                 '<div class="rest"></div>' +
+               '</div>' +
+               '<div class="val">' + num(b.matched) + ' <i>+' + num(b.explored) + '</i></div>' +
+             '</div>';
+    }).join('');
+  }
+
+  function renderProducts(products) {
+    if (!products.length) { els.productsSection.hidden = true; return; }
+    els.productsSection.hidden = false;
+    var max = Math.max.apply(null, products.map(function (p) { return p.clicks; }));
+    els.products.innerHTML = products.map(function (p) {
+      return bar(productName(p.product_id), p.clicks, max, num(p.clicks));
+    }).join('');
+  }
+
+  /* ── Sparkline ─────────────────────────────────────────────────────────── */
+  /* Sessions per day. Gaps are filled with zero here rather than in SQL, so a
+     quiet Sunday reads as a dip rather than vanishing and shortening the line. */
+  function renderSpark(daily) {
+    if (!daily.length) { els.spark.innerHTML = ''; return; }
+    var byDay = {};
+    daily.forEach(function (d) { byDay[d.day] = d.sessions; });
+
+    var end = new Date(daily[daily.length - 1].day + 'T00:00:00Z');
+    var pts = [];
+    for (var i = days - 1; i >= 0; i--) {
+      var d = new Date(end.getTime() - i * 86400000);
+      pts.push(byDay[d.toISOString().slice(0, 10)] || 0);
+    }
+    var max = Math.max.apply(null, pts) || 1;
+    var step = pts.length > 1 ? 300 / (pts.length - 1) : 300;
+    var path = pts.map(function (v, i) {
+      return (i ? 'L' : 'M') + (i * step).toFixed(1) + ' ' + (32 - (v / max) * 30).toFixed(1);
+    }).join(' ');
+
+    els.spark.innerHTML =
+      '<path d="' + path + '" fill="none" stroke="var(--series-matched)" stroke-width="2" ' +
+      'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+  }
+
+  /* ── Table view ────────────────────────────────────────────────────────── */
+  function table(caption, head, rows) {
+    return '<table><caption>' + esc(caption) + '</caption><thead><tr>' +
+      head.map(function (h, i) { return '<th' + (i ? ' class="n"' : '') + '>' + esc(h) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr>' + r.map(function (c, i) {
+          return i ? '<td class="n">' + esc(c) + '</td>' : '<td>' + esc(c) + '</td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  function renderTables(d) {
+    var start = (d.funnel[0] && d.funnel[0].sessions) || 0;
+    els.tables.innerHTML =
+      table('Screen dropoff', ['Screen', 'Sessions', 'Share of starts'],
+        d.funnel.map(function (s) { return [s.screen, num(s.sessions), pct(s.sessions, start)]; })) +
+      table('CTA buttons', ['Button', 'Taps', 'Of those who saw a bundle'],
+        d.cta.map(function (c) {
+          return [CTA_LABELS[c.action] || c.action, num(c.clicks), pct(c.clicks, d.cta_opportunities)];
+        })) +
+      table('Bundles viewed', ['Bundle', 'Matched', 'Explored'],
+        d.bundles.map(function (b) {
+          return [bundleName(b.bundle_id), num(b.matched), num(b.explored)];
+        })) +
+      table('Product links opened', ['Product', 'Clicks'],
+        d.product_clicks.map(function (p) { return [productName(p.product_id), num(p.clicks)]; }));
+  }
+
+  /* ── Render ────────────────────────────────────────────────────────────── */
+  function render(d) {
+    var start = (d.funnel[0] && d.funnel[0].sessions) || 0;
+    var done = (d.funnel[d.funnel.length - 1] && d.funnel[d.funnel.length - 1].sessions) || 0;
+    var clicks = (d.clicks['quiz:product-click'] || 0) +
+                 (d.clicks['quiz:cta-click'] || 0) +
+                 (d.clicks['quiz:alternate-view'] || 0);
+    var ctaTotal = d.cta.reduce(function (t, c) { return t + c.clicks; }, 0);
+
+    document.getElementById('t-sessions').textContent = num(start);
+    document.getElementById('t-done').textContent = num(done);
+    document.getElementById('t-rate').textContent = pct(done, start) + ' of sessions';
+    document.getElementById('t-clicks').textContent = num(clicks);
+    document.getElementById('t-cta').textContent = num(ctaTotal);
+    document.getElementById('t-cta-foot').textContent = pct(ctaTotal, done) + ' of people who saw a bundle';
+
+    renderFunnel(d.funnel);
+    renderCta(d.cta, d.cta_opportunities);
+    renderBundles(d.bundles);
+    renderProducts(d.product_clicks);
+    renderSpark(d.daily);
+    renderTables(d);
+
+    els.privacy.textContent =
+      'Counted from ' + num(d.total_events) + ' quiz events over the last ' + d.days + ' days. ' +
+      'Sessions are per browser tab and carry no IP address, no device details and nothing ' +
+      'that identifies a person, so two visits by the same customer count as two sessions.';
+
+    var when = new Date(d.generated_at);
+    els.sub.textContent = 'Last ' + d.days + ' days · read ' +
+      when.toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function showNote(html) { els.state.innerHTML = '<div class="note">' + html + '</div>'; }
+
+  function load() {
+    els.state.innerHTML = '<div class="note">Reading&hellip;</div>';
+    els.app.hidden = true;
+
+    fetch('/api/insights?days=' + days, { headers: { accept: 'application/json' } })
+      .then(function (r) {
+        return r.json().then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          if (res.status === 503) {
+            showNote('<h2>Not connected yet</h2><p>' + esc(res.body.hint || '') + '</p>');
+          } else {
+            showNote('<h2>Could not read the numbers</h2><p>The database did not answer ' +
+                     '(' + esc(res.body.error || res.status) + '). The quiz is unaffected: it keeps ' +
+                     'recording, and this page will catch up once the connection is back.</p>');
+          }
+          return;
+        }
+
+        var d = res.body;
+        if (!d.total_events) {
+          // An empty table and a broken pipeline look identical on a dashboard,
+          // so say which one this is and how to tell them apart.
+          showNote(
+            '<h2>Nothing recorded yet</h2>' +
+            '<p>No quiz events in the last ' + esc(d.days) + ' days. That is expected until the ' +
+            'quiz is live on homegym.sg and someone runs through it.</p>' +
+            '<ol>' +
+              '<li>Open <code>/bundle-quiz.html</code> and answer all four questions.</li>' +
+              '<li>Come back here and reload. One session should appear within a few seconds.</li>' +
+              '<li>If it does not, check the <code>collect</code> function log in Vercel.</li>' +
+            '</ol>'
+          );
+          els.sub.textContent = 'Last ' + d.days + ' days · no data';
+          return;
+        }
+
+        els.state.innerHTML = '';
+        els.app.hidden = false;
+        render(d);
+      })
+      .catch(function (err) {
+        showNote('<h2>Could not reach the server</h2><p>' + esc(err && err.message) + '</p>');
+      });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.range button'), function (b) {
+    b.addEventListener('click', function () {
+      days = parseInt(b.dataset.days, 10);
+      Array.prototype.forEach.call(document.querySelectorAll('.range button'), function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      load();
+    });
+  });
+
+  load();
+}());
+</script>
