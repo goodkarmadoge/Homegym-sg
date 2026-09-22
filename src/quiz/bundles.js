@@ -411,22 +411,32 @@ export const BUNDLE_COPY = {
     // a bare "Leg press" here would answer yes to a question they meant more
     // literally than that. Bundles 3 and 14 include one outright and say so.
     name: "The Full House",
+    tagline: "Four jobs, one frame, no premium for the badge.",
+    pitch: "Smith, rack and cable in a single tower, with the bench and plates to load it from day one, and a leg press that bolts on when you want one. The same span of work as the biggest build here, at the price of a middling one.",
     trains: ["Squat", "Bench press", "Deadlift", "Smith press", "Lat pulldown", "Cable rows", "Chin-ups", "Dips", "Landmine", "Leg press (add-on)"]
   },
   12: {
     name: "The Connected Cube",
+    tagline: "A smith that counts the set while you lift it.",
+    pitch: "The Cube Smith Pro logs the work as it happens, so the notebook stops being your job. Smith, rack and cable in one frame, with a bench and plates to match.",
     trains: ["Smith squat", "Smith bench", "Lat pulldown", "Low row", "Cable flys", "Chin-ups"]
   },
   13: {
     name: "The Cable Corner",
+    tagline: "Two stacks, every angle, one corner.",
+    pitch: "A dual adjustable pulley does the work of a wall of machines and asks for a corner to do it in. No plates to change, no bar to rack, nothing to step over between sets.",
     trains: ["Cable press", "Cable flys", "Lat pulldown", "Low row", "Woodchops", "Bicep curls", "Tricep pushdown"]
   },
   14: {
     name: "The Leg Station",
+    tagline: "The half of the body a home gym usually skips.",
+    pitch: "Most home setups train everything above the waist and hope for the rest. A leg press and hack squat in one frame fixes that in the floor space of a doorway, plates included.",
     trains: ["Leg press", "Hack squat", "Calf raises"]
   },
   15: {
     name: "The Starting Barbell",
+    tagline: "The big lifts, folded flat when you are done.",
+    pitch: "An adjustable stand, a bench, a bar and plates: everything the barbell lifts need and nothing they do not. Folds back against the wall in under a minute.",
     trains: ["Squat", "Bench press", "Overhead press", "Deadlift", "Barbell row"]
   },
   16: {
@@ -450,6 +460,8 @@ export const BUNDLE_COPY = {
     // sync fails its own check step and refuses to push, and the quiz keeps
     // serving the last good data rather than an option nothing can answer.
     name: "The Dumbbell Corner",
+    tagline: "A bench and a pair, instead of a rack of fixed weights.",
+    pitch: "Adjustable dumbbells from 4 to 23.5kg a side, and a bench that folds flat to 12cm. The whole thing lives under a bed between sessions.",
     trains: ["Dumbbell press", "Dumbbell flys", "Dumbbell rows", "Goblet squats", "Lunges", "Shoulder press", "Curls"]
   }
 };
