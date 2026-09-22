@@ -1042,6 +1042,32 @@ export const STYLES = css`
     font-variant-numeric: tabular-nums;
   }
 
+  /* The way back to the matched bundle, shown only while browsing an
+     alternate. Stands apart from the result rather than joining it: it is a
+     way OUT of what you are reading, not part of it. */
+  .backmatch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 20px;
+    padding: 12px 14px;
+    background: var(--n100);
+    border: 1px solid var(--n300);
+  }
+  /* The second copy sits under the whole result, so it needs air above it in a
+     way the first one does not. */
+  .view > .backmatch:not(:first-child) { margin: 28px 0 0; }
+  .backmatch__btn { flex: 0 0 auto; }
+  .backmatch__name {
+    font-size: 13px;
+    color: var(--n700);
+    /* min-width:0 so a long bundle name wraps inside the bar instead of
+       widening it past the column on a phone. */
+    min-width: 0;
+  }
+  .backmatch__name strong { color: var(--text); font-weight: 800; }
+
   /* Rooms strip: one row that scrolls sideways, seven tiles long.
      ─────────────────────────────────────────────────────────────────────────
      It was a wrapping grid of every photo in the feed, which on a phone meant
