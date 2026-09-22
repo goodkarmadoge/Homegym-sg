@@ -87,7 +87,32 @@ export const FUNCTION_ALIASES = {
   multigym: 'multigym',
   machine: 'multigym',
   smart: 'smart',
-  smarttrainer: 'smart'
+  smarttrainer: 'smart',
+
+  // FREE WEIGHT IS NOT THE RACK, AND THAT DISTINCTION IS THE POINT.
+  //
+  // `power_rack` means a frame you lift inside: uprights, J-cups, safeties.
+  // `free_weight` means loose iron you pick up, whether that is a barbell and
+  // plates or a pair of adjustable dumbbells. Most bundles carry both, because
+  // a rack with no plates in it is furniture. Two carry only one:
+  //
+  //   bundle 16  a folding bench and adjustable dumbbells, no rack anywhere. It
+  //              was tagged "Power Rack" until 22 Sep 2026, which put the word
+  //              "Barbell" in its auto-generated tagline and offered it to
+  //              people who had asked to squat inside a rack.
+  //   bundle 14  a leg press and a set of plates. The plates load the sled;
+  //              there is no bar and no bench, so nothing here is lifted free.
+  //
+  // Both halves of the pair and both plurals, because this is typed by hand
+  // into a spreadsheet cell by whoever is adding the row.
+  freeweight: 'free_weight',
+  freeweights: 'free_weight',
+  barbell: 'free_weight',
+  barbells: 'free_weight',
+  dumbbell: 'free_weight',
+  dumbbells: 'free_weight',
+  barbelldumbbell: 'free_weight',
+  freeweightbarbelldumbbell: 'free_weight'
 };
 
 /**

@@ -197,6 +197,72 @@ function eligible(bundles, length, depth, budget) {
 }
 
 /**
+ * For each thing the customer asked for that the answer does not do, work out
+ * WHY, and what it would have taken.
+ *
+ * WHY THIS EXISTS.
+ *   Two of the seven options on question one are carried by exactly one bundle:
+ *   `multigym` only by The Fast Track, which needs 1.6 x 2.0 m, and `smart`
+ *   only by The Silent Operator, at $5,899. Anyone with a narrower room or a
+ *   smaller budget than those single bundles demand cannot be given what they
+ *   asked for, because it does not exist in the catalogue.
+ *
+ *   The ladder already handles that honestly at the matching level: tier 2b
+ *   deliberately drops the relevance floor rather than showing the contact card,
+ *   on the grounds that a real bundle that fits and is affordable beats nothing.
+ *   What it did NOT do was SAY so. Measured over the sweep space before this
+ *   was added, a visitor asking only for app-guided digital resistance was shown
+ *   a bundle containing none of it in 58.7% of cases, and 36.0% for a machine
+ *   circuit, with no banner at all, because tier 2b returns FALLBACK.NONE and
+ *   the banner only fired on a named fallback rung.
+ *
+ *   So the page needs more than "we compromised". It needs to name the thing it
+ *   could not give them, name the constraint that ruled it out, and quote the
+ *   figure that would have changed the answer. That last part is what makes it
+ *   actionable rather than an apology: "the smallest one we make needs 1.6 x
+ *   2.0 m" tells someone with a 1.5 m wall exactly where they stand.
+ *
+ * WHAT `blocked` MEANS.
+ *   space        no bundle carrying this fits the room, at any price
+ *   budget       they all fit, but none is within budget
+ *   both         neither gate can be cleared by any of them
+ *   combination  some fit and some are affordable, but no single one is both
+ *   none         nothing in the catalogue carries this tag at all. Not
+ *                reachable from the quiz today, since every option on question
+ *                one is checked against the data by the test suite, but a sheet
+ *                edit could create it between syncs and a silent wrong answer
+ *                here would be worse than an awkward one.
+ */
+export function explainGaps(a, bundles, primary) {
+  const named = a.functions.filter((f) => f !== ANY_FUNCTION);
+  if (!named.length || !primary) return [];
+
+  return named
+    .filter((fn) => !primary.functions.includes(fn))
+    .map((fn) => {
+      const carriers = bundles.filter((b) => b.functions.includes(fn));
+      if (!carriers.length) return { fn, carriers: 0, blocked: 'none', smallest: null, cheapest: null };
+
+      const fitsAny = carriers.some((b) => fits(b, a.length, a.depth));
+      const affordAny = carriers.some((b) => b.price <= a.budget);
+      const blocked =
+        !fitsAny && !affordAny ? 'both'
+        : !fitsAny ? 'space'
+        : !affordAny ? 'budget'
+        : 'combination';
+
+      // The one to quote at them. Smallest by area for a space problem, cheapest
+      // for a money problem: quoting the cheapest machine's footprint to someone
+      // whose room is too narrow would be answering a question they did not ask.
+      const area = (b) => b.footprint.length * b.footprint.depth;
+      const smallest = carriers.slice().sort((x, y) => area(x) - area(y) || x.id - y.id)[0];
+      const cheapest = carriers.slice().sort((x, y) => x.price - y.price || x.id - y.id)[0];
+
+      return { fn, carriers: carriers.length, blocked, smallest, cheapest };
+    });
+}
+
+/**
  * Match a set of answers to a bundle.
  *
  * @param {{functions: string[], length: number, depth: number, persona: string, budget: number}} answers
@@ -227,10 +293,15 @@ export function match(answers, bundles) {
       score: Math.round(s.score * 100) / 100,
       parts: s.parts
     }));
+    const primary = scored[0] ? scored[0].bundle : null;
     return {
-      primary: scored[0] ? scored[0].bundle : null,
+      primary,
       alternates: scored.slice(1, 3).map((s) => s.bundle),
       fallback: tier,
+      // What the customer asked for that this answer does not do, and why.
+      // Empty on the overwhelming majority of paths, which is the point: it is
+      // only non-empty when the page owes the visitor an explanation.
+      gaps: explainGaps(a, bundles, primary),
       debug: { ...debug, ...extra }
     };
   };
@@ -309,13 +380,16 @@ export function match(answers, bundles) {
       primary: cheapestFirst[0],
       alternates: cheapestFirst.slice(1, 3),
       fallback: FALLBACK.SMALLEST,
+      gaps: explainGaps(a, bundles, cheapestFirst[0]),
       debug: { ...debug, overBudgetBy: Math.max(0, cheapestFirst[0].price - a.budget) }
     };
   }
 
   // ── Tier 4: nothing fits. Never fabricate a bundle. ────────────────────────
+  // No gaps here, deliberately. There is no bundle to explain a shortfall in,
+  // and the contact card already says the honest thing: nothing we make fits.
   debug.tier = FALLBACK.CONTACT;
-  return { primary: null, alternates: [], fallback: FALLBACK.CONTACT, debug };
+  return { primary: null, alternates: [], fallback: FALLBACK.CONTACT, gaps: [], debug };
 }
 
 export default match;

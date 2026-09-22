@@ -30,7 +30,7 @@ Four questions (what you want to train, floor space, which customer you are, bud
 
 **Question one has two escape hatches,** because a shopper who does not yet know what they want is the one this quiz is most useful to, and a required multi-select was turning them away at the first screen:
 
-- **All of the above** ticks all six functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
+- **All of the above** ticks all seven functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
 - **No preference** declines the question. The 40-point function axis stops discriminating entirely and floor space, budget and persona decide the match.
 
 They are deliberately **not** the same answer. "I want everything" and "I don't mind" pull in different directions, and the matcher honours both: across a spread of rooms, budgets and personas the two land on a different bundle about a third of the time. Both are exclusive against the individual options, so no one can hold a contradiction like *barbell lifts* **and** *no preference*.
@@ -343,7 +343,7 @@ Question one has two shortcuts, and both show up here:
 
 | value in `functions` | what the visitor did |
 |---|---|
-| all six tags | ticked **All of the above** (or all six by hand, which is the same answer) |
+| all seven tags | ticked **All of the above** (or all seven by hand, which is the same answer) |
 | `["_any"]` | ticked **No preference**, declining the question |
 
 `_any` is a sentinel, never a tag: no bundle carries it and nothing in the sheet
@@ -424,6 +424,59 @@ That is enough to make it real. The bundle takes its name from the sheet's
 a product photo. Writing it a proper `tagline`, `pitch` and `trains` list in
 `BUNDLE_COPY` is a separate improvement, not a blocker: until then the
 "What you'll train" section is simply omitted rather than shown empty.
+
+### The free-weight split
+
+**Status: the code is done, the sheet is not.** Until the cells below are
+changed, `src/quiz/sheet-data.js` carries the corrected tags as a hand edit and
+the nightly sync will revert them.
+
+Question one gained a seventh option on 22 Sep 2026:
+
+| | label | help line |
+|---|---|---|
+| `power_rack` | Barbell lifts: squat, bench, deadlift | A rack to lift inside, with safeties |
+| `free_weight` | Free weight - barbell / dumbbell lifts | Loose barbell, plates or dumbbells |
+
+`power_rack` used to mean both the frame and the iron — its help line read
+"Free-weight barbell work in a rack" — which left a visitor who wanted a pair of
+dumbbells nothing to tick, and forced bundle 16, a folding bench and a pair of
+adjustable dumbbells, to be tagged as a rack to be reachable at all. It then
+introduced itself to customers as **"Barbell in 1 x 1.5 m"** and was offered to
+people who had asked to squat inside a rack.
+
+**Change these cells in the rules tab's Function column:**
+
+| Bundle | Label | From | To |
+|---|---|---|---|
+| 3 | The Iron Fortress | Smith; Power Rack; Cable; Leg Press | Smith; Power Rack; **Free Weight**; Cable; Leg Press |
+| 6 | The Level Up | Power Rack; Cable | Power Rack; **Free Weight**; Cable |
+| 7 | The All-Rounder | Smith; Power Rack; Cable | Smith; Power Rack; **Free Weight**; Cable |
+| 15 | The Starting Barbell | Power Rack | Power Rack; **Free Weight** |
+| 16 | The Dumbbell Corner | Power Rack | **Free Weight** *(replaces, does not add)* |
+
+`Free Weight`, `Barbell`, `Dumbbell` and the plurals all map to the same tag, so
+the exact wording in the cell does not matter. The parser is case- and
+punctuation-insensitive as it is for every other function.
+
+**Why only those five.** The tag means the bundle contains something you pick
+up. Ten bundles contain plates, but only four contain a **barbell** (3, 6, 7,
+15) and one contains **dumbbells** (16). In bundles 1, 9, 10, 11 and 12 the
+plates load the machine's own Smith or rack bar — there is no loose bar in the
+box, so a visitor ticking this option and receiving one of them could not do the
+lift they asked for. Bundle 14's plates load the leg press sled.
+
+Worth a separate decision: **bundle 10 is called The Barbell Purist and contains
+no barbell.** A power rack, a bench and 107.5 kg of plates, and nothing to load
+them onto. The same is true of bundles 1, 9, 11 and 12, where it matters less
+because those machines have an integrated bar. Adding a 1.8 M Olympic Bar ($179)
+to bundle 10's product row would fix the bundle and earn it the tag.
+
+**The guard.** `test/matcher.test.mjs` asserts that every option on question one
+is carried by at least one bundle. The sync workflow runs `npm run check` before
+it commits, so if the sheet comes back without `free_weight` the sync fails and
+refuses to push, and the quiz keeps serving the last good data rather than
+offering an option nothing can answer.
 
 ### Editing prices, copy and imagery
 
@@ -555,9 +608,51 @@ If nothing passes both filters, constraints relax in a fixed order and the resul
 3. Cheapest bundle that fits on space alone
 4. Nothing fits, a **"Let's talk"** card with a contact CTA. It never fabricates a bundle.
 
+### When we simply don't stock it
+
+The ladder relaxes *space* and *budget*. It cannot conjure a capability that is
+not in the catalogue, and two options on question one are carried by exactly one
+bundle each:
+
+| Option | Only bundle | Needs |
+|---|---|---|
+| Simple pin-loaded machine circuit | The Fast Track | 1.6 × 2.0 m |
+| App-guided digital resistance | The Silent Operator | $5,899 |
+
+Anyone with a narrower room or a smaller budget than those demand cannot be
+given what they asked for. The matcher already handled that sensibly — rung 2b
+deliberately drops the relevance floor and returns a real bundle rather than the
+contact card — but until 22 Sep 2026 **it did not say so**. Rung 2b returns
+`FALLBACK.NONE`, and the banner only fired on a named rung, so the page showed a
+substitute with no acknowledgement at all. Measured across the sweep space:
+
+| Asked for, on its own | Shown a bundle containing none of it |
+|---|---|
+| App-guided digital resistance | 58.7% |
+| Simple pin-loaded machine circuit | 36.0% |
+| Guided pressing (Smith) | 17.1% |
+| Cable work | 4.4% |
+
+`match()` now returns a **`gaps`** array alongside `primary`. One entry per thing
+the visitor asked for that the answer does not do, carrying why (`space`,
+`budget`, `both`, `combination`) and the bundle to quote back at them. The result
+view leads with it, under **No exact match** when the bundle covers nothing that
+was asked for and **Partial match** when it covers some:
+
+> **No exact match**
+> Nothing we build with machine circuit fits your space. The smallest is The Fast Track, which needs 1.6 × 2.0 m.
+> Here's the closest we have.
+
+Naming the figure is the point. "We don't have one that fits" invites the reply
+"then what would?", and the visitor is not in a position to ask — quoting the
+smallest one we make, with its footprint, tells someone with a 1.5 m wall exactly
+where they stand. `gaps` is empty on a clean match, and always empty for
+**No preference**: the visitor declined the question, so there is nothing we can
+have failed to give them.
+
 ### Coverage
 
-`npm run sweep` runs every realistic answer combination (112,875 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
+`npm run sweep` runs every realistic answer combination (170,625 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
 
 | Bundle | Share of matched runs |
 |---|---|
@@ -613,7 +708,9 @@ Seven things need a decision from HomeGym. They are flagged in code at the exact
 1. **Prices are a 30 Aug 2026 snapshot** and several are promotional, TinyTitan, Bodyx Cube, Titan X20, IM2000, Folding Rack, the Olympic set and both bars. They will drift. The durable fix is a nightly job that reads the Magento product API and rewrites `PRODUCTS`.
 2. **The Vigor X20 Sliding Bench is out of stock**, and its URL slug says `b20` while the product page title says `X20`. It currently renders an "On backorder" badge. Confirm the correct SKU.
 3. **Image URLs are CloudFront cache paths.** The `/cache/c0dcb29ef.../` segment changes when Magento regenerates its image cache, which would 404 every image at once. The initial-letter fallback tile stops the grid breaking; resolving images from the product API is the real fix.
-4. **Footprints are unverified.** They came from the source spreadsheet, not from measuring machines, and they read as working areas including clearance. A customer who buys on a wrong footprint is a returned 338 kg machine. **This is the highest-risk item on the list.**
+4. **Footprints are the equipment, not the room.** Confirmed with the client on 22 Sep 2026: the sheet's Size column is *the floor space the equipment will occupy*, and nothing more. It does **not** include room to stand, to walk round the frame, or to lie back on a bench and press. An earlier draft of this list said the opposite, that the figures "read as working areas including clearance". That was wrong, and it mattered: read the generous way, a 1.6 × 2.0 m machine circuit sounds like it needs a 1.6 × 2.0 m room, and it does not.
+
+    In practice: bundle 16's `1 × 1.5 m` is the folding bench unfolded plus its pair of dumbbells beside it, not a corner anyone can train in. `npm run check:fit` measures against this convention, which is why it can report a bundle fitting with 5 cm spare and call that TIGHT rather than a failure, and why its closing line reminds you the bench, the plates and the lifter all need floor the column never counted. Question two asks the visitor for the space they have *available for equipment*, so both sides of the comparison agree — but a customer who reads their own answer as "the room I'll train in" will still be unhappy with a machine that technically fits. The figures themselves are also still unverified: they came from the source spreadsheet, not from measuring machines. A customer who buys on a wrong footprint is a returned 338 kg machine. **This is the highest-risk item on the list.**
 5. **Bundles 1, 4, 7 and 9 share identical function tags** (`smith` + `power_rack` + `cable`), separated only by space, persona and price. Adding a distinguishing tag to each, `folding`, `self_spotting`, `connected`, plus a matching quiz option would sharpen them.
 6. ~~**`contact-url` points at `https://homegym.sg/contact`,** which has not been confirmed.~~ Confirmed resolving (HTTP 200) on 8 Sep 2026. It is only ever used as a fallback when no `whatsapp` number is set, which is not the case in production.
 6b. **Their link blue `#22B4FF` fails WCAG AA at 2.32:1 on white**, here and on the live site, on every product link. The quiz uses a darkened `#0077B3` for text. Worth fixing site-wide.
@@ -649,7 +746,7 @@ npm run sync:images  # refresh install photos from the Instagram feed, report th
 npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
-npm run sweep    # assert every bundle is reachable across 112,875 combinations
+npm run sweep    # assert every bundle is reachable across 170,625 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -679,7 +776,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any bundle becomes unreachable, or the matcher throws on any of 112,875 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 170,625 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output

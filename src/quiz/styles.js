@@ -663,6 +663,15 @@ export const STYLES = css`
     color: var(--accent-700);
     margin-bottom: 6px;
   }
+  /* A gap banner runs to two or three sentences, and each one is a separate
+     reason, so they get to be separate paragraphs. The fallback-rung banner is a
+     single run of bare text with no children, so it is untouched by this. */
+  .banner__line {
+    margin: 0 0 6px;
+  }
+  .banner__line:last-child {
+    margin-bottom: 0;
+  }
 
   .result__name {
     font-size: clamp(34px, 6vw, 68px);
