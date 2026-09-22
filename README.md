@@ -13,6 +13,7 @@ A pro bono site and business review of [homegym.sg](https://homegym.sg), a Singa
 | [`messaging.html`](messaging.html) | Positioning and messaging brief: the gym-cost wedge, four value pillars, eight messaging lines graded, five objections with responses, and house-brand strategy. |
 | [`prototype.html`](prototype.html) | A working concept homepage with a six-question quiz that sizes a gym build to the visitor's floor area, ceiling height and budget. |
 | [`bundle-quiz.html`](bundle-quiz.html) | A four-question quiz matching the visitor to a complete priced bundle built from real catalogue products. Bundle data comes from a Google Sheet. Ships bare, for embedding into homegym.sg. |
+| `insights.html` | **Internal.** What the quiz is doing: sessions, screen dropoff, bundles viewed, CTA taps. Not linked from any page above, on purpose, and its data is behind a password on `/api/insights`. Deliberately not a link in this table either. See [The insights dashboard](#the-insights-dashboard). |
 
 ## About the prototype
 
@@ -670,6 +671,119 @@ have failed to give them.
 32.0% of combinations hit the fallback ladder, almost all of them floors under 1.5 m on a side or budgets under $2,750, rare in practice. 12.0% reach the "let's talk" card. The ladder never throws.
 
 Rung 3 currently never fires: rung 2's space relaxation always unlocks something affordable first. It is kept because a future price or footprint change could open that gap.
+
+## The insights dashboard
+
+`/insights.html`, built from `src/insights.html`. Sessions, screen dropoff,
+bundles viewed and CTA taps, read from the quiz's own events.
+
+**It is not linked from anywhere, and that is enforced.** No page a customer can
+reach mentions it; `npm run verify` fails the build if one ever does. Open it by
+typing the URL.
+
+### Turning it on
+
+The database is live. Supabase project **`Homegym-sg`**
+(`bsbqiupwdxyzfxgjxazs`, Sydney), with `db/001_quiz_events.sql` applied and
+verified end to end on 22 Sep 2026: an insert through the publishable key is
+accepted, a `SELECT` through the same key returns nothing, and
+`quiz_insights()` reports the session correctly.
+
+Two things are left, and both are in the Vercel console:
+
+1. **Set two environment variables**, then redeploy. (The API token this repo's
+   tooling uses is not permitted to write project env vars, which is why these
+   are by hand.)
+
+   | Variable | Value |
+   |---|---|
+   | `SUPABASE_URL` | `https://bsbqiupwdxyzfxgjxazs.supabase.co` |
+   | `SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys → the **publishable** key (`sb_publishable_…`) |
+   | `INSIGHTS_PASSWORD` | A password of your choosing, 12 characters or more. Gates the dashboard. |
+
+   Use the publishable key, never the service role key. The publishable one is
+   held to `INSERT` by the table's RLS policy and can read nothing back; the
+   service role key bypasses RLS entirely and would turn a leaked function log
+   into a full database compromise.
+
+2. **Set `INSIGHTS_PASSWORD`**, at least 12 characters. This is what keeps the
+   numbers private. `/api/insights` refuses every request without it, and the
+   dashboard asks for it once per browser.
+
+Until step 1 is done the page says exactly that, in plain words, rather than
+showing a broken chart. The quiz is unaffected either way.
+
+### Why the password is in the app and not on the deployment
+
+**Vercel's deployment protection cannot do this job**, and it is worth writing
+down why so nobody reaches for it again. Protection is per-*deployment*, not
+per-path, and this deployment also serves `bundle-quiz.html`, the customer
+embed on homegym.sg. Switching on Password Protection for production would take
+the quiz down with it, and there is no per-path option on standard plans.
+
+Checked on the live project on 22 Sep 2026 rather than assumed:
+
+| | |
+|---|---|
+| Password Protection | **off** |
+| Vercel Authentication (SSO) | on, `all_except_custom_domains` |
+| `homegym-sg.vercel.app/index.html` | **HTTP 200** — production is open |
+| generated deployment URL | HTTP 302 to the SSO login |
+
+So SSO was covering only the preview and deployment URLs, and production — the
+one that matters — was answering anybody.
+
+The lock therefore sits on the **data**, not the page. `insights.html` is
+markup; leaking it costs nothing, because without the endpoint it renders a
+password prompt and no numbers.
+
+- The password is sent as an `x-insights-key` **header**, never in the URL. A query string lands in browser history, in bookmarks, and in the referrer of anything the page links out to.
+- A header rather than a cookie, so nothing is ever sent automatically on a cross-site request and CSRF is a non-topic.
+- Compared as SHA-256 digests through `timingSafeEqual`, so a wrong password of any length costs the same time.
+- **It fails closed.** An unset or under-12-character `INSIGHTS_PASSWORD` refuses *everyone*, including you, and logs why. The alternative — falling through to "allow" — would publish the client's traffic while looking exactly like a working dashboard from the inside.
+- The browser remembers it in `localStorage`, so it is a once-per-browser question. A 401 clears it and asks again.
+
+What this does **not** do is rate-limit. The endpoint is public and serverless,
+so a determined attacker can guess at it; a 12-character minimum is the
+mitigation, and it is enforced rather than suggested.
+
+### How it flows
+
+```
+quiz event  ──►  collector in bundle-quiz.html  ──►  POST /api/collect
+                 (batched, sendBeacon on exit)              │
+                                                            ▼
+                                                    public.quiz_events
+                                                            │
+insights.html  ◄──  GET /api/insights  ◄──  public.quiz_insights(days)
+                                            (aggregates only, never rows)
+```
+
+**The browser never holds a database key.** Both directions go through a
+serverless function. The key those functions hold can `INSERT` and nothing else:
+there is deliberately no `SELECT` policy on the table, so that key cannot read
+back a single row, and reads go through a `security definer` function that
+returns counts and has no argument that will make it return a `session_id`.
+
+### What it does not collect
+
+No IP address, no user agent, no referrer, no cookie, no name, email or phone.
+A `session_id` is random, minted in `sessionStorage`, and dies with the tab, so
+it cannot join a visitor to a second visit, to another device, or to the details
+they hand over on WhatsApp thirty seconds later. It exists to turn seven loose
+events into one funnel row.
+
+That is a deliberate position, not an oversight: under Singapore's PDPA it keeps
+the table out of "personal data" altogether, which means no consent banner on
+the quiz, no access-or-correction obligation, and nothing in it to breach. **Add
+an IP column and all three of those stop being true.**
+
+### Reading it honestly
+
+- **Sessions are per tab.** One customer who comes back tomorrow is two sessions. There is no way to tell the difference without storing something that identifies them, which is the trade above.
+- **Screen dropoff counts "ever reached", not "ended on".** Back exists: someone who reaches Budget and steps back to Floor space still counts as having reached Budget.
+- **Matched and explored are kept apart** on the bundles chart, and summing them would hide the more interesting one. *Explored* is the visitor opening a bundle the matcher did not choose for them, which is them disagreeing with the match.
+- **The component embed reports nothing.** The collector lives in `bundle-quiz.html`, so it covers the iframe embed, which is what the README recommends. A site that drops `homegym-bundle-quiz.min.js` straight onto a page instead gets no telemetry; a collector for that path belongs inside the bundle and is not written yet.
 
 ## The WhatsApp CTA
 

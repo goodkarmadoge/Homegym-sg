@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bundle as buildQuizBundle, SIZE_LIMIT } from './build-quiz.mjs';
+import { BUNDLES, PRODUCTS } from '../src/quiz/bundles.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
@@ -19,6 +20,13 @@ export const PAGES = [
     desc: 'Positioning and messaging: the gym-cost wedge, four value pillars, graded lines, five objections and the leaking funnel.' },
   { file: 'prototype.html', emoji: '🏋️',
     desc: 'Concept landing page with a six-question quiz that sizes a gym build to your floor, ceiling and budget.' },
+  // INTERNAL, AND DELIBERATELY UNLINKED. Nothing customer-facing points at this
+  // page and verify.mjs fails the build if anything ever does. The page itself
+  // is only markup: the password sits on /api/insights, because deployment-level
+  // protection would also lock the customer-facing quiz served beside it. See
+  // the header comment in src/insights.html.
+  { file: 'insights.html', emoji: '📊',
+    desc: 'Internal dashboard: quiz sessions, screen dropoff, bundles viewed and CTA taps.' },
   { file: 'bundle-quiz.html', emoji: '🎯',
     desc: 'Four questions about function, floor space, level and budget, matched to a complete priced home gym bundle.',
     // Archivo 400/600/800, the Modernist system's only family. Loaded here so
@@ -86,6 +94,29 @@ function main() {
       .replace(/<title>[\s\S]*?<\/title>/, '')
       .replace(/<style>[\s\S]*?<\/style>/, '')
       .trim();
+
+    // The dashboard reports on bundles by number; this is where those numbers
+    // get the names a person would recognise. Read from the same module the
+    // quiz is built from, so the two cannot drift: rename a bundle and the next
+    // build renames it here too, with nothing to remember.
+    if (p.file === 'insights.html') {
+      const names = {
+        bundles: Object.fromEntries(BUNDLES.map((b) => [b.id, b.name])),
+        products: Object.fromEntries(Object.entries(PRODUCTS).map(([id, pr]) => [id, pr.name]))
+      };
+      const before = body;
+      body = body.replace(
+        '<script id="quiz-names" type="application/json">{}</script>',
+        () => `<script id="quiz-names" type="application/json">${JSON.stringify(names)}</script>`
+      );
+      if (body === before) {
+        console.error(
+          'insights.html: the quiz-names placeholder is missing, so every row would read ' +
+          '"Bundle 14" and "tinytitan" instead of the names a person would recognise'
+        );
+        process.exit(1);
+      }
+    }
 
     if (p.file === 'bundle-quiz.html') {
       if (!body.includes(QUIZ_SCRIPT_TAG)) {
