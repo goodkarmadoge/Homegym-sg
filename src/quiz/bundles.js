@@ -302,8 +302,9 @@ export const BUNDLE_COPY = {
     tagline: "338kg of machine that folds to 60cm in 30 seconds.",
     pitch: "Full commercial-grade Smith and functional trainer that collapses from 120cm to 60cm deep when you're done. Built for the guy whose gym has to disappear.",
     trains: ["Smith squat", "Smith bench", "Lat pulldown", "Low row", "Chin-ups", "Cable flys"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   3: {
@@ -767,7 +768,7 @@ export const ROOMS = [
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
     title: "Bodyx Cube Smith in a physio studio",
     date: "15 Jul 2026",
     href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
