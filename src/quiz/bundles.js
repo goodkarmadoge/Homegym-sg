@@ -375,8 +375,9 @@ export const BUNDLE_COPY = {
     tagline: "Squat, bench, deadlift. Folds flat against the wall.",
     pitch: "A real power rack with high and low pulleys that folds to a third of its depth. 50+ exercise variations, lifetime frame warranty, and your floor back when you are done.",
     trains: ["Squat", "Bench press", "Deadlift", "Chin-ups", "Dips", "Lat pulldown", "Landmine"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -761,7 +762,7 @@ export const ROOMS = [
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
     title: "Vigor folding power rack with bench",
     date: "18 Jul 2026",
     href: "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
