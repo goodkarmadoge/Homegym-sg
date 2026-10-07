@@ -20,15 +20,27 @@
 //       - a hero that 404s, or is no longer in the feed, is replaced by the
 //         newest post whose caption names that bundle's own machine
 //       - a rooms tile that 404s is dropped
+//       - a new post whose caption names a machine in the catalogue joins the
+//         rooms strip, marked verified: false (added 7 Oct 2026)
 //
 //     reported, because it needs an eye
 //       - a bundle on a studio shot when the feed now has a post of its machine
-//       - new posts that could join the rooms strip
+//       - which adopted tiles are still waiting to be looked at
 //
 //   An auto-picked hero is marked heroVerified: false and captioned "From our
 //   Instagram", which is true of any post. Only a human who has looked at it
 //   promotes it to "A real install, from our Instagram". That distinction is
 //   the whole reason this can run unattended.
+//
+//   ROOMS TILES NOW TAKE THE SAME BARGAIN. Adopting them used to be refused
+//   outright, on the grounds that a caption cannot tell a finished room from a
+//   bare dumbbell rack. That is still true, and it is why an adopted tile
+//   carries verified: false: while one is among the tiles on screen, the
+//   section's standfirst drops its "real installs, not showroom mock-ups" claim
+//   to what is actually known. So the strip stays current on its own without
+//   the page asserting something nobody has checked. Promoting a tile is a
+//   human looking at the photograph, then setting verified true and rewriting
+//   its title from the machine's name into a description of the room.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -114,6 +126,43 @@ const candidatesFor = (posts, anchorId) => {
   return sigs.length ? posts.filter((p) => sigs.some((re) => re.test(p.full))) : [];
 };
 
+/** The first catalogue machine a post's caption names, or null for none. */
+const machineIn = (post) =>
+  Object.keys(SIGNATURE).find((k) => SIGNATURE[k].some((re) => re.test(post.full))) || null;
+
+/**
+ * A feed timestamp in the form ROOMS tiles are written in, "5 Oct 2026".
+ *
+ * Returns null rather than a guess. The date is printed under every tile, and
+ * the feed has handed back both ISO strings and M/D/YY, so a format nobody
+ * anticipated must stop the tile being adopted instead of labelling it wrongly.
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function tileDate(raw) {
+  if (!raw) return null;
+  const us = String(raw).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  const d = us
+    ? new Date(Date.UTC(us[3].length === 2 ? 2000 + Number(us[3]) : Number(us[3]), Number(us[1]) - 1, Number(us[2])))
+    : new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  const year = d.getUTCFullYear();
+  if (year < 2020 || year > 2100) return null;
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${year}`;
+}
+
+/**
+ * A tile title, from HomeGym's own first line where that is usable.
+ *
+ * Their headlines read as tile labels already ("Aeke S1 PRO setup"). The
+ * product name is the fallback, because a 60-character catalogue name under a
+ * 200px tile is worse than their four words. Either way it names a MACHINE, not
+ * a room, which is the tell that nobody has looked at it yet.
+ */
+const tileTitle = (post, key) => {
+  const h = post.headline.replace(/\s+/g, ' ').trim();
+  return h && h.length <= 48 ? h : PRODUCTS[key].name;
+};
+
 /** Does the file still exist? A pinned URL can 404 long after it was chosen. */
 async function resolves(url) {
   try {
@@ -186,18 +235,44 @@ for (const [id, copy] of Object.entries(BUNDLE_COPY)) {
   }
 }
 
-/* Rooms strip: drop anything that has stopped loading. Adding new tiles is not
-   automated, because a caption cannot tell a finished room from a dumbbell
-   rack, and that distinction is the whole point of the section. */
+/* Rooms strip: drop anything that has stopped loading. */
 const deadTiles = [];
 for (const r of ROOMS) {
   if (!(await resolves(r.image))) deadTiles.push(r);
 }
 
-const freshRoomCandidates = posts
-  .filter((p) => !ROOMS.some((r) => r.image === p.url))
-  .filter((p) => Object.keys(SIGNATURE).some((k) => candidatesFor([p], k).length))
-  .slice(0, 5);
+/*
+ * Adopt new posts into the strip, newest first, unverified.
+ *
+ * A post qualifies when it is not already a tile, its caption names a machine
+ * this catalogue sells, it carries a date that parses, and the file actually
+ * loads. The link comes from the matched product rather than from a guess at the
+ * caption, which is the one part of a tile a machine can get exactly right.
+ *
+ * AT MOST ADOPT_MAX PER RUN. The strip renders seven tiles and these go in at
+ * the top, so an unbounded first run would replace the whole visible gallery
+ * with photographs nobody has opened. Five a night is a pace a weekly glance can
+ * keep up with.
+ */
+const ADOPT_MAX = 5;
+const roomAdditions = [];
+const roomSkipped = [];
+for (const post of posts) {
+  if (roomAdditions.length === ADOPT_MAX) break;
+  if (ROOMS.some((r) => r.image === post.url)) continue;
+  const key = machineIn(post);
+  if (!key) continue;                       // nothing in the catalogue, not ours to show
+  const date = tileDate(post.date);
+  if (!date) { roomSkipped.push(`${post.headline.slice(0, 40)}: date "${post.date}" did not parse`); continue; }
+  if (!(await resolves(post.url))) { roomSkipped.push(`${post.headline.slice(0, 40)}: image does not load`); continue; }
+  roomAdditions.push({
+    image: post.url,
+    title: tileTitle(post, key),
+    date,
+    href: PRODUCTS[key].url,
+    linkKind: 'product'
+  });
+}
 
 /* ── Report ───────────────────────────────────────────────────────────────── */
 
@@ -216,19 +291,37 @@ if (attention.length) {
   for (const a of attention) console.log('  ' + a);
   console.log('');
 }
-if (freshRoomCandidates.length) {
-  console.log(`ROOMS: ${freshRoomCandidates.length} newer post(s) could join the strip, if they show a room:`);
-  for (const p of freshRoomCandidates) console.log(`  ${p.date}  ${p.headline.slice(0, 58)}`);
+if (roomAdditions.length) {
+  console.log(`ROOMS: ${roomAdditions.length} new post(s) joining the strip, unverified:`);
+  for (const r of roomAdditions) console.log(`  ${r.date}  ${r.title}`);
+  console.log('  Each goes in captioned by its machine, and the section stops claiming');
+  console.log('  "real installs" until someone has looked. `npm run check:heroes` lists them.');
+  console.log('');
+}
+if (roomSkipped.length) {
+  console.log(`ROOMS: ${roomSkipped.length} post(s) not adopted:`);
+  for (const r of roomSkipped) console.log(`  ${r}`);
   console.log('');
 }
 
-if (!edits.length && !deadTiles.length) {
+const unverifiedAfter = ROOMS.filter((r) => r.verified === false).length + roomAdditions.length;
+if (unverifiedAfter) {
+  console.log(`ROOMS: ${unverifiedAfter} tile(s) now waiting to be looked at. Promoting one means`);
+  console.log('  opening the photograph, then setting verified true and rewriting its title');
+  console.log('  from the machine to the room.');
+  console.log('');
+}
+
+if (!edits.length && !deadTiles.length && !roomAdditions.length) {
   console.log('Every photograph still loads and still matches its bundle. Nothing to change.');
   process.exit(0);
 }
 
 if (CHECK_ONLY) {
-  console.log(`--check: ${edits.length / 2} hero(es) and ${deadTiles.length} tile(s) would change. Nothing written.`);
+  console.log(
+    `--check: ${edits.length / 2} hero(es), ${deadTiles.length} dead tile(s) and ` +
+    `${roomAdditions.length} new tile(s) would change. Nothing written.`
+  );
   process.exit(0);
 }
 
@@ -255,6 +348,27 @@ for (const e of edits.filter((x) => x.field === 'heroVerified')) {
 for (const t of deadTiles) {
   const block = src.match(new RegExp(`\\n  \\{\\n    image: "${t.image.replace(/[.*+?^$()|[\]\\]/g, '\\$&')}"[\\s\\S]*?\\n  \\},?`));
   if (block) src = src.replace(block[0], '');
+}
+
+/* New tiles go at the HEAD of the array, because the strip renders the first
+   ROOMS_SHOWN and these are the newest posts. Written against the literal
+   `export const ROOMS = [` rather than by parsing the array, in the same spirit
+   as the hero edits above: this file is read by people, and a reprinted array
+   would lose every comment in it. */
+if (roomAdditions.length) {
+  const anchor = 'export const ROOMS = [\n';
+  if (!src.includes(anchor)) throw new Error('could not find the ROOMS array to add tiles to');
+  const entries = roomAdditions.map((r) => [
+    '  {',
+    `    image: ${JSON.stringify(r.image)},`,
+    `    title: ${JSON.stringify(r.title)},`,
+    `    date: ${JSON.stringify(r.date)},`,
+    `    href: ${JSON.stringify(r.href)},`,
+    `    linkKind: ${JSON.stringify(r.linkKind)},`,
+    '    verified: false',
+    '  },'
+  ].join('\n')).join('\n');
+  src = src.replace(anchor, `${anchor}${entries}\n`);
 }
 
 writeFileSync(TARGET, src);

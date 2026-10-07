@@ -22,7 +22,7 @@
 //   Same as check-images and check-fit: it reads a third party's live feed,
 //   which rotates on its own. A HomeGym post going stale should not be able to
 //   fail a deploy. Exits 0 always; it is a report.
-import { BUNDLES, PRODUCTS } from '../src/quiz/bundles.js';
+import { BUNDLES, PRODUCTS, ROOMS } from '../src/quiz/bundles.js';
 
 const FEED = 'https://homegym.sg/instagram?plnkgd=1';
 
@@ -180,6 +180,20 @@ if (upgradable.length) {
     for (const c of r.available.slice(0, 3)) console.log(`      ${c.date}  ${c.caption.slice(0, 60)}`);
   }
   console.log('  Check each one shows the right machine before swapping it in.');
+  console.log('');
+}
+
+/* Rooms tiles sync-images.mjs adopted on its own. Reported here because this is
+   the script someone already runs to decide what needs looking at, and the whole
+   bargain of unattended adoption is that the list is short and visible. */
+const waiting = ROOMS.filter((r) => r.verified === false);
+if (waiting.length) {
+  console.log(`${waiting.length} rooms tile(s) were adopted from the feed and nobody has looked yet:`);
+  for (const r of waiting) console.log(`  ${r.date}  ${r.title}\n      ${r.image}`);
+  console.log('  Open each one. If it shows a finished room, set verified: true in bundles.js');
+  console.log('  and rewrite the title from the machine to the room ("AEKE S1 Pro in a living');
+  console.log('  room", not "AEKE S1 PRO"). If it is a bare rack or a studio shot, delete the tile.');
+  console.log('  Until they are all promoted the strip stops claiming "real installs".');
   console.log('');
 }
 

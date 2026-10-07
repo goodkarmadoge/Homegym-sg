@@ -1113,12 +1113,26 @@ class HomegymBundleQuiz extends HTMLElement {
       .filter((r) => !bundle || r.image !== bundle.hero)
       .slice(0, ROOMS_SHOWN);
     if (!tiles.length) return '';
+    // THE STANDFIRST ONLY CLAIMS WHAT SOMEBODY HAS CHECKED.
+    // "Real installs, not showroom mock-ups" is a claim about the photographs,
+    // and sync-images.mjs can now add tiles to this strip on its own, off a
+    // caption that names a machine. A caption cannot tell a finished room from a
+    // bare dumbbell rack, so a tile it adopted carries verified: false until
+    // somebody looks. While one of those is on screen the line drops to what is
+    // true of any post in the feed, and the full claim comes back by itself when
+    // the last one is promoted. Read off the tiles ACTUALLY SHOWN, not off all of
+    // ROOMS: an unverified tile sitting unseen at position 12 says nothing about
+    // the seven on screen.
+    const allChecked = tiles.every((r) => r.verified !== false);
     return `
       <section class="section">
         <${this._h(1)} class="section__title">Rooms we've built</${this._h(1)}>
         <p class="pitch">
-          Real installs from our Instagram, not showroom mock-ups. Every one links
-          to the machine in the picture.
+          ${allChecked
+            ? `Real installs from our Instagram, not showroom mock-ups. Every one links
+          to the machine in the picture.`
+            : `Straight from our Instagram, newest first. Every one links to the machine
+          in the picture.`}
         </p>
         <div class="rooms-wrap">
           <button class="rooms__arrow rooms__arrow--prev" type="button"
