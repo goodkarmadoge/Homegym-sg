@@ -752,6 +752,46 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/799724607_18629541532005504_8567913137448412912_n.jpg",
+    title: "Vigor Tiny Titan",
+    date: "5 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805218848_18625869361005504_7088613047784270362_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "1 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/806987419_18629549428005504_6568181374746105844_n.jpg",
+    title: "Aeke S1 PRO setup",
+    date: "30 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825326419_18631656322005504_2538518365462069212_n.jpg",
+    title: "AEKE S1 PRO smart home gym",
+    date: "29 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805313830_18625868437005504_120218228989945275_n.jpg",
+    title: "Vigor Titan X20 all in one trainer",
+    date: "27 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
     title: "AEKE S1 Pro in a living room",
     date: "4 Sep 2026",
