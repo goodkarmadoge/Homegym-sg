@@ -919,7 +919,7 @@ dist/        generated site (gitignored, produced by the build)
 
 ```bash
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
-npm run sync:images  # refresh install photos from the Instagram feed, report the rest
+npm run sync:images  # refresh install photos from the Instagram feed, adopt new rooms tiles
 npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
@@ -928,7 +928,7 @@ npm run verify   # validate dist/ structure, noindex tags, internal links, quiz 
 npm run check    # all four, in order, this is what CI and Vercel run
 
 npm run check:images   # confirm every hotlinked HomeGym image still resolves
-npm run check:heroes   # confirm each bundle's install photo shows that bundle's machine
+npm run check:heroes   # confirm each hero shows its machine, and list rooms tiles awaiting an eye
 npm run check:fit      # confirm each anchor machine fits the footprint its row claims
 ```
 
@@ -937,6 +937,42 @@ No dependencies; Node 20+ only.
 The quiz is bundled by `scripts/build-quiz.mjs`, a ~60-line concatenator, rather than esbuild. That is deliberate: Vercel's `installCommand` is `echo 'no dependencies'` and CI never runs `npm ci`, so a devDependency in the build path would fail the first push. The module graph is a handful of files with no external imports, so a real resolver buys nothing.
 
 In development the page loads `src/quiz/*.js` as plain ES modules with no build step; `npm run build` swaps that script tag for the inlined bundle.
+
+### The rooms strip keeps itself current
+
+`sync-images.mjs` adds new Instagram posts to **Rooms we've built** on its own,
+up to five a night, and the guarantee that makes that safe is worth stating
+plainly.
+
+A caption proves which **machine** is in a photograph. It cannot prove the
+photograph is a **room** rather than a bare dumbbell rack or a studio shot, and
+the twenty curated tiles were chosen by somebody opening all 49 posts in the
+feed. So an adopted tile carries `verified: false`, and the section's standfirst
+reads the flag:
+
+| tiles on screen | standfirst |
+|---|---|
+| all `verified: true` | "Real installs from our Instagram, not showroom mock-ups. Every one links to the machine in the picture." |
+| any `verified: false` | "Straight from our Instagram, newest first. Every one links to the machine in the picture." |
+
+The weaker line is true of any post in the feed, so the page never asserts
+something nobody has checked, and the full claim returns by itself when the last
+tile is promoted. It is read off the tiles **actually shown**, not off all of
+`ROOMS`: an unverified tile sitting unseen at position 12 says nothing about the
+seven on screen. This is the same bargain `heroVerified` strikes for the big
+photo at the top of a result.
+
+**Promoting a tile** is two edits in `bundles.js`, after looking at the
+photograph: set `verified: true`, and rewrite the title from the machine to the
+room — the curated tiles read "AEKE S1 Pro in a living room", not "AEKE S1 PRO".
+A machine name as a title is the tell that nobody has looked yet. If the photo is
+a bare rack or a studio shot, delete the tile instead. `npm run check:heroes`
+lists what is waiting, with the image URL to open.
+
+New tiles go in at the **head** of the array, because the strip renders the first
+seven and these are the newest posts — so five adoptions displace five curated
+tiles from view until they are promoted or dropped. Five a night is the cap for
+exactly that reason.
 
 ### Images and logo
 
