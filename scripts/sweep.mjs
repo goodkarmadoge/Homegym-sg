@@ -8,16 +8,18 @@
  * The tag count is READ FROM FUNCTION_OPTIONS, not typed in, so the arithmetic
  * below is a description of today's data rather than a constraint on it. It read
  * 6 tags and 112,875 combinations until 22 Sep 2026, when question one gained a
- * seventh option, `free_weight`, splitting loose iron off from the rack.
+ * seventh option, `free_weight`, splitting loose iron off from the rack, and
+ * 7 tags and 170,625 combinations until 7 Oct 2026, when `power_rack` was
+ * retired from the form and the count went back to 6.
  *
- *   Function subsets of size 1-3 from 7 tags : 7 + 21 + 35 = 63
- *     plus "all of the above" (all 7 at once): 1
+ *   Function subsets of size 1-3 from 6 tags : 6 + 15 + 20 = 41
+ *     plus "all of the above" (all 6 at once): 1
  *     plus "no preference" (the sentinel)    : 1
  *   Space combos (5 lengths x 5 depths)      : 25
  *   Personas                                 : 5
  *   Budget steps ($2,500-$7,500 by $250)     : 21
  *   ---------------------------------------------------
- *   Total                                    : 65 x 25 x 5 x 21 = 170,625
+ *   Total                                    : 43 x 25 x 5 x 21 = 112,875
  *
  * Run with:  npm run sweep
  * Exits non-zero if any bundle is unreachable or any combination throws.
@@ -53,7 +55,7 @@ function subsets(arr, maxSize) {
  *
  * Subsets of 1-3 are what someone picking by hand realistically does, but the
  * two shortcuts on question one reach states no subset of that size covers:
- * "all of the above" selects all seven at once, and "no preference" stores the
+ * "all of the above" selects every tag at once, and "no preference" stores the
  * sentinel alone. Both take different branches through functionScore, so
  * leaving them out of the sweep would ship the two newest paths as the only
  * two nothing checks.

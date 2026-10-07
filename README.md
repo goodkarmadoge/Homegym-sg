@@ -31,7 +31,7 @@ Four questions (what you want to train, floor space, which customer you are, bud
 
 **Question one has two escape hatches,** because a shopper who does not yet know what they want is the one this quiz is most useful to, and a required multi-select was turning them away at the first screen:
 
-- **All of the above** ticks all seven functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
+- **All of the above** ticks all six functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
 - **No preference** declines the question. The 40-point function axis stops discriminating entirely and floor space, budget and persona decide the match.
 
 They are deliberately **not** the same answer. "I want everything" and "I don't mind" pull in different directions, and the matcher honours both: across a spread of rooms, budgets and personas the two land on a different bundle about a third of the time. Both are exclusive against the individual options, so no one can hold a contradiction like *barbell lifts* **and** *no preference*.
@@ -344,7 +344,7 @@ Question one has two shortcuts, and both show up here:
 
 | value in `functions` | what the visitor did |
 |---|---|
-| all seven tags | ticked **All of the above** (or all seven by hand, which is the same answer) |
+| every tag | ticked **All of the above** (or all six by hand, which is the same answer) |
 | `["_any"]` | ticked **No preference**, declining the question |
 
 `_any` is a sentinel, never a tag: no bundle carries it and nothing in the sheet
@@ -428,9 +428,9 @@ a product photo. Writing it a proper `tagline`, `pitch` and `trains` list in
 
 ### The free-weight split
 
-**Status: the code is done, the sheet is not.** Until the cells below are
-changed, `src/quiz/sheet-data.js` carries the corrected tags as a hand edit and
-the nightly sync will revert them.
+**Status: done on both sides.** The sheet's Function column carries the tags the
+table below asks for, and `src/quiz/sheet-data.js` has them from the nightly
+sync rather than from a hand edit.
 
 Question one gained a seventh option on 22 Sep 2026:
 
@@ -438,6 +438,10 @@ Question one gained a seventh option on 22 Sep 2026:
 |---|---|---|
 | `power_rack` | Barbell lifts: squat, bench, deadlift | A rack to lift inside, with safeties |
 | `free_weight` | Free weight - barbell / dumbbell lifts | Loose barbell, plates or dumbbells |
+
+**`power_rack` came back off the form on 7 Oct 2026** and `free_weight` is now
+the only barbell question. See "Retiring an option" below; the rest of this
+section is why the split happened, which still explains the tags on the bundles.
 
 `power_rack` used to mean both the frame and the iron — its help line read
 "Free-weight barbell work in a rack" — which left a visitor who wanted a pair of
@@ -478,6 +482,38 @@ is carried by at least one bundle. The sync workflow runs `npm run check` before
 it commits, so if the sheet comes back without `free_weight` the sync fails and
 refuses to push, and the quiz keeps serving the last good data rather than
 offering an option nothing can answer.
+
+### Retiring an option
+
+**`power_rack` is no longer asked, 7 Oct 2026.** It was the first option on
+question one, directly above `free_weight`, and the client asked for it removed:
+the two read as one question to anyone not shopping for a frame specifically, and
+ten of the sixteen bundles carry both tags, so ticking either landed on much the
+same shortlist. Question one now offers six options.
+
+**The tag stays on the bundles.** It is true of them, the sheet's Function column
+still sets it, `sheet-parse.js` still resolves "Power Rack" to it, and
+`FUNCTION_SHORT` still prints **Rack** on the "why this one" chips, which is how
+a customer is told there is a frame in the box. Nothing is unreachable: every
+bundle carrying `power_rack` also carries `free_weight`, `smith`, `cable` or
+`leg_press`, and `npm run sweep` still reaches all sixteen as a primary match.
+
+**How to retire another one.** Two edits, in this order:
+
+1. Delete the entry from `FUNCTION_OPTIONS` in `src/quiz/bundles.js`.
+2. Add the tag to `UNASKED_FUNCTIONS` in the same file, with a one-line reason.
+
+Step 2 is not optional. The guard above has a mirror — *no bundle carries a tag
+question one cannot offer* — which exists because a capability in the sheet that
+the form cannot ask for is normally a data fault, and it fails on step 1 alone.
+`UNASKED_FUNCTIONS` is the allowlist of tags that are unaskable **on purpose**,
+so the guard keeps catching the fault it was written for. A third test fails if a
+tag sits in the allowlist while no bundle carries it, which means it is dead
+vocabulary and should come out of `UNASKED_FUNCTIONS`, `FUNCTION_SHORT` and
+`sheet-parse.js`'s alias table together.
+
+To bring an option back, reverse both edits: the sheet never stopped carrying the
+tag, so nothing else is needed.
 
 ### Editing prices, copy and imagery
 

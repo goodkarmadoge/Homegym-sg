@@ -40,10 +40,11 @@ const TOTAL_STEPS = 4;
  * The "all of the above" checkbox's value.
  *
  * UI ONLY, and unlike ANY_FUNCTION it is never stored. "All of the above" is a
- * shortcut for ticking the six real boxes, not a seventh answer, so its own
- * checked state is DERIVED from whether all seven are selected. That is what
- * makes ticking the six by hand light it up, and unticking one turn it off,
- * with no extra state to keep in step.
+ * shortcut for ticking every real box, not an answer of its own, so its checked
+ * state is DERIVED from whether all of FUNCTION_OPTIONS is selected. That is what
+ * makes ticking them all by hand light it up, and unticking one turn it off, with
+ * no extra state to keep in step, and it is why nothing here counts the options:
+ * question one has had six, then seven, then six again.
  */
 const ALL_FUNCTIONS = '_all';
 
@@ -1842,7 +1843,7 @@ class HomegymBundleQuiz extends HTMLElement {
     }
 
     // A salesperson reads this message. "_any" would be noise, and a list of
-    // all seven reads as a demand rather than the shrug it actually was, so both
+    // every option reads as a demand rather than the shrug it actually was, so both
     // shortcuts are spelled out in the words the visitor saw on screen.
     const fns = a.functions.includes(ANY_FUNCTION)
       ? 'No preference'

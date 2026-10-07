@@ -291,7 +291,7 @@ matched bundle, its price, and whether the fallback ladder was used. The README'
 **Events** section has the payload for each.
 
 **Two values in `answers.functions` are not training functions.** Question one
-has two shortcuts and both reach your `dataLayer`: all seven tags means the visitor
+has two shortcuts and both reach your `dataLayer`: every tag means the visitor
 ticked **All of the above**, and `["_any"]` means they ticked **No preference**
 and declined the question. Segment on `_any` rather than filtering it out —
 "didn't know what they wanted" is the cohort most likely to need a salesperson,
