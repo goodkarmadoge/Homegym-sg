@@ -240,7 +240,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
      mount, so a bundle added to the spreadsheet appears without a redeploy.
      Without it the quiz uses the committed snapshot, which is the data that
-     every test and the 170,625-combination sweep actually checked. */
+     every test and the 112,875-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
   get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }

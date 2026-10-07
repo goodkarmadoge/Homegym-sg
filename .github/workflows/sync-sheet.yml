@@ -10,10 +10,14 @@ name: Sync bundle data and photography
 #   because posts scroll out of that feed on their own and a pinned image can
 #   keep loading long after nothing proves what it shows
 #
-# The commit this pushes to main triggers ci.yml, which is what actually
-# deploys. Nothing reaches the live quiz without passing the test suite and the
-# 170,625-combination sweep first: that is the whole reason both are committed
-# rather than fetched in the browser on every page load.
+# The commit this pushes to main is what ci.yml deploys, but NOT by way of the
+# push: a push made with the default GITHUB_TOKEN does not fire push-triggered
+# workflows, by design, so ci.yml listens for this workflow finishing instead.
+# See the `workflow_run` block in ci.yml for what that cost before it was wired
+# up. Nothing reaches the live quiz without passing the test suite and the
+# 112,875-combination sweep first, which this job runs itself below rather than
+# leaving to the deploy: that is the whole reason the data is committed rather
+# than fetched in the browser on every page load.
 #
 # REQUIRES the sheet to be readable without signing in:
 #   open it, Share, "Anyone with the link" as Viewer.
@@ -29,11 +33,10 @@ name: Sync bundle data and photography
 
 on:
   schedule:
-    # Daily at 06:30 Singapore time.
+    # Daily, aimed at the small hours of Singapore morning.
     #
     # GITHUB CRON IS UTC ONLY. There is no timezone field, so the conversion has
-    # to live here: 06:30 SGT is 22:30 UTC THE PREVIOUS DAY, because Singapore
-    # is UTC+8. Singapore has not observed daylight saving since 1935, so that
+    # to live here: Singapore is UTC+8, so 18:30 UTC is 02:30 SGT the NEXT day. Singapore has not observed daylight saving since 1935, so that
     # offset is fixed all year and this line never needs a seasonal correction.
     # A UK or US schedule would drift by an hour twice a year; this one does not.
     #
@@ -44,11 +47,20 @@ on:
     # the evening is when it would actually be seen. Running at the end of the
     # day instead would put every change live at the exact hour traffic peaks.
     #
-    # 22:30 rather than 22:00 because scheduled jobs queue behind everyone
-    # else's on the hour; GitHub delays them under load and drops them entirely
-    # if the backlog is bad enough. Off-the-hour schedules start far closer to
-    # when they were asked to.
-    - cron: '30 22 * * *'
+    # 18:30 rather than 22:30, FROM MEASUREMENT, 7 Oct 2026. The line below asked
+    # for 22:30 UTC for a fortnight and GitHub never once started it on time: the
+    # fourteen scheduled runs from 24 Sep to 7 Oct began between 00:41 and 02:25
+    # UTC, a delay of 2h12m to 3h56m with a median near 2h53m. Scheduled jobs
+    # queue behind every other account's, and off-the-hour minutes buy minutes
+    # against a backlog measured in hours, so the correction has to be in the
+    # schedule rather than in the hope.
+    #
+    # 18:30 UTC plus the worst observed delay still lands at 06:26 SGT, so
+    # yesterday's sheet edits are live before anyone arrives even on a bad
+    # morning, which is what this time was always for. On a clean morning it runs
+    # at 02:30 SGT, which costs nothing: the sheet is edited in office hours, so
+    # there is never a late edit this would miss.
+    - cron: '30 18 * * *'
   workflow_dispatch:       # "Run workflow" in the Actions tab, for an instant sync
 
 permissions:
