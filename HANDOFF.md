@@ -291,7 +291,7 @@ matched bundle, its price, and whether the fallback ladder was used. The README'
 **Events** section has the payload for each.
 
 **Two values in `answers.functions` are not training functions.** Question one
-has two shortcuts and both reach your `dataLayer`: all seven tags means the visitor
+has two shortcuts and both reach your `dataLayer`: every tag means the visitor
 ticked **All of the above**, and `["_any"]` means they ticked **No preference**
 and declined the question. Segment on `_any` rather than filtering it out —
 "didn't know what they wanted" is the cohort most likely to need a salesperson,
@@ -299,8 +299,9 @@ and it is worth knowing how big it is.
 
 **Worth instrumenting from day one:** the share of sessions where `quiz:complete`
 reports `fallbackUsed`, and the share that reach the "let's talk" card with no
-bundle at all. Swept across all 170,625 realistic answer combinations, the
-fallback ladder is used by **38.9%** and **13.1%** end with no bundle. Those are
+bundle at all. Swept across all 112,875 realistic answer combinations as at
+7 Oct 2026, the fallback ladder is used by **11.2%** and **1.3%** end with no
+bundle, down from 38.9% and 13.1% when the catalogue held ten bundles. Those are
 combinations, not visitors, and real traffic will not be spread evenly across
 them, which is exactly why it is worth measuring. If the live numbers land near
 these, the honest reading is a catalogue gap at particular room sizes rather than

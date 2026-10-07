@@ -40,10 +40,11 @@ const TOTAL_STEPS = 4;
  * The "all of the above" checkbox's value.
  *
  * UI ONLY, and unlike ANY_FUNCTION it is never stored. "All of the above" is a
- * shortcut for ticking the six real boxes, not a seventh answer, so its own
- * checked state is DERIVED from whether all seven are selected. That is what
- * makes ticking the six by hand light it up, and unticking one turn it off,
- * with no extra state to keep in step.
+ * shortcut for ticking every real box, not an answer of its own, so its checked
+ * state is DERIVED from whether all of FUNCTION_OPTIONS is selected. That is what
+ * makes ticking them all by hand light it up, and unticking one turn it off, with
+ * no extra state to keep in step, and it is why nothing here counts the options:
+ * question one has had six, then seven, then six again.
  */
 const ALL_FUNCTIONS = '_all';
 
@@ -211,6 +212,10 @@ class HomegymBundleQuiz extends HTMLElement {
       view: 'quiz',        // quiz | matching | result
       result: null,
       shownBundleId: null, // which bundle the result view is currently showing
+      // The bundle the QUIZ chose, as opposed to the one being looked at.
+      // Browsing an alternate overwrites result.primary, so without this the
+      // answer the visitor actually came for leaves no trace.
+      matchedBundleId: null,
       completedBefore: false,
       error: ''
     };
@@ -235,7 +240,7 @@ class HomegymBundleQuiz extends HTMLElement {
   /* Live data. With sheet-live present the quiz re-reads the Google Sheet on
      mount, so a bundle added to the spreadsheet appears without a redeploy.
      Without it the quiz uses the committed snapshot, which is the data that
-     every test and the 170,625-combination sweep actually checked. */
+     every test and the 112,875-combination sweep actually checked. */
   get sheetLive() { return this.hasAttribute('sheet-live'); }
   get sheetId() { return this.getAttribute('sheet-id') || SHEET_ID; }
   get bookingUrl() { return this.getAttribute('booking-url') || BOOKING_URL; }
@@ -363,6 +368,8 @@ class HomegymBundleQuiz extends HTMLElement {
         const res = match(this._answersOut(), BUNDLES);
         this.state.result = res;
         this.state.shownBundleId = res.primary ? res.primary.id : null;
+        // Re-matched against new data, so the old match is no longer the match.
+        this.state.matchedBundleId = this.state.shownBundleId;
       }
       this.render();
 
@@ -898,6 +905,7 @@ class HomegymBundleQuiz extends HTMLElement {
     return `
       <div class="quiz quiz--result">
         <div class="view">
+        ${this.backToMatch()}
         ${this.banner(res)}
         <p class="eyebrow">${this.resultEyebrow(res)}</p>
         <${this._h(0)} class="result__name" tabindex="-1" data-focus>${esc(bundle.name)}</${this._h(0)}>
@@ -922,6 +930,8 @@ class HomegymBundleQuiz extends HTMLElement {
         ${this.sectionAlternates(alternates)}
         ${this.sectionAdvice()}
         ${this.sectionRooms(bundle)}
+
+        ${this.backToMatch()}
 
         <div class="hr"></div>
         <div class="retake">
@@ -1031,6 +1041,38 @@ class HomegymBundleQuiz extends HTMLElement {
   }
 
   /* ── 4. Other bundles ─────────────────────────────────────────────────── */
+
+  /**
+   * The way back to the bundle the quiz actually chose.
+   *
+   * Browsing an alternate overwrites result.primary, so the matched bundle is
+   * demoted into the "Other bundles" strip at the foot of the page. It is
+   * reachable from there, which is why this was not noticed sooner, but it is
+   * indistinguishable from a genuine alternate once it arrives: nothing marks
+   * it as the answer the visitor came for, and finding it means scrolling past
+   * the whole result to a strip of look-alike cards.
+   *
+   * So it gets a named button, at the top and again at the bottom. Top because
+   * switching bundles scrolls to the top, so that is where the reader is
+   * standing when they decide they preferred the first one; bottom because the
+   * other way they decide is by reading the whole thing.
+   *
+   * Empty while the matched bundle IS the one on screen, which is every visitor
+   * who never browsed an alternate.
+   */
+  backToMatch() {
+    const { matchedBundleId, shownBundleId } = this.state;
+    if (!matchedBundleId || matchedBundleId === shownBundleId) return '';
+    const matched = BUNDLES.find((b) => b.id === matchedBundleId);
+    if (!matched) return '';
+    return `
+      <div class="backmatch">
+        <button class="btn btn--outline backmatch__btn" data-action="back-to-match" type="button">
+          ${BACK_ARROW} Back to your bundle
+        </button>
+        <span class="backmatch__name">You matched <strong>${esc(matched.name)}</strong></span>
+      </div>`;
+  }
 
   sectionAlternates(alternates) {
     if (!alternates.length) return '';
@@ -1173,6 +1215,15 @@ class HomegymBundleQuiz extends HTMLElement {
    * which part is missing.
    */
   resultEyebrow(res) {
+    // BROWSING AN ALTERNATE IS NOT YOUR MATCH. Checked first because it is a
+    // fact about which bundle is on screen, where the rest of this is about how
+    // well the matched one scored. Without it the page ran "YOUR MATCH" over a
+    // bundle the quiz did not choose -- and now directly under a bar saying
+    // "You matched The Smart Smith", which is a flat contradiction on one
+    // screen. Found in the browser after adding that bar.
+    const { matchedBundleId, shownBundleId } = this.state;
+    if (matchedBundleId && shownBundleId !== matchedBundleId) return 'Another option';
+
     const gaps = Array.isArray(res.gaps) ? res.gaps : [];
     const asked = this.state.answers.functions.filter((f) => f !== ANY_FUNCTION);
     return gaps.length && gaps.length === asked.length ? 'Closest we have' : 'Your match';
@@ -1410,6 +1461,7 @@ class HomegymBundleQuiz extends HTMLElement {
       case 'restart':   e.preventDefault(); this._restart(); break;
       case 'adjust':    e.preventDefault(); this._adjust(); break;
       case 'alternate': e.preventDefault(); this._showAlternate(parseInt(el.dataset.bundle, 10)); break;
+      case 'back-to-match': e.preventDefault(); this._showAlternate(this.state.matchedBundleId, true); break;
       case 'cta':       e.preventDefault(); this._cta(); break;
       case 'whatsapp':  e.preventDefault(); this._whatsapp('bundle'); break;
       case 'book':      this._bookingClick(); break;   // let the link open naturally
@@ -1592,6 +1644,7 @@ class HomegymBundleQuiz extends HTMLElement {
     const finish = () => {
       this.state.result = result;
       this.state.shownBundleId = result.primary ? result.primary.id : null;
+      this.state.matchedBundleId = this.state.shownBundleId;
       this.state.view = 'result';
       this.state.completedBefore = true;
       this._shouldFocus = true;
@@ -1658,6 +1711,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this.state.view = 'quiz';
     this.state.result = null;
     this.state.shownBundleId = null;
+    this.state.matchedBundleId = null;
     this.state.error = '';
     this._clearStorage();
     this._shouldFocus = true;
@@ -1666,7 +1720,7 @@ class HomegymBundleQuiz extends HTMLElement {
     this.emit('quiz:restart', { completedBefore });
   }
 
-  _showAlternate(id) {
+  _showAlternate(id, isReturn = false) {
     const target = BUNDLES.find((b) => b.id === id);
     if (!target) return;
     const from = this.state.shownBundleId;
@@ -1689,7 +1743,11 @@ class HomegymBundleQuiz extends HTMLElement {
     // they just clicked, apparently unchanged. Same reasoning, and the same
     // call, as stepping between questions.
     this._scrollToTop();
-    this.emit('quiz:alternate-view', { fromBundleId: from, toBundleId: id });
+    // Reuses quiz:alternate-view rather than adding an event name: the shown
+    // bundle changed, which is what that event means, and a new name would have
+    // to be added to the forwarder in bundle-quiz.html or the host would never
+    // hear it. backToMatch separates the two directions for the funnel.
+    this.emit('quiz:alternate-view', { fromBundleId: from, toBundleId: id, backToMatch: isReturn });
   }
 
   _currentBundle() {
@@ -1785,7 +1843,7 @@ class HomegymBundleQuiz extends HTMLElement {
     }
 
     // A salesperson reads this message. "_any" would be noise, and a list of
-    // all seven reads as a demand rather than the shrug it actually was, so both
+    // every option reads as a demand rather than the shrug it actually was, so both
     // shortcuts are spelled out in the words the visitor saw on screen.
     const fns = a.functions.includes(ANY_FUNCTION)
       ? 'No preference'

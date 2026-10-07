@@ -6,6 +6,30 @@ on:
   pull_request:
   workflow_dispatch:
 
+  # A PUSH BY GITHUB_TOKEN DOES NOT FIRE THE PUSH EVENT ABOVE.
+  #
+  # sync-sheet.yml commits the Google Sheet's changes to main with the default
+  # GITHUB_TOKEN, and GitHub deliberately suppresses the workflow runs such a
+  # push would otherwise trigger, to stop a workflow looping on its own commits.
+  # So the two nightly sync commits on 26 and 27 Sep 2026 ran no CI and, more to
+  # the point, no Pages deploy: the live site at goodkarmadoge.github.io sat on
+  # 22 Sep's build while main had moved twice. Vercel was unaffected, because its
+  # Git integration reads GitHub's webhooks directly rather than through Actions,
+  # which is why the drift showed on one published URL and not the other.
+  #
+  # `workflow_run` is the documented way back in and needs no personal access
+  # token: it fires after the named workflow finishes, with the default branch
+  # checked out, which is exactly the commit that wants deploying.
+  #
+  # It fires after EVERY sync, including the usual no-change ones, so this builds
+  # and deploys the same bytes most mornings. That is the trade accepted here:
+  # roughly two runner-minutes a day against a class of silent staleness that
+  # nobody notices until a customer reads last week's prices, and it re-runs the
+  # suite and the sweep against the live data daily as a side effect.
+  workflow_run:
+    workflows: ['Sync bundle data and photography']
+    types: [completed]
+
 permissions:
   contents: read
 
@@ -39,7 +63,24 @@ jobs:
   pages:
     name: Deploy to GitHub Pages
     needs: check
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Everything on main that is not a pull request, which now includes the
+    # nightly sync's commit by way of `workflow_run`. Phrased as an exclusion
+    # rather than a list of events so that adding a trigger above does not
+    # silently stop deploying, which is the failure this whole block exists to
+    # undo. A sync that failed has nothing worth publishing.
+    #
+    # The ref check is deliberately NOT applied to `workflow_run`. That event
+    # only fires for a workflow file on the default branch, and the sync only
+    # ever runs on main, so the guard would be redundant; the risk is that
+    # `github.ref` means something slightly different in that context than it
+    # does for a push, and a condition that quietly never matches is precisely
+    # the bug being fixed here.
+    if: >-
+      github.event_name != 'pull_request'
+      && (
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+        || github.ref == 'refs/heads/main'
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read

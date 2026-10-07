@@ -31,7 +31,7 @@ Four questions (what you want to train, floor space, which customer you are, bud
 
 **Question one has two escape hatches,** because a shopper who does not yet know what they want is the one this quiz is most useful to, and a required multi-select was turning them away at the first screen:
 
-- **All of the above** ticks all seven functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
+- **All of the above** ticks all six functions. The function axis then rewards breadth, so the most capable bundle that still fits the room and the budget wins.
 - **No preference** declines the question. The 40-point function axis stops discriminating entirely and floor space, budget and persona decide the match.
 
 They are deliberately **not** the same answer. "I want everything" and "I don't mind" pull in different directions, and the matcher honours both: across a spread of rooms, budgets and personas the two land on a different bundle about a third of the time. Both are exclusive against the individual options, so no one can hold a contradiction like *barbell lifts* **and** *no preference*.
@@ -344,7 +344,7 @@ Question one has two shortcuts, and both show up here:
 
 | value in `functions` | what the visitor did |
 |---|---|
-| all seven tags | ticked **All of the above** (or all seven by hand, which is the same answer) |
+| every tag | ticked **All of the above** (or all six by hand, which is the same answer) |
 | `["_any"]` | ticked **No preference**, declining the question |
 
 `_any` is a sentinel, never a tag: no bundle carries it and nothing in the sheet
@@ -428,9 +428,9 @@ a product photo. Writing it a proper `tagline`, `pitch` and `trains` list in
 
 ### The free-weight split
 
-**Status: the code is done, the sheet is not.** Until the cells below are
-changed, `src/quiz/sheet-data.js` carries the corrected tags as a hand edit and
-the nightly sync will revert them.
+**Status: done on both sides.** The sheet's Function column carries the tags the
+table below asks for, and `src/quiz/sheet-data.js` has them from the nightly
+sync rather than from a hand edit.
 
 Question one gained a seventh option on 22 Sep 2026:
 
@@ -438,6 +438,10 @@ Question one gained a seventh option on 22 Sep 2026:
 |---|---|---|
 | `power_rack` | Barbell lifts: squat, bench, deadlift | A rack to lift inside, with safeties |
 | `free_weight` | Free weight - barbell / dumbbell lifts | Loose barbell, plates or dumbbells |
+
+**`power_rack` came back off the form on 7 Oct 2026** and `free_weight` is now
+the only barbell question. See "Retiring an option" below; the rest of this
+section is why the split happened, which still explains the tags on the bundles.
 
 `power_rack` used to mean both the frame and the iron — its help line read
 "Free-weight barbell work in a rack" — which left a visitor who wanted a pair of
@@ -479,6 +483,38 @@ it commits, so if the sheet comes back without `free_weight` the sync fails and
 refuses to push, and the quiz keeps serving the last good data rather than
 offering an option nothing can answer.
 
+### Retiring an option
+
+**`power_rack` is no longer asked, 7 Oct 2026.** It was the first option on
+question one, directly above `free_weight`, and the client asked for it removed:
+the two read as one question to anyone not shopping for a frame specifically, and
+ten of the sixteen bundles carry both tags, so ticking either landed on much the
+same shortlist. Question one now offers six options.
+
+**The tag stays on the bundles.** It is true of them, the sheet's Function column
+still sets it, `sheet-parse.js` still resolves "Power Rack" to it, and
+`FUNCTION_SHORT` still prints **Rack** on the "why this one" chips, which is how
+a customer is told there is a frame in the box. Nothing is unreachable: every
+bundle carrying `power_rack` also carries `free_weight`, `smith`, `cable` or
+`leg_press`, and `npm run sweep` still reaches all sixteen as a primary match.
+
+**How to retire another one.** Two edits, in this order:
+
+1. Delete the entry from `FUNCTION_OPTIONS` in `src/quiz/bundles.js`.
+2. Add the tag to `UNASKED_FUNCTIONS` in the same file, with a one-line reason.
+
+Step 2 is not optional. The guard above has a mirror — *no bundle carries a tag
+question one cannot offer* — which exists because a capability in the sheet that
+the form cannot ask for is normally a data fault, and it fails on step 1 alone.
+`UNASKED_FUNCTIONS` is the allowlist of tags that are unaskable **on purpose**,
+so the guard keeps catching the fault it was written for. A third test fails if a
+tag sits in the allowlist while no bundle carries it, which means it is dead
+vocabulary and should come out of `UNASKED_FUNCTIONS`, `FUNCTION_SHORT` and
+`sheet-parse.js`'s alias table together.
+
+To bring an option back, reverse both edits: the sheet never stopped carrying the
+tag, so nothing else is needed.
+
 ### Editing prices, copy and imagery
 
 Still `src/quiz/bundles.js`:
@@ -518,16 +554,24 @@ keeps serving the last good committed data.
 > verbatim, blank spacer rows and all. Both endpoints were compared on
 > 7 Sep 2026; the strict "defined but has no products" check is what caught it.
 
-`.github/workflows/sync-sheet.yml` runs the sync **daily at 06:30 Singapore
-time**, and on demand from the Actions tab. It commits only when something
+`.github/workflows/sync-sheet.yml` runs the sync **daily, early Singapore
+morning**, and on demand from the Actions tab. It commits only when something
 actually changed, and only after `npm run check` passes, so a sheet edit that
 breaks the quiz stops in CI rather than on a customer's screen.
 
-The schedule is written `30 22 * * *` because **GitHub cron is always UTC** and
-has no timezone field: 06:30 SGT is 22:30 UTC the previous day. Singapore has
-not observed daylight saving since 1935, so that offset is fixed all year and
-the line never needs a seasonal correction. The job itself runs with
+The schedule is written `30 18 * * *` because **GitHub cron is always UTC** and
+has no timezone field: Singapore is UTC+8, so that is 02:30 SGT the next day.
+Singapore has not observed daylight saving since 1935, so the offset is fixed all
+year and the line never needs a seasonal correction. The job itself runs with
 `TZ=Asia/Singapore`, so every timestamp it logs reads in local time.
+
+**It asks for 02:30 and expects not to get it.** GitHub queues scheduled jobs
+behind every other account's and starts them late. Measured over the fourteen
+scheduled runs from 24 Sep to 7 Oct 2026, a schedule of 22:30 UTC started between
+00:41 and 02:25 UTC — **2h12m to 3h56m late, every single day**, median near
+2h53m. The hour below is therefore set three to four hours ahead of when the sync
+is actually wanted, not at it. If you are checking whether the cron fired, look
+for a run a few hours after the nominal time before concluding it did not.
 
 **Timing:** the sheet is edited in Singapore office hours and the quiz is read
 by Singapore customers, who browse in the evening. Running before the working
@@ -536,7 +580,16 @@ business day to spot a problem before the evening peak. An end-of-day sync would
 instead push every change live at the exact hour traffic is highest.
 
 So an edit made on Monday afternoon goes live early Tuesday. If that is too slow
-for a particular change, **Run workflow** does it in about a minute.
+for a particular change, **Run workflow** does it in about a minute, and a manual
+run is not subject to the queueing above.
+
+**A quiet stretch is not a broken cron.** The sync commits only when the sheet or
+the Instagram feed has actually moved, so the normal healthy result is a run that
+reports *"Sheet and photography both match what is committed. Nothing to do."*
+and ends. Between 28 Sep and 7 Oct 2026 that was every single run: ten days of
+green with no commit, because the sheet had not been edited since 27 Sep. To tell
+a sleeping cron from an idle one, read the latest run's log — a healthy no-op
+still logs `parsed 16 bundles and 5 personas`, which proves it reached the sheet.
 
 One failure mode worth knowing: **GitHub disables scheduled workflows after 60
 days of repository inactivity**, and emails only the repo owner. Sheet changes
@@ -653,24 +706,34 @@ have failed to give them.
 
 ### Coverage
 
-`npm run sweep` runs every realistic answer combination (170,625 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Current distribution:
+`npm run sweep` runs every realistic answer combination (112,875 of them: function sets, room sizes, all five personas and the budget range) and asserts every bundle is reachable and nothing throws. Distribution as at 7 Oct 2026, 16 bundles and six options on question one:
 
 | Bundle | Share of matched runs |
 |---|---|
-| The Fast Track | 22.8% |
-| The Smart Smith | 21.8% |
-| The Silent Operator | 17.5% |
-| The Foldaway Beast | 11.5% |
-| The Solo Lifter | 8.4% |
-| The All-Rounder | 7.6% |
-| The Apartment Titan | 5.1% |
-| The Level Up | 2.7% |
-| The Barbell Purist | 1.8% |
-| The Iron Fortress | 0.8% |
+| The Dumbbell Corner | 18.9% |
+| The Leg Station | 16.0% |
+| The Silent Operator | 11.1% |
+| The Full House | 9.3% |
+| The Smart Smith | 8.5% |
+| The Cable Corner | 6.1% |
+| The Foldaway Beast | 5.9% |
+| The Solo Lifter | 4.6% |
+| The Fast Track | 4.4% |
+| The All-Rounder | 4.1% |
+| The Connected Cube | 3.4% |
+| The Apartment Titan | 2.3% |
+| The Level Up | 2.2% |
+| The Starting Barbell | 2.1% |
+| The Iron Fortress | 0.6% |
+| The Barbell Purist | 0.5% |
 
-32.0% of combinations hit the fallback ladder, almost all of them floors under 1.5 m on a side or budgets under $2,750, rare in practice. 12.0% reach the "let's talk" card. The ladder never throws.
+**11.2%** of combinations hit the fallback ladder, almost all of them floors under 1.5 m on a side or budgets under $2,750, rare in practice. **1.3%** reach the "let's talk" card. The ladder never throws.
+
+Both figures were far higher — 32.0% and 12.0% — when the catalogue held ten bundles. Six more bundles, several of them small and cheap, is what closed the gap: there is now usually something that genuinely fits rather than something the ladder had to reach for.
 
 Rung 3 currently never fires: rung 2's space relaxation always unlocks something affordable first. It is kept because a future price or footprint change could open that gap.
+
+Re-run `npm run sweep` after any sheet change and paste the new table in; the numbers above are measured, not estimated, and a stale table here is worse than none.
 
 ## The insights dashboard
 
@@ -860,7 +923,7 @@ npm run sync:images  # refresh install photos from the Instagram feed, report th
 npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
-npm run sweep    # assert every bundle is reachable across 170,625 combinations
+npm run sweep    # assert every bundle is reachable across 112,875 combinations
 npm run verify   # validate dist/ structure, noindex tags, internal links, quiz bundle
 npm run check    # all four, in order, this is what CI and Vercel run
 
@@ -890,7 +953,7 @@ deploy.
 
 - any quiz answer combination produces an empty, malformed, duplicated or over-budget result
 - a bundle's products no longer sum to its stated price
-- any bundle becomes unreachable, or the matcher throws on any of 170,625 combinations
+- any bundle becomes unreachable, or the matcher throws on any of 112,875 combinations
 - the inlined quiz bundle does not match the standalone one byte for byte
 - a page is missing its doctype, `<head>`, `<title>` or noindex tags
 - an absolute artifact URL leaks into the output
@@ -898,9 +961,24 @@ deploy.
 
 On a green push to `main`, two deployments run from the same `dist/`:
 
-| Host | URL |
-|---|---|
-| Vercel (production) | https://homegym-sg.vercel.app |
-| GitHub Pages | https://goodkarmadoge.github.io/Homegym-sg/ |
+| Host | URL | Triggered by |
+|---|---|---|
+| Vercel (production) | https://homegym-sg.vercel.app | Vercel's own Git integration, reading GitHub's webhooks |
+| GitHub Pages | https://goodkarmadoge.github.io/Homegym-sg/ | the `pages` job in `ci.yml` |
 
 Vercel runs the identical `npm run check` as its build command, so a broken commit fails to deploy rather than deploying broken.
+
+**The nightly sync's commit is the exception, and it used to only half-deploy.**
+A push made with the default `GITHUB_TOKEN` does not fire push-triggered
+workflows — GitHub suppresses them so a workflow cannot loop on its own commits —
+so `sync-sheet.yml`'s commits ran no CI and no Pages deploy. Vercel took them
+regardless, because it never reads Actions in the first place. The two sync
+commits of 26 and 27 Sep 2026 therefore went live on Vercel while Pages stayed on
+22 Sep's build, which is the kind of drift that shows up as a customer quoting a
+price nobody can find.
+
+`ci.yml` now also triggers on `workflow_run` for the sync workflow, which is the
+documented way in and needs no personal access token. It fires after every sync,
+including the usual no-change ones, so expect a CI run most mornings that
+rebuilds identical bytes; the daily re-run of the suite and the sweep against
+live data is a fair consolation for two runner-minutes.

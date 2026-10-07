@@ -4,7 +4,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUNDLES, PRODUCTS, FUNCTION_OPTIONS } from '../src/quiz/bundles.js';
+import { BUNDLES, PRODUCTS, FUNCTION_OPTIONS, UNASKED_FUNCTIONS } from '../src/quiz/bundles.js';
 import { match, fits, functionScore, budgetScore, personaScore, scoreBundle, FALLBACK, ANY_FUNCTION } from '../src/quiz/matcher.js';
 
 const run = (answers) => match(answers, BUNDLES);
@@ -177,13 +177,13 @@ test('"no preference" makes the function axis stop discriminating', () => {
 });
 
 test('"all of the above" still ranks by how much a bundle covers', () => {
-  // The other shortcut is the opposite of neutral: selecting all seven means the
-  // bundle doing the most of them should score highest.
+  // The other shortcut is the opposite of neutral: selecting every option means
+  // the bundle doing the most of them should score highest.
   const all = FUNCTION_OPTIONS.map((o) => o.tag);
   const three = functionScore(all, ['cable', 'smith', 'power_rack']);
   const one = functionScore(all, ['cable']);
   assert.ok(three > one, `expected broader to beat narrower, got ${three} vs ${one}`);
-  // No bundle covers all seven, so nothing reaches full marks this way.
+  // No bundle covers every option, so nothing reaches full marks this way.
   assert.ok(three < 1, `expected under 1, got ${three}`);
 });
 
@@ -235,12 +235,38 @@ test('every option on question one is carried by at least one bundle', () => {
   }
 });
 
+// The mirror of the test above, with one allowlist. A tag in the sheet's
+// Function column that the form cannot ask for is normally a data fault: a
+// capability we advertise on the result page and no visitor can search for. The
+// exception is a tag retired from the form on purpose, which `power_rack` was on
+// 7 Oct 2026, so the allowlist is an explicit list in bundles.js rather than a
+// relaxed assertion here.
 test('no bundle carries a tag question one cannot offer', () => {
   const offered = new Set(FUNCTION_OPTIONS.map((o) => o.tag));
   for (const b of BUNDLES) {
     for (const fn of b.functions) {
-      assert.ok(offered.has(fn), `bundle ${b.id} carries "${fn}", which nothing on question one can select`);
+      assert.ok(
+        offered.has(fn) || UNASKED_FUNCTIONS.has(fn),
+        `bundle ${b.id} carries "${fn}", which nothing on question one can select. ` +
+        'If that is deliberate, add it to UNASKED_FUNCTIONS in bundles.js with the reason.'
+      );
     }
+  }
+});
+
+// Stops the allowlist outliving its data. A tag nobody can pick AND no bundle
+// carries is dead vocabulary: it should come out of UNASKED_FUNCTIONS, and out
+// of FUNCTION_SHORT and sheet-parse.js's alias table with it.
+test('every unasked tag is still carried by a bundle', () => {
+  for (const tag of UNASKED_FUNCTIONS) {
+    assert.ok(
+      BUNDLES.some((b) => b.functions.includes(tag)),
+      `"${tag}" is in UNASKED_FUNCTIONS but no bundle carries it, so delete it from the allowlist`
+    );
+    assert.ok(
+      !FUNCTION_OPTIONS.some((o) => o.tag === tag),
+      `"${tag}" is both offered on question one and listed as unasked; pick one`
+    );
   }
 });
 

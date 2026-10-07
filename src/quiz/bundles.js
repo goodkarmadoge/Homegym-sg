@@ -595,25 +595,38 @@ function autoPitch(products) {
 /**
  * Step 1 options. `tag` is the value stored in answers.functions.
  *
- * POWER RACK AND FREE WEIGHT ARE TWO QUESTIONS, NOT ONE.
- *   Until 22 Sep 2026 `power_rack` carried both: its help line read "Free-weight
- *   barbell work in a rack", so a visitor who owned no rack and wanted a pair of
- *   dumbbells had nothing to tick, and bundle 16, which is a bench and a pair of
- *   dumbbells, had to be tagged "Power Rack" to be reachable at all.
+ * `power_rack` IS NO LONGER ASKED, 7 Oct 2026. Question one listed it first, as
+ *   "Barbell lifts: squat, bench, deadlift / A rack to lift inside, with
+ *   safeties", directly above `free_weight`, "Free weight - barbell / dumbbell
+ *   lifts". The client asked for it removed: the two read as the same question
+ *   to a visitor who is not shopping for a frame specifically, and ten of the
+ *   sixteen bundles carry both tags, so ticking either one landed on much the
+ *   same shortlist.
  *
- *   Splitting them lets each option mean one thing. `power_rack` is now the
- *   FRAME: uprights, J-cups, safeties, something to fail a rep inside.
- *   `free_weight` is the LOOSE IRON: a bar and plates, or dumbbells. Most
- *   bundles carry both tags, because a rack with nothing to load it is
- *   furniture, and the two options are deliberately adjacent in the list so the
- *   difference between them is read rather than guessed at.
+ *   The TAG STAYS ON THE BUNDLES. It is accurate, the sheet's Function column
+ *   still sets it, `FUNCTION_SHORT` still prints it on the "why this one" chips,
+ *   and sheet-parse.js still resolves "Power Rack" to it. All that changed is
+ *   that nobody can select it, which is why it is listed in UNASKED_FUNCTIONS
+ *   below. Removing it from the sheet as well would be a different change, and a
+ *   lossy one: the chips would stop telling a customer there is a rack in the
+ *   box.
  *
- *   The help lines do the separating and have to keep doing it. If one of them
- *   drifts back to describing free weights "in a rack", the two options collapse
- *   into each other again and the split has bought nothing.
+ *   Nothing became unreachable. Every bundle that carries `power_rack` also
+ *   carries at least one tag question one still offers, `free_weight`, `smith`,
+ *   `cable` or `leg_press`, and `npm run sweep` asserts all sixteen are still
+ *   reachable as a primary match.
+ *
+ * WHAT `free_weight` HAS TO KEEP MEANING.
+ *   Until 22 Sep 2026 `power_rack` carried both frame and iron: its help line
+ *   read "Free-weight barbell work in a rack", so a visitor who owned no rack
+ *   and wanted a pair of dumbbells had nothing to tick, and bundle 16, which is
+ *   a bench and a pair of dumbbells, had to be tagged "Power Rack" to be
+ *   reachable at all. `free_weight` was split off to carry the LOOSE IRON: a bar
+ *   and plates, or dumbbells. It is now the only barbell question on the form,
+ *   so its help line has to stay broad enough to be the one a barbell lifter
+ *   ticks.
  */
 export const FUNCTION_OPTIONS = [
-  { tag: 'power_rack',  label: 'Barbell lifts: squat, bench, deadlift',  help: 'A rack to lift inside, with safeties' },
   { tag: 'free_weight', label: 'Free weight - barbell / dumbbell lifts', help: 'Loose barbell, plates or dumbbells' },
   { tag: 'smith',       label: 'Guided pressing, safe to do solo',       help: 'Smith machine bar on fixed rails' },
   { tag: 'cable',       label: 'Cable work: lat pulldown, rows, flys',   help: 'Dual weight-stack functional trainer' },
@@ -621,6 +634,23 @@ export const FUNCTION_OPTIONS = [
   { tag: 'multigym',    label: 'Simple pin-loaded machine circuit',      help: 'One station, seated, easy to learn' },
   { tag: 'smart',       label: 'App-guided digital resistance',          help: 'Smart cable with on-screen coaching' }
 ];
+
+/**
+ * Tags a bundle may carry that question one deliberately does not offer.
+ *
+ * An allowlist, not a feature. A tag in the sheet's Function column that the
+ * form cannot ask for is normally a data fault, and the test "no bundle carries
+ * a tag question one cannot offer" exists to catch it before a nightly sync
+ * ships a capability nobody can select. Retiring `power_rack` from the form on
+ * 7 Oct 2026 made it the one honest exception, so it is named here rather than
+ * weakening the test to let any unknown tag through.
+ *
+ * Keep this tight. A tag belongs here only when it stays true of the bundle and
+ * is still shown to the customer somewhere, and `npm test` fails if one of these
+ * is carried by no bundle at all, which means it should be deleted from here
+ * instead.
+ */
+export const UNASKED_FUNCTIONS = new Set(['power_rack']);
 
 /**
  * Step 3 options, generated from the sheet's personas tab.

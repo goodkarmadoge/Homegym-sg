@@ -201,7 +201,7 @@ function eligible(bundles, length, depth, budget) {
  * WHY, and what it would have taken.
  *
  * WHY THIS EXISTS.
- *   Two of the seven options on question one are carried by exactly one bundle:
+ *   Two of the options on question one are carried by exactly one bundle:
  *   `multigym` only by The Fast Track, which needs 1.6 x 2.0 m, and `smart`
  *   only by The Silent Operator, at $5,899. Anyone with a narrower room or a
  *   smaller budget than those single bundles demand cannot be given what they
