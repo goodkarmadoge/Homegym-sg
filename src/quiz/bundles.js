@@ -302,8 +302,9 @@ export const BUNDLE_COPY = {
     tagline: "338kg of machine that folds to 60cm in 30 seconds.",
     pitch: "Full commercial-grade Smith and functional trainer that collapses from 120cm to 60cm deep when you're done. Built for the guy whose gym has to disappear.",
     trains: ["Smith squat", "Smith bench", "Lat pulldown", "Low row", "Chin-ups", "Cable flys"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   3: {
@@ -374,8 +375,9 @@ export const BUNDLE_COPY = {
     tagline: "Squat, bench, deadlift. Folds flat against the wall.",
     pitch: "A real power rack with high and low pulleys that folds to a third of its depth. 50+ exercise variations, lifetime frame warranty, and your floor back when you are done.",
     trains: ["Squat", "Bench press", "Deadlift", "Chin-ups", "Dips", "Lat pulldown", "Landmine"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -760,14 +762,14 @@ export const ROOMS = [
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/733271344_18602786473005504_1565312074247429973_n.jpg",
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
     title: "Vigor folding power rack with bench",
     date: "18 Jul 2026",
     href: "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
     linkKind: "product"
   },
   {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729579068_18600535006005504_1282245155372288029_n.jpg",
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
     title: "Bodyx Cube Smith in a physio studio",
     date: "15 Jul 2026",
     href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
