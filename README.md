@@ -882,7 +882,7 @@ All motion is 150-200 ms ease-out, and `prefers-reduced-motion: reduce` disables
 
 Seven things need a decision from HomeGym. They are flagged in code at the exact lines they affect.
 
-1. **Prices are a 30 Aug 2026 snapshot** and several are promotional, TinyTitan, Bodyx Cube, Titan X20, IM2000, Folding Rack, the Olympic set and both bars. They will drift. The durable fix is a nightly job that reads the Magento product API and rewrites `PRODUCTS`.
+1. ~~**Prices are a 30 Aug 2026 snapshot**~~ **Handled, 15 Oct 2026.** `npm run sync:prices` re-reads every product page in the nightly job and corrects `PRODUCTS`, so a sale starting or ending reaches the quiz the next morning. What still needs a decision from HomeGym is the two cases it refuses to apply on its own — a move over 35%, and a page whose price cannot be read — which are reported rather than written. See "Keeping prices honest" below.
 2. **The Vigor X20 Sliding Bench is out of stock**, and its URL slug says `b20` while the product page title says `X20`. It currently renders an "On backorder" badge. Confirm the correct SKU.
 3. **Image URLs are CloudFront cache paths.** The `/cache/c0dcb29ef.../` segment changes when Magento regenerates its image cache, which would 404 every image at once. The initial-letter fallback tile stops the grid breaking; resolving images from the product API is the real fix.
 4. **Footprints are the equipment, not the room.** Confirmed with the client on 22 Sep 2026: the sheet's Size column is *the floor space the equipment will occupy*, and nothing more. It does **not** include room to stand, to walk round the frame, or to lie back on a bench and press. An earlier draft of this list said the opposite, that the figures "read as working areas including clearance". That was wrong, and it mattered: read the generous way, a 1.6 × 2.0 m machine circuit sounds like it needs a 1.6 × 2.0 m room, and it does not.
@@ -919,7 +919,8 @@ dist/        generated site (gitignored, produced by the build)
 
 ```bash
 npm run sync     # pull bundle data from the Google Sheet into src/quiz/sheet-data.js
-npm run sync:images  # refresh install photos from the Instagram feed, report the rest
+npm run sync:prices  # re-read every product page and correct prices in PRODUCTS
+npm run sync:images  # refresh install photos from the Instagram feed, adopt new rooms tiles
 npm run sync:all     # both of the above, which is what the nightly job runs
 npm run build    # src/ -> dist/, including the inlined and standalone quiz bundles
 npm test         # prototype engine (3,072 combinations) + matcher and sheet-parser units
@@ -928,7 +929,7 @@ npm run verify   # validate dist/ structure, noindex tags, internal links, quiz 
 npm run check    # all four, in order, this is what CI and Vercel run
 
 npm run check:images   # confirm every hotlinked HomeGym image still resolves
-npm run check:heroes   # confirm each bundle's install photo shows that bundle's machine
+npm run check:heroes   # confirm each hero shows its machine, and list rooms tiles awaiting an eye
 npm run check:fit      # confirm each anchor machine fits the footprint its row claims
 ```
 
@@ -937,6 +938,106 @@ No dependencies; Node 20+ only.
 The quiz is bundled by `scripts/build-quiz.mjs`, a ~60-line concatenator, rather than esbuild. That is deliberate: Vercel's `installCommand` is `echo 'no dependencies'` and CI never runs `npm ci`, so a devDependency in the build path would fail the first push. The module graph is a handful of files with no external imports, so a real resolver buys nothing.
 
 In development the page loads `src/quiz/*.js` as plain ES modules with no build step; `npm run build` swaps that script tag for the inlined bundle.
+
+### Keeping prices honest
+
+**`npm run sync:prices`, in the nightly job since 15 Oct 2026.** It opens every
+product page in `PRODUCTS`, reads the selling price and the was-price off the
+markup, and corrects the catalogue. A bundle price is the **sum of its
+products**, never a typed-in figure, so one product moving re-prices every
+bundle containing it with no second edit — which is what makes a price sync
+worth having here rather than a chore that needs a human to finish.
+
+**Hand edits to a price do not survive.** The sync puts the page's own number
+back the next morning. To hold a price, change it on homegym.sg.
+
+What it does on its own, and what it refuses:
+
+| | |
+|---|---|
+| price moved within 35% | **applied** |
+| a sale started, changed or ended | **applied**, including `was` back to `null` |
+| move over 35% | **refused**, reported, committed price kept |
+| price unreadable, or page would not load | **refused**, reported, committed price kept |
+| more than ⅓ of the catalogue unreadable | **whole run aborts**, nothing written |
+
+The limits are the point, not timidity. Nothing in the script can tell *"HomeGym
+halved the price"* from *"the pattern started matching the related-items
+carousel"* — both arrive as a smaller number on a page that returned HTTP 200.
+So a large move is treated as the bug it usually is. A stale price disappoints a
+customer; an invented one is a wrong invoice. The one-third rule exists because
+the signal there is not "a page is broken" but "the site no longer looks the way
+this code believes", and in that state the prices that *did* parse are no more
+trustworthy than the ones that didn't.
+
+35% clears every real promotion in the catalogue as at 30 Aug 2026 — the widest
+is the Olympic set, $580 from $820, 29% — while still catching a $292 bench read
+as $29 or $2,920. If a genuine promotion is ever refused, apply that one by hand
+and leave the limit alone.
+
+**The patterns are shared, deliberately.** `scripts/lib/product-page.mjs` is
+imported by both this and `scripts/new-products.mjs`, which prints a new
+catalogue entry from the same markup. Two copies would eventually extract
+different numbers from the same page, and the nightly diff would look like a
+price change at HomeGym rather than a bug here. (`SIGNATURE` in
+`sync-images.mjs` and `check-heroes.mjs` is the hand-synced pair this avoids
+becoming.)
+
+**The rules are in `scripts/lib/price-rules.mjs`, separately, so they can be
+tested.** `decidePrice(committed, parsed)` is a pure function; `test/prices.test.mjs`
+exercises the limits, the sale-ended case, the unreadable page and the
+abort threshold, and runs the real write surgery against `bundles.js` and loads
+the result back as a module. A script that rewrites prices unattended at 02:30
+should not have its only test be "it ran and nothing crashed".
+
+**It is not a scrape by choice.** Known Issue 1 proposed reading the Magento
+product API, which would be better — typed numbers rather than inferred ones. No
+API endpoint on homegym.sg has been shown to answer without a token, and these
+patterns are the ones proven against the real pages in CI. If the API turns up,
+replace `parseProductPage` and nothing above it changes.
+
+**One consequence worth knowing.** The nightly job runs `npm run check` before
+it commits, and a price rise can push a bundle past the budget ceilings the
+matcher uses. If that ever made a bundle unreachable the sweep fails, the commit
+is refused, and the quiz keeps serving the last good data. That is the right
+failure — a bundle nobody can reach is worse than a price a day stale — but it
+also means a bad price night holds back that night's sheet edits.
+
+### The rooms strip keeps itself current
+
+`sync-images.mjs` adds new Instagram posts to **Rooms we've built** on its own,
+up to five a night, and the guarantee that makes that safe is worth stating
+plainly.
+
+A caption proves which **machine** is in a photograph. It cannot prove the
+photograph is a **room** rather than a bare dumbbell rack or a studio shot, and
+the twenty curated tiles were chosen by somebody opening all 49 posts in the
+feed. So an adopted tile carries `verified: false`, and the section's standfirst
+reads the flag:
+
+| tiles on screen | standfirst |
+|---|---|
+| all `verified: true` | "Real installs from our Instagram, not showroom mock-ups. Every one links to the machine in the picture." |
+| any `verified: false` | "Straight from our Instagram, newest first. Every one links to the machine in the picture." |
+
+The weaker line is true of any post in the feed, so the page never asserts
+something nobody has checked, and the full claim returns by itself when the last
+tile is promoted. It is read off the tiles **actually shown**, not off all of
+`ROOMS`: an unverified tile sitting unseen at position 12 says nothing about the
+seven on screen. This is the same bargain `heroVerified` strikes for the big
+photo at the top of a result.
+
+**Promoting a tile** is two edits in `bundles.js`, after looking at the
+photograph: set `verified: true`, and rewrite the title from the machine to the
+room — the curated tiles read "AEKE S1 Pro in a living room", not "AEKE S1 PRO".
+A machine name as a title is the tell that nobody has looked yet. If the photo is
+a bare rack or a studio shot, delete the tile instead. `npm run check:heroes`
+lists what is waiting, with the image URL to open.
+
+New tiles go in at the **head** of the array, because the strip renders the first
+seven and these are the newest posts — so five adoptions displace five curated
+tiles from view until they are promoted or dropped. Five a night is the cap for
+exactly that reason.
 
 ### Images and logo
 

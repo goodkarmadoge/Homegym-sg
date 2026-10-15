@@ -7,12 +7,23 @@
  * See README.md → "Editing the data".
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * KNOWN ISSUE 1, PRICE SNAPSHOT.
- *   Every price below is a 30 Aug 2026 snapshot of homegym.sg SALE prices.
- *   Several are promotional and WILL drift: tinytitan, bodyx-cube, titan-x20,
- *   im2000, folding-rack, olympic-set, bar-22m, bar-18m (all carry a `was`).
- *   Re-verify before any campaign. A nightly job that reads the Magento product
- *   API and rewrites PRODUCTS is the durable fix, README → "Keeping prices honest".
+ * PRICES ARE RE-READ NIGHTLY, SINCE 15 OCT 2026. Known Issue 1 is handled.
+ *   The figures below began as a 30 Aug 2026 snapshot of homegym.sg SALE prices,
+ *   several of them promotional (tinytitan, bodyx-cube, titan-x20, im2000,
+ *   folding-rack, olympic-set, bar-22m, bar-18m all carry a `was`), and they
+ *   drifted on their own with nothing watching. scripts/sync-prices.mjs now
+ *   re-reads every product page in the nightly job and corrects `price` and
+ *   `was` here, so a sale starting or ending at HomeGym reaches the quiz the
+ *   next morning. Bundle totals follow for free: a bundle price is the SUM OF
+ *   ITS PRODUCTS, never a typed-in figure.
+ *
+ *   SO HAND EDITS TO A PRICE DO NOT SURVIVE. The sync will put the page's own
+ *   number back. To hold a price deliberately, change it on homegym.sg.
+ *
+ *   What it will NOT do unattended: apply a move of more than 35%, or write
+ *   anything at all when more than a third of the catalogue fails to parse. Both
+ *   are reported instead, because a pattern matching the wrong element looks
+ *   exactly like a steep discount from here. README → "Keeping prices honest".
  *
  * KNOWN ISSUE 2, IMAGE URLS ARE CLOUDFRONT CACHE PATHS.
  *   The `/cache/c0dcb29ef46d222f886111be6e10f76c/` segment is a Magento image-cache
@@ -37,7 +48,7 @@ export const PRODUCTS = {
     footprint: { w: 2.09, d: 1.15 },
     name: 'Vigor TinyTitan All-in-1 Trainer',
     price: 2200,
-    was: 2799,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/t/i/tinytitan11.jpg'
   },
@@ -48,7 +59,7 @@ export const PRODUCTS = {
     footprint: { w: 1.37, d: 1.2 },
     name: 'Bodyx Folding Cube Smith Machine Functional Trainer Combo',
     price: 3520,
-    was: 3999,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/c/u/cube_2_35.jpg'
   },
@@ -58,7 +69,7 @@ export const PRODUCTS = {
     footprint: { w: 2.07, d: 1.79 },
     name: 'Vigor Titan X20 All-in-1 Trainer',
     price: 4899,
-    was: 5899,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/x/2/x20-main2.jpg'
   },
@@ -67,7 +78,7 @@ export const PRODUCTS = {
     //   153 x 132 x 218cm (L x W x H)
     footprint: { w: 1.53, d: 1.32 },
     name: 'Vigor BF900 Pro Connected All-in-1 System',
-    price: 3599,
+    price: 3699,
     was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/b/f/bf900.jpg'
@@ -86,7 +97,7 @@ export const PRODUCTS = {
     // No dimensions published on the product page, checked 8 Sep 2026.
     footprint: null,
     name: 'Infinity Half Rack Dual Cable Combo',
-    price: 2299,
+    price: 2399,
     was: null,
     url: 'https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/img_4453.jpg'
@@ -95,7 +106,7 @@ export const PRODUCTS = {
     // No dimensions published on the product page, checked 8 Sep 2026.
     footprint: null,
     name: 'Infinity All-in-1 Trainer',
-    price: 2899,
+    price: 2999,
     was: null,
     url: 'https://homegym.sg/strength.html/infinity-series/infinity-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/n/infinity-31in1_1.jpg'
@@ -117,8 +128,8 @@ export const PRODUCTS = {
     // converted from inches
     footprint: { w: 1.88, d: 1.22 },
     name: 'Ironmaster IM2000 Self Spotting System',
-    price: 1999,
-    was: 2500,
+    price: 1399,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/space-saving/ironmaster-im2000-self-spotting-system.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/im2000-1_512x512.jpg'
   },
@@ -127,7 +138,7 @@ export const PRODUCTS = {
     footprint: null,
     name: 'Vigor Folding Power Rack',
     price: 1499,
-    was: 1650,
+    was: null,
     url: 'https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/v/s/vs-vr-3.jpg'
   },
@@ -203,7 +214,7 @@ export const PRODUCTS = {
     footprint: { w: 1.91, d: 1.53 },
     name: 'Bodyx Cube Smith Pro All-in-1 Trainer (Connected Smith System)',
     price: 4299,
-    was: 4599,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/bodyx-cube-smith-pro-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/c/u/cubesmith-pro.jpg',
     // Out of stock on the product page on 21 Sep 2026, and it anchors bundle 12.
@@ -215,7 +226,7 @@ export const PRODUCTS = {
     footprint: { w: 1.18, d: 0.98 },
     name: 'Bodyx PT360 Dual Adjustable Pulley',
     price: 2599,
-    was: 2899,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-pt360-dual-adjustable-pulley.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/2/4260_magnify_013.jpg'
   },
@@ -236,7 +247,7 @@ export const PRODUCTS = {
     footprint: { w: 1.24, d: 0.89 },
     name: 'Vigor Folding Adjustable Squat Stand',
     price: 299,
-    was: 399,
+    was: null,
     url: 'https://homegym.sg/strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/f/a/fass-1.jpg'
   },
@@ -266,7 +277,7 @@ export const PRODUCTS = {
   'smartlock-db': {
     name: 'Vigor 23.5kg Smartlock Adjustable Dumbbell (4 to 23.5kg Pair)',
     price: 580,
-    was: 699,
+    was: null,
     url: 'https://homegym.sg/strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/-/4-235_dumbbell_2_.jpg'
   }
@@ -691,17 +702,38 @@ export const FUNCTION_SHORT = {
 /**
  * "Rooms we've built", the install strip on the result page.
  *
- * Twenty posts from homegym.sg/instagram, in feed order. HomeGym's own
+ * Posts from homegym.sg/instagram, in feed order, newest first. HomeGym's own
  * photography, served from their own CloudFront origin by the store's Instagram
  * extension: nothing is scraped from Instagram and nothing of theirs is
- * redistributed.
+ * redistributed. The strip renders the first ROOMS_SHOWN of them, so order here
+ * is what decides which ones a customer sees.
  *
  * CURATED FOR ROOM-SCALE SETUPS, NOT PRODUCT SHOTS.
  *   All 49 posts in the feed were looked at rather than skimmed by caption, and
- *   the twenty here all show a machine standing in a finished room. Left out on
- *   purpose: bare dumbbell and plate racks, rooms with nothing in them but new
- *   matting, and single cardio machines against a blank wall. None of those
- *   show a room anyone built.
+ *   the first twenty here all show a machine standing in a finished room. Left
+ *   out on purpose: bare dumbbell and plate racks, rooms with nothing in them
+ *   but new matting, and single cardio machines against a blank wall. None of
+ *   those show a room anyone built.
+ *
+ * `verified` IS WHAT THAT CURATION LEAVES BEHIND.
+ *   true   somebody opened the photograph and saw a finished room
+ *   false  scripts/sync-images.mjs adopted the post from the feed on its own,
+ *          because the caption names a machine in the catalogue. A caption
+ *          cannot tell a finished room from a bare dumbbell rack, so nobody has
+ *          confirmed this one shows a room yet
+ *
+ *   The section's standfirst reads the flag. While every tile on screen is
+ *   verified it claims "Real installs from our Instagram, not showroom
+ *   mock-ups"; with an unverified tile among them it drops to what is actually
+ *   known, that these are recent posts from the feed. That is the same bargain
+ *   heroVerified strikes for the big photo at the top, and it is the whole
+ *   reason the sync is allowed to add tiles unattended: the page never claims
+ *   more than somebody has checked.
+ *
+ *   `npm run check:heroes` lists the unverified ones. Promoting one is a
+ *   two-part edit: look at the photograph, then set verified true and rewrite
+ *   the machine-name title into a description of the room, the way the curated
+ *   twenty read ("AEKE S1 Pro in a living room", not "AEKE S1 Pro").
  *
  * EVERY TILE LINKS SOMEWHERE, AND THE LINK IS ACCURATE.
  *   linkKind 'product'  the post shows an item in the catalogue above, so the
@@ -714,6 +746,15 @@ export const FUNCTION_SHORT = {
  *   that sent a treadmill photo to a power rack page would be worse than no
  *   link at all.
  *
+ * ONE IMAGE, ONE TILE. Two photographs were listed twice here until 7 Oct 2026,
+ * each under two different titles and two different dates: the Vigor folding
+ * power rack ("...gym set", 9 Aug, and "...with bench", 18 Jul) and the Bodyx
+ * Cube Smith ("...with bench", 25 Aug, and "...in a physio studio", 15 Jul). One
+ * file has one post date, so one date in each pair was wrong, and the strip
+ * would have shown the same photograph twice as soon as the tiles above them
+ * were dropped. The later entry of each pair is gone and test/rooms.test.mjs
+ * fails on a repeat now.
+ *
  * KNOWN ISSUE 6, IMAGE ROT. The /ox_instagram/ filenames are Instagram media
  * ids and the extension prunes its cache as the feed moves on, so these can 404
  * in time exactly as the catalogue cache paths can. Tiles fall back to a
@@ -722,144 +763,228 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/818479244_18629543650005504_8388184001478289486_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "11 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/803926508_18625867495005504_6733673456102011619_n.jpg",
+    title: "Vigor xpress pro home gym",
+    date: "23 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805579331_18625867042005504_1316462337569096294_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "21 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/809201815_18626848147005504_304992392339003241_n.jpg",
+    title: "Vigor BF900 Pro Connected All-in-1 System",
+    date: "14 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/803323682_18625847215005504_8108354033943915639_n.jpg",
+    title: "Vigor BF900 Pro Connected All-in-1 System",
+    date: "11 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/799724607_18629541532005504_8567913137448412912_n.jpg",
+    title: "Vigor Tiny Titan",
+    date: "5 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805218848_18625869361005504_7088613047784270362_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "1 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/806987419_18629549428005504_6568181374746105844_n.jpg",
+    title: "Aeke S1 PRO setup",
+    date: "30 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825326419_18631656322005504_2538518365462069212_n.jpg",
+    title: "AEKE S1 PRO smart home gym",
+    date: "29 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805313830_18625868437005504_120218228989945275_n.jpg",
+    title: "Vigor Titan X20 all in one trainer",
+    date: "27 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
     title: "AEKE S1 Pro in a living room",
     date: "4 Sep 2026",
     href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
     title: "Bodyx Cube Smith Pro with bench",
     date: "25 Aug 2026",
     href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg",
     title: "Infinity half rack with barbell set",
     date: "21 Aug 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760242206_18611550190005504_3346270900337644903_n.jpg",
     title: "Infinity half rack with pegboard",
     date: "17 Aug 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/762107975_18611546767005504_6529779789667579583_n.jpg",
     title: "Treadmill and elliptical setup",
     date: "11 Aug 2026",
     href: "https://homegym.sg/cardio.html",
-    linkKind: "category"
+    linkKind: "category",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
     title: "Vigor folding power rack gym set",
     date: "9 Aug 2026",
     href: "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760974318_18611553115005504_1009769436051274014_n.jpg",
     title: "Bench, dumbbells and rack",
     date: "6 Aug 2026",
     href: "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/760068554_18611544580005504_6537229001685739515_n.jpg",
     title: "Vigor TinyTitan with bench and plates",
     date: "2 Aug 2026",
     href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/736448867_18602787841005504_7631076833331828894_n.jpg",
     title: "Vigor Titan G9 all-in-1 setup",
     date: "28 Jul 2026",
     href: "https://homegym.sg/strength.html",
-    linkKind: "category"
+    linkKind: "category",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/731158364_18602787226005504_3919957454936227618_n.jpg",
     title: "Infinity dual cable half rack",
     date: "24 Jul 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759676739_18611546479005504_846082442829319540_n.jpg",
-    title: "Vigor folding power rack with bench",
-    date: "18 Jul 2026",
-    href: "https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html",
-    linkKind: "product"
-  },
-  {
-    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/761107252_18611552692005504_8740749186703023996_n.jpg",
-    title: "Bodyx Cube Smith in a physio studio",
-    date: "15 Jul 2026",
-    href: "https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/729364213_18600534748005504_7492638712585432183_n.jpg",
     title: "Infinity Smith machine setup",
     date: "13 Jul 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-all-in-1-trainer.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/731014406_18600533389005504_8914844780706475251_n.jpg",
     title: "Infinity functional trainer half rack",
     date: "10 Jul 2026",
     href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/733309572_18602787556005504_5869793302032627450_n.jpg",
     title: "Vigor Xpress Pro home gym",
     date: "2 Jul 2026",
     href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805119822_18625846609005504_1896468927118295722_n.jpg",
     title: "Vigor TinyTitan full gym setup",
     date: "27 Jun 2026",
     href: "https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805485570_18625867930005504_4064003759971236651_n.jpg",
     title: "Vigor Titan X20 all-in-1 trainer",
     date: "19 Jun 2026",
     href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/720206740_18595990204005504_1555444394403186457_n.jpg",
     title: "Bodyx BK3058 all-in-1 setup",
     date: "17 Jun 2026",
     href: "https://homegym.sg/strength.html",
-    linkKind: "category"
+    linkKind: "category",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/720040277_18595989928005504_6317610763181088945_n.jpg",
     title: "Vigor Titan X20 with bench",
     date: "15 Jun 2026",
     href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/719598557_18595988128005504_8448550947109249164_n.jpg",
     title: "Reebok SL8 with Vigor Xpress gym",
     date: "14 Jun 2026",
     href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
-    linkKind: "product"
+    linkKind: "product",
+    verified: true
   }
 ];
 

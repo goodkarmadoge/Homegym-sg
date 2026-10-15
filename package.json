@@ -9,7 +9,7 @@
     "build:quiz": "node scripts/build-quiz.mjs",
     "test": "npm run test:engine && npm run test:matcher",
     "test:engine": "node scripts/test-engine.mjs",
-    "test:matcher": "node --test test/matcher.test.mjs test/sheet-parse.test.mjs test/collect.test.mjs",
+    "test:matcher": "node --test test/matcher.test.mjs test/sheet-parse.test.mjs test/collect.test.mjs test/rooms.test.mjs test/prices.test.mjs",
     "sync": "node scripts/sync-sheet.mjs",
     "sync:check": "node scripts/sync-sheet.mjs --check",
     "sweep": "node scripts/sweep.mjs",
@@ -19,7 +19,8 @@
     "check:fit": "node scripts/check-fit.mjs",
     "check:heroes": "node scripts/check-heroes.mjs",
     "sync:images": "node scripts/sync-images.mjs",
-    "sync:all": "npm run sync && npm run sync:images",
+    "sync:prices": "node scripts/sync-prices.mjs",
+    "sync:all": "npm run sync && npm run sync:prices && npm run sync:images",
     "products:new": "node scripts/new-products.mjs"
   },
   "engines": {

@@ -32,6 +32,10 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SHEET_BUNDLES } from '../src/quiz/sheet-data.js';
+// Shared with sync-prices.mjs, which reads the same pages nightly. One copy of
+// the patterns, so the nightly job can never extract a different number from
+// the same markup than the tool that first set it.
+import { dimensionLines, fetchProductPage, parseProductPage } from './lib/product-page.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -60,59 +64,6 @@ if (!missing.size) {
 
 console.log(`${missing.size} product(s) in the sheet are not in the catalogue.\n`);
 
-/** First capture of the first pattern that matches, or null. */
-/* Magento escapes its own product names, so og:title arrives as
-   "Vigor&#x20;Titan&#x20;G9". Left alone that string reaches a customer
-   verbatim, spaces and all. */
-function decode(s) {
-  if (s == null) return null;
-  return s
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ').trim();
-}
-
-const first = (html, patterns) => {
-  for (const re of patterns) {
-    const m = re.exec(html);
-    if (m) return m[1].trim();
-  }
-  return null;
-};
-
-/**
- * Every dimension-shaped run of numbers on the page, with its surrounding
- * words.
- *
- * The first version of this split the de-tagged page into LINES and kept the
- * ones mentioning cm. It found nothing on any of the eight pages, because
- * Magento puts the spec in a table and each cell is its own element: by the
- * time tags became newlines, "209 x 92 x 225cm" had been cut into three
- * pieces. So this matches the numbers wherever they sit and carries the
- * neighbouring text along, which is what names the axes.
- */
-function dimensionLines(html) {
-  const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ');
-  const flat = decode(text);
-  const re = /(\d{1,3}(?:\.\d+)?)\s*[x×*]\s*(\d{1,3}(?:\.\d+)?)(?:\s*[x×*]\s*(\d{1,3}(?:\.\d+)?))?\s*(cm|mm|m\b)/gi;
-  const out = new Set();
-  let m;
-  while ((m = re.exec(flat)) !== null) {
-    const from = Math.max(0, m.index - 90);
-    const to = Math.min(flat.length, m.index + m[0].length + 90);
-    out.add(('...' + flat.slice(from, to) + '...').replace(/\s+/g, ' '));
-    if (out.size >= 8) break;
-  }
-  return [...out];
-}
-
-const money = (s) => (s == null ? null : Number(String(s).replace(/[^0-9.]/g, '')) || null);
 
 for (const [url, ids] of missing) {
   const key = url.split('/').pop().replace(/\.html$/, '');
@@ -120,42 +71,14 @@ for (const [url, ids] of missing) {
   console.log(`bundle ${ids.join(', ')}  ${key}`);
   console.log(url);
 
-  let html;
-  try {
-    const res = await fetch(url, { headers: { 'user-agent': 'homegym-quiz-catalogue/1.0' } });
-    if (!res.ok) { console.log(`  FETCH FAILED: HTTP ${res.status}. Fill this one in by hand.\n`); continue; }
-    html = await res.text();
-  } catch (err) {
-    console.log(`  FETCH FAILED: ${err.message}. Fill this one in by hand.\n`); continue;
+  const page = await fetchProductPage(url);
+  if (page.error) {
+    console.log(`  FETCH FAILED: ${page.error}. Fill this one in by hand.\n`);
+    continue;
   }
+  const html = page.html;
 
-  const name = decode(first(html, [
-    /<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i,
-    /<span[^>]+itemprop="name"[^>]*>([^<]+)</i,
-    /<h1[^>]*class="[^"]*page-title[^"]*"[^>]*>\s*(?:<span[^>]*>)?([^<]+)/i,
-    /<title>([^<]+)<\/title>/i
-  ]));
-  const price = money(first(html, [
-    /<meta[^>]+itemprop="price"[^>]+content="([^"]+)"/i,
-    /data-price-type="finalPrice"[^>]*data-price-amount="([^"]+)"/i,
-    /data-price-amount="([^"]+)"/i,
-    /"final_price"\s*:\s*"?([0-9.]+)/i
-  ]));
-  // A "was" that is not ABOVE the selling price is a mis-read, not a discount.
-  // Both showed up on the real pages: one product reported was === price, and
-  // the dumbbell reported 175 against a price of 580, picked up from a related
-  // item's markup. Either would have rendered a nonsense strikethrough.
-  const wasRaw = money(first(html, [
-    /data-price-type="oldPrice"[^>]*data-price-amount="([^"]+)"/i,
-    /"oldPrice"\s*:\s*\{[^}]*"amount"\s*:\s*"?([0-9.]+)/i,
-    /"regular_price"\s*:\s*"?([0-9.]+)/i
-  ]));
-  const was = (wasRaw != null && price != null && wasRaw > price) ? wasRaw : null;
-  const wasRejected = wasRaw != null && was == null;
-  const image = first(html, [
-    /<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i,
-    /"(https:\/\/[^"]*cloudfront\.net\/catalog\/product\/cache\/[^"]+\.(?:jpg|jpeg|png|webp))"/i
-  ]);
+  const { name, price, was, wasRaw, wasRejected, image } = parseProductPage(html);
 
   console.log('\n  dimension lines found on the page, pick the pair that is W and D in use:');
   const dims = dimensionLines(html);
