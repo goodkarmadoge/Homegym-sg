@@ -165,24 +165,39 @@ async function productsOf(source) {
   }
 }
 
-/** A change record shaped the way the script's own loop builds them. */
-function changeFor(key, { price, was } = {}) {
-  const source = read('src/quiz/bundles.js');
+/**
+ * A change record shaped the way the script's own loop builds them.
+ *
+ * Both the offsets and the committed price are read out of the SOURCE PASSED
+ * IN, never out of the imported PRODUCTS. Two reasons, and the first one cost a
+ * CI run: an earlier version took `was` from PRODUCTS and cleared it on
+ * tinytitan, which worked only while tinytitan happened to be on sale. The
+ * price sync ended that sale and the test started failing on real data — a test
+ * asserting something about the catalogue's contents while claiming to test
+ * string surgery. The second is that it lets a change be built against an
+ * already-rewritten source, so two writes can be chained; offsets shift when the
+ * first one lands.
+ */
+function changeFor(key, { price, was } = {}, source = read('src/quiz/bundles.js')) {
   const blockStart = source.indexOf('export const PRODUCTS = {');
   const re = new RegExp(`^ {2}'${key}': \\{\\n[\\s\\S]*?\\n {2}\\},?$`, 'm');
   const m = re.exec(source.slice(blockStart));
   assert.ok(m, `could not find ${key} in PRODUCTS`);
+  const body = m[0];
+  const committedPrice = Number(/^ {4}price: (\d+(?:\.\d+)?),$/m.exec(body)[1]);
+  const committedWasRaw = /^ {4}was: (\d+(?:\.\d+)?|null),$/m.exec(body)[1];
+  const committedWas = committedWasRaw === 'null' ? null : Number(committedWasRaw);
   return {
     key,
     entry: {
       key,
-      price: PRODUCTS[key].price,
-      was: PRODUCTS[key].was ?? null,
+      price: committedPrice,
+      was: committedWas,
       from: blockStart + m.index,
-      to: blockStart + m.index + m[0].length
+      to: blockStart + m.index + body.length
     },
-    price: price === undefined ? null : { from: PRODUCTS[key].price, to: price },
-    was: was === undefined ? null : { from: PRODUCTS[key].was ?? null, to: was }
+    price: price === undefined ? null : { from: committedPrice, to: price },
+    was: was === undefined ? null : { from: committedWas, to: was }
   };
 }
 
@@ -197,15 +212,20 @@ test('a price is rewritten in place, and nothing else moves', async () => {
   }
 });
 
-test('a was-price can be set and cleared', async () => {
+// A sale starting and then ending, on one product, chained. Deliberately NOT
+// "clear the was-price of whichever product is on sale today": the price sync
+// ends sales, so that test passes or fails according to HomeGym's promotions
+// rather than according to this code.
+test('a was-price can be set and then cleared', async () => {
   const source = read('src/quiz/bundles.js');
 
-  const set = await productsOf(writer()(source, [changeFor('x20-bench', { was: 1200 })]));
-  assert.equal(set['x20-bench'].was, 1200);
+  const withWas = writer()(source, [changeFor('x20-bench', { was: 1200 }, source)]);
+  const set = await productsOf(withWas);
+  assert.equal(set['x20-bench'].was, 1200, 'a sale starting must be written');
 
-  const cleared = await productsOf(writer()(source, [changeFor('tinytitan', { was: null })]));
-  assert.equal(cleared.tinytitan.was, null, 'a sale ending must write null, not remove the line');
-  assert.equal(cleared.tinytitan.price, PRODUCTS.tinytitan.price);
+  const cleared = await productsOf(writer()(withWas, [changeFor('x20-bench', { was: null }, withWas)]));
+  assert.equal(cleared['x20-bench'].was, null, 'a sale ending must write null, not remove the line');
+  assert.equal(cleared['x20-bench'].price, set['x20-bench'].price, 'and must leave the price alone');
 });
 
 // Several products change on a normal night, and each edit shifts the offsets of
