@@ -433,8 +433,12 @@ under *Before this goes live*.
    measuring machines. The quiz tells people what fits their room. A customer who
    buys on a wrong footprint is a returned 338 kg machine. **Highest risk on the
    list, and worth an afternoon with a tape measure before launch.**
-2. **Prices are a 30 Aug 2026 snapshot** and several are promotional. They will
-   drift. The durable fix is a nightly job reading the Magento product API.
+2. ~~**Prices are a 30 Aug 2026 snapshot**~~ **Handled, 15 Oct 2026.** The
+   nightly job now re-reads every product page and corrects the catalogue, so a
+   sale starting or ending on homegym.sg reaches the quiz the next morning. Two
+   cases it will not apply on its own, and reports instead: a price that moved
+   more than 35%, and a page whose price cannot be read. Both want a human,
+   because from the outside a mis-read page and a steep discount look the same.
 3. **Image URLs are CloudFront cache paths.** The `/cache/c0dcb29ef.../` segment
    changes when Magento regenerates its image cache, which would 404 every image
    at once. There is a fallback tile so the grid does not break, but resolving

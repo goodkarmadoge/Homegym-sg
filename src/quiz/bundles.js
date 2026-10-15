@@ -7,12 +7,23 @@
  * See README.md → "Editing the data".
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * KNOWN ISSUE 1, PRICE SNAPSHOT.
- *   Every price below is a 30 Aug 2026 snapshot of homegym.sg SALE prices.
- *   Several are promotional and WILL drift: tinytitan, bodyx-cube, titan-x20,
- *   im2000, folding-rack, olympic-set, bar-22m, bar-18m (all carry a `was`).
- *   Re-verify before any campaign. A nightly job that reads the Magento product
- *   API and rewrites PRODUCTS is the durable fix, README → "Keeping prices honest".
+ * PRICES ARE RE-READ NIGHTLY, SINCE 15 OCT 2026. Known Issue 1 is handled.
+ *   The figures below began as a 30 Aug 2026 snapshot of homegym.sg SALE prices,
+ *   several of them promotional (tinytitan, bodyx-cube, titan-x20, im2000,
+ *   folding-rack, olympic-set, bar-22m, bar-18m all carry a `was`), and they
+ *   drifted on their own with nothing watching. scripts/sync-prices.mjs now
+ *   re-reads every product page in the nightly job and corrects `price` and
+ *   `was` here, so a sale starting or ending at HomeGym reaches the quiz the
+ *   next morning. Bundle totals follow for free: a bundle price is the SUM OF
+ *   ITS PRODUCTS, never a typed-in figure.
+ *
+ *   SO HAND EDITS TO A PRICE DO NOT SURVIVE. The sync will put the page's own
+ *   number back. To hold a price deliberately, change it on homegym.sg.
+ *
+ *   What it will NOT do unattended: apply a move of more than 35%, or write
+ *   anything at all when more than a third of the catalogue fails to parse. Both
+ *   are reported instead, because a pattern matching the wrong element looks
+ *   exactly like a steep discount from here. README → "Keeping prices honest".
  *
  * KNOWN ISSUE 2, IMAGE URLS ARE CLOUDFRONT CACHE PATHS.
  *   The `/cache/c0dcb29ef46d222f886111be6e10f76c/` segment is a Magento image-cache

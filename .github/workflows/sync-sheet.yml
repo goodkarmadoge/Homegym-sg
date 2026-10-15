@@ -1,10 +1,13 @@
-name: Sync bundle data and photography
+name: Sync bundle data, prices and photography
 
 # Keeps the quiz in step with the two things that change without anyone
 # touching this repo:
 #
 #   the DATA, from the Google Sheet, into src/quiz/sheet-data.js, so adding a
 #   bundle is a spreadsheet edit rather than a code change
+#
+#   the PRICES, from the product pages on homegym.sg, into the same file,
+#   because the catalogue's prices are promotional and drift on their own
 #
 #   the PHOTOGRAPHY, from HomeGym's Instagram feed, into src/quiz/bundles.js,
 #   because posts scroll out of that feed on their own and a pinned image can
@@ -98,6 +101,23 @@ jobs:
       # differently: Instagram posts scroll out of the feed on their own, and a
       # pinned URL can keep returning 200 long after nothing proves what it
       # shows. This refreshes what it can prove and reports what needs an eye.
+      # PRICES, from the product pages themselves.
+      #
+      # Known Issue 1 in src/quiz/bundles.js has said since 30 Aug 2026 that the
+      # prices there are a snapshot, that several are promotional, and that they
+      # will drift. This is the job that stops them drifting. A bundle price is
+      # the sum of its products, so correcting a product re-prices every bundle
+      # containing it with no second edit.
+      #
+      # continue-on-error for the same reason as the photography below, and one
+      # more: the script ABORTS, writing nothing, when too much of the catalogue
+      # fails to parse at once. That abort is an exit 1 by design, and it must
+      # not take the sheet's own changes down with it. A failed step is still
+      # loud in the Actions tab, which is where it belongs.
+      - name: Pull the prices
+        continue-on-error: true
+        run: npm run sync:prices
+
       # It must not fail the run: HomeGym's feed is a third party, and it being
       # slow or down should leave the sheet sync alone.
       - name: Pull the photography
@@ -176,6 +196,9 @@ jobs:
             echo ""
             echo "Live bundles: $(grep -c '^    id:' src/quiz/sheet-data.js)"
             echo "Install photos: $(grep -c 'heroSource: \"instagram\"' src/quiz/bundles.js) of 10 from Instagram"
+            echo ""
+            echo "Prices are re-read from the product pages nightly. A move over 35%"
+            echo "is refused and reported rather than applied: see the Pull the prices step."
             echo ""
             echo "A photo the sync picked on its own is captioned \"From our Instagram\""
             echo "rather than \"A real install\" until someone has looked at it. Run"
