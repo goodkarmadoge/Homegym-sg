@@ -744,37 +744,42 @@ bundles viewed and CTA taps, read from the quiz's own events.
 reach mentions it; `npm run verify` fails the build if one ever does. Open it by
 typing the URL.
 
-### Turning it on
+### It is on, and collecting
 
-The database is live. Supabase project **`Homegym-sg`**
-(`bsbqiupwdxyzfxgjxazs`, Sydney), with `db/001_quiz_events.sql` applied and
-verified end to end on 22 Sep 2026: an insert through the publishable key is
-accepted, a `SELECT` through the same key returns nothing, and
-`quiz_insights()` reports the session correctly.
+**Live since 22 Sep 2026.** Supabase project **`Homegym-sg`**
+(`bsbqiupwdxyzfxgjxazs`, Sydney), with `db/001_quiz_events.sql` applied. As at
+15 Oct 2026 it holds **285 events across 61 sessions**, most recent the same day,
+and the live objects match that file one for one: RLS on, one insert-only policy,
+three indexes, `quiz_insights()` present.
 
-Two things are left, and both are in the Vercel console:
+This section used to end "two things are left, and both are in the Vercel
+console". Both were done; the traffic is the proof, since `/api/collect` drops
+every event and logs loudly when either variable is missing. The three it needs:
 
-1. **Set two environment variables**, then redeploy. (The API token this repo's
-   tooling uses is not permitted to write project env vars, which is why these
-   are by hand.)
+| Variable | Value |
+|---|---|
+| `SUPABASE_URL` | `https://bsbqiupwdxyzfxgjxazs.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys → the **publishable** key (`sb_publishable_…`) |
+| `INSIGHTS_PASSWORD` | 12 characters or more. Gates the dashboard |
 
-   | Variable | Value |
-   |---|---|
-   | `SUPABASE_URL` | `https://bsbqiupwdxyzfxgjxazs.supabase.co` |
-   | `SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys → the **publishable** key (`sb_publishable_…`) |
-   | `INSIGHTS_PASSWORD` | A password of your choosing, 12 characters or more. Gates the dashboard. |
+**The publishable key, never the service role key.** The publishable one is held
+to `INSERT` by the table's RLS policy and can read nothing back, so a leak buys an
+attacker the ability to write junk into a metrics table. The service role key
+bypasses RLS entirely and would turn a leaked function log into a full database
+compromise.
 
-   Use the publishable key, never the service role key. The publishable one is
-   held to `INSERT` by the table's RLS policy and can read nothing back; the
-   service role key bypasses RLS entirely and would turn a leaked function log
-   into a full database compromise.
+`INSIGHTS_PASSWORD` fails closed: unset or under twelve characters refuses
+everyone, including you, and logs why. Before the variables were set the page said
+so in plain words rather than showing a broken chart, and the quiz was unaffected
+either way — both still true if they are ever cleared.
 
-2. **Set `INSIGHTS_PASSWORD`**, at least 12 characters. This is what keeps the
-   numbers private. `/api/insights` refuses every request without it, and the
-   dashboard asks for it once per browser.
-
-Until step 1 is done the page says exactly that, in plain words, rather than
-showing a broken chart. The quiz is unaffected either way.
+**Moving this to the client's own Supabase** is three environment variables and
+one `psql` paste, because the schema is checked in rather than clicked together.
+The step-by-step, with the acceptance test and the four things that bite, is
+HANDOFF.md → §6 → *"Taking the analytics onto your own Supabase"*. The short
+version: the project must be in **their** organisation, the region is immutable so
+pick `ap-southeast-1`, and Supabase holds only the telemetry — it is not a host
+for the quiz itself.
 
 ### Why the password is in the app and not on the deployment
 
