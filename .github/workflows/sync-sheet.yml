@@ -64,7 +64,20 @@ on:
     # at 02:30 SGT, which costs nothing: the sheet is edited in office hours, so
     # there is never a late edit this would miss.
     - cron: '30 18 * * *'
-  workflow_dispatch:       # "Run workflow" in the Actions tab, for an instant sync
+  # "Run workflow" in the Actions tab, for an instant sync.
+  #
+  # dry_run exists because the three syncs read three third parties and the only
+  # way to see what tonight would do used to be to let it do it. With dry_run on,
+  # each one runs with --check: it reports and writes nothing, so no commit
+  # follows and the log is just the three reports. Useful before a campaign, and
+  # the only way to read a price report without the test suite's output on top of
+  # it.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would change, write nothing'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -95,12 +108,8 @@ jobs:
       - name: Pull the sheet
         run: |
           echo "Sync started $(date '+%a %d %b %Y, %H:%M') Singapore time"
-          npm run sync
+          npm run sync ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '-- --check' || '' }}
 
-      # The photographs come from a different place than the data and go stale
-      # differently: Instagram posts scroll out of the feed on their own, and a
-      # pinned URL can keep returning 200 long after nothing proves what it
-      # shows. This refreshes what it can prove and reports what needs an eye.
       # PRICES, from the product pages themselves.
       #
       # Known Issue 1 in src/quiz/bundles.js has said since 30 Aug 2026 that the
@@ -116,13 +125,18 @@ jobs:
       # loud in the Actions tab, which is where it belongs.
       - name: Pull the prices
         continue-on-error: true
-        run: npm run sync:prices
+        run: npm run sync:prices ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '-- --check' || '' }}
 
+      # The photographs come from a different place than the data and go stale
+      # differently: Instagram posts scroll out of the feed on their own, and a
+      # pinned URL can keep returning 200 long after nothing proves what it
+      # shows. This refreshes what it can prove and reports what needs an eye.
+      #
       # It must not fail the run: HomeGym's feed is a third party, and it being
       # slow or down should leave the sheet sync alone.
       - name: Pull the photography
         continue-on-error: true
-        run: npm run sync:images
+        run: npm run sync:images ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '-- --check' || '' }}
 
       - name: Stop unless something actually changed
         id: diff
