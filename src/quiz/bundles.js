@@ -48,7 +48,7 @@ export const PRODUCTS = {
     footprint: { w: 2.09, d: 1.15 },
     name: 'Vigor TinyTitan All-in-1 Trainer',
     price: 2200,
-    was: 2799,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/space-saving/vigor-tinytitan-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/t/i/tinytitan11.jpg'
   },
@@ -59,7 +59,7 @@ export const PRODUCTS = {
     footprint: { w: 1.37, d: 1.2 },
     name: 'Bodyx Folding Cube Smith Machine Functional Trainer Combo',
     price: 3520,
-    was: 3999,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-folding-cube-smith-machine-functional-trainer-combo.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/c/u/cube_2_35.jpg'
   },
@@ -69,7 +69,7 @@ export const PRODUCTS = {
     footprint: { w: 2.07, d: 1.79 },
     name: 'Vigor Titan X20 All-in-1 Trainer',
     price: 4899,
-    was: 5899,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/x/2/x20-main2.jpg'
   },
@@ -78,7 +78,7 @@ export const PRODUCTS = {
     //   153 x 132 x 218cm (L x W x H)
     footprint: { w: 1.53, d: 1.32 },
     name: 'Vigor BF900 Pro Connected All-in-1 System',
-    price: 3599,
+    price: 3699,
     was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/b/f/bf900.jpg'
@@ -97,7 +97,7 @@ export const PRODUCTS = {
     // No dimensions published on the product page, checked 8 Sep 2026.
     footprint: null,
     name: 'Infinity Half Rack Dual Cable Combo',
-    price: 2299,
+    price: 2399,
     was: null,
     url: 'https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/img_4453.jpg'
@@ -106,7 +106,7 @@ export const PRODUCTS = {
     // No dimensions published on the product page, checked 8 Sep 2026.
     footprint: null,
     name: 'Infinity All-in-1 Trainer',
-    price: 2899,
+    price: 2999,
     was: null,
     url: 'https://homegym.sg/strength.html/infinity-series/infinity-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/n/infinity-31in1_1.jpg'
@@ -128,8 +128,8 @@ export const PRODUCTS = {
     // converted from inches
     footprint: { w: 1.88, d: 1.22 },
     name: 'Ironmaster IM2000 Self Spotting System',
-    price: 1999,
-    was: 2500,
+    price: 1399,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/space-saving/ironmaster-im2000-self-spotting-system.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/i/m/im2000-1_512x512.jpg'
   },
@@ -138,7 +138,7 @@ export const PRODUCTS = {
     footprint: null,
     name: 'Vigor Folding Power Rack',
     price: 1499,
-    was: 1650,
+    was: null,
     url: 'https://homegym.sg/strength/squat-racks/power-rack.html/vigor-folding-power-rack.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/v/s/vs-vr-3.jpg'
   },
@@ -214,7 +214,7 @@ export const PRODUCTS = {
     footprint: { w: 1.91, d: 1.53 },
     name: 'Bodyx Cube Smith Pro All-in-1 Trainer (Connected Smith System)',
     price: 4299,
-    was: 4599,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/cable-machine/bodyx-cube-smith-pro-all-in-1-trainer.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/c/u/cubesmith-pro.jpg',
     // Out of stock on the product page on 21 Sep 2026, and it anchors bundle 12.
@@ -226,7 +226,7 @@ export const PRODUCTS = {
     footprint: { w: 1.18, d: 0.98 },
     name: 'Bodyx PT360 Dual Adjustable Pulley',
     price: 2599,
-    was: 2899,
+    was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/functional-trainer/bodyx-pt360-dual-adjustable-pulley.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/2/4260_magnify_013.jpg'
   },
@@ -247,7 +247,7 @@ export const PRODUCTS = {
     footprint: { w: 1.24, d: 0.89 },
     name: 'Vigor Folding Adjustable Squat Stand',
     price: 299,
-    was: 399,
+    was: null,
     url: 'https://homegym.sg/strength/squat-racks/squat-stands.html/vigor-folding-adjustable-squat-stand.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/f/a/fass-1.jpg'
   },
@@ -277,7 +277,7 @@ export const PRODUCTS = {
   'smartlock-db': {
     name: 'Vigor 23.5kg Smartlock Adjustable Dumbbell (4 to 23.5kg Pair)',
     price: 580,
-    was: 699,
+    was: null,
     url: 'https://homegym.sg/strength/weights/dumbbell.html/quick-adjust-dumbbell/vigor-23-5kg-smartlock-adjustable-dumbbell-4-to-23-5kg-pair.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/d11b41faeeed0bb2e654198967f4842e/4/-/4-235_dumbbell_2_.jpg'
   }
@@ -762,6 +762,46 @@ export const FUNCTION_SHORT = {
  * scripts/check-images.mjs to find them.
  */
 export const ROOMS = [
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/818479244_18629543650005504_8388184001478289486_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "11 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/803926508_18625867495005504_6733673456102011619_n.jpg",
+    title: "Vigor xpress pro home gym",
+    date: "23 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional/multi-gym-85.html/vigor-xpress-pro-home-gym-station.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/805579331_18625867042005504_1316462337569096294_n.jpg",
+    title: "Vigor Titan x20 all in one trainer",
+    date: "21 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/809201815_18626848147005504_304992392339003241_n.jpg",
+    title: "Vigor BF900 Pro Connected All-in-1 System",
+    date: "14 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/803323682_18625847215005504_8108354033943915639_n.jpg",
+    title: "Vigor BF900 Pro Connected All-in-1 System",
+    date: "11 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-bf900-pro-connected-all-in-1-system.html",
+    linkKind: "product",
+    verified: false
+  },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/799724607_18629541532005504_8567913137448412912_n.jpg",
     title: "Vigor Tiny Titan",
