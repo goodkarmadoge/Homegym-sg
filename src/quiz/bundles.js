@@ -763,6 +763,14 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825324102_18631653883005504_1013145156143114332_n.jpg",
+    title: "Vigor infinity half rack with smith machine",
+    date: "16 Oct 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/791561042_18623257588005504_1614753796060253158_n.jpg",
     title: "Train smarter. Move better.",
     date: "3 Sep 2026",
