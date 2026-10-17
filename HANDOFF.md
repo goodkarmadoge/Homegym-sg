@@ -307,6 +307,149 @@ them, which is exactly why it is worth measuring. If the live numbers land near
 these, the honest reading is a catalogue gap at particular room sizes rather than
 a quiz that needs retuning.
 
+### Taking the analytics onto your own Supabase
+
+Everything above works without you owning anything. This section is for when you
+want the data in **your** account rather than the agency's.
+
+**What is actually in Supabase: one table and one function.** Not the quiz. The
+quiz is a static file with no database, no login and no server state; its bundle
+data is committed into the repository from the Google Sheet. Supabase holds only
+the telemetry §6 describes:
+
+| | |
+|---|---|
+| `public.quiz_events` | one append-only table, three indexes |
+| one RLS policy | `INSERT` only, for the `anon` role — no read, no update, no delete |
+| `public.quiz_insights(days)` | returns aggregates, never rows. The dashboard's only read path |
+
+All of it is in **`db/001_quiz_events.sql`** in the repository, 216 lines, checked
+in so it can be recreated exactly rather than clicked together from memory. As at
+15 Oct 2026 the live project matches that file object for object.
+
+So the whole coupling between the quiz and Supabase is **three environment
+variables**. Moving it is a morning's work, not a migration.
+
+#### 1. Create the project, in your own organisation
+
+Not an invitation to someone else's — if you are a guest in another account, the
+handover has not happened. Pick region **Singapore (`ap-southeast-1`)**. The
+current project is in Sydney, and **region cannot be changed after creation**, so
+this is the one decision worth getting right before you click Create.
+
+#### 2. Apply the migration
+
+Paste `db/001_quiz_events.sql` into the SQL Editor and run it, or
+`supabase db push` with the project linked. It is safe to run twice:
+`create table if not exists`, `drop policy if exists`,
+`create or replace function`.
+
+#### 3. Copy the publishable key
+
+Project Settings → API Keys → the **publishable** key (`sb_publishable_…`).
+
+**Never the service role key.** The publishable key is only safe to put in a
+server function because the RLS policy holds it to `INSERT` and nothing else:
+if it leaked, an attacker could write junk into a metrics table. The service role
+key bypasses RLS entirely, so the same leak would be a full database compromise.
+
+#### 4. Set three variables and redeploy
+
+On whichever hosting project serves the quiz:
+
+| Variable | Value |
+|---|---|
+| `SUPABASE_URL` | `https://<your-project-ref>.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | the key from step 3 |
+| `INSIGHTS_PASSWORD` | your choice, **at least 12 characters** |
+
+`INSIGHTS_PASSWORD` gates `/insights.html`. It **fails closed**: unset, or under
+twelve characters, refuses everyone including you, and logs why. That is
+deliberate — the alternative, falling through to "allow", would publish your
+traffic while looking like a working dashboard from the inside.
+
+#### 5. Prove the security model, not just the connection
+
+Three checks, in this order. They are the same three the current project passed
+on 22 Sep 2026, and the second is the one that matters.
+
+```bash
+export URL="https://<ref>.supabase.co"
+export KEY="sb_publishable_..."
+
+# a) an insert through the publishable key is ACCEPTED -> expect 201
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$URL/rest/v1/quiz_events" \
+  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+  -H 'Content-Type: application/json' \
+  -d '[{"session_id":"handover-test-01","name":"quiz:start","detail":{}}]'
+
+# b) a SELECT through the SAME key returns NOTHING -> expect []
+curl -s "$URL/rest/v1/quiz_events?select=session_id&limit=1" \
+  -H "apikey: $KEY" -H "Authorization: Bearer $KEY"
+
+# c) the aggregate function still answers -> expect JSON, sessions >= 1
+curl -s -X POST "$URL/rest/v1/rpc/quiz_insights" \
+  -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+  -H 'Content-Type: application/json' -d '{"days":30}'
+```
+
+**On (b), `[]` is the pass, not a failure.** A table with RLS on and no `SELECT`
+policy returns an empty array with HTTP 200 — it does not return 403. If you were
+expecting an error, you will think something is broken when it is working. If (b)
+ever returns a row, stop: the policy did not apply and your visitors' sessions are
+readable by anyone holding a key that ships to the browser.
+
+Then clear the test row in the SQL Editor:
+
+```sql
+delete from public.quiz_events where session_id = 'handover-test-01';
+```
+
+You have to do that in the editor, because the publishable key cannot delete. That
+is the policy working again.
+
+#### 6. Check the real path
+
+Complete the quiz once, then open `/insights.html` and enter the password. One new
+session should appear. Until step 4 is done the page says so in plain words rather
+than showing a broken chart, and the quiz itself is unaffected either way.
+
+#### What to do with the three weeks of data already collected
+
+The current project holds **285 events across 61 sessions**, 22 Sep to 15 Oct 2026.
+
+**Starting clean is the recommendation.** It is funnel telemetry, three weeks of
+it, and a clean cutover is one less thing to get wrong on the day.
+
+If you would rather keep it: export every column **except `id`** and insert that.
+`id` is `generated always as identity`, so an insert that includes it is rejected
+unless you add `overriding system value`, and then you are fighting the sequence
+for no benefit. The columns to carry are `occurred_at, session_id, name, step,
+bundle_id, action, product_id, detail`.
+
+Either way, leave the old project running read-only for a few weeks before
+deleting it. It costs nothing and it is the only copy.
+
+#### Four things that will bite
+
+- **`ALLOWED_ORIGINS` is in the code, not a setting.** `api/collect.js` lists the
+  origins allowed to post events, and it is deliberately paired with the
+  `frame-ancestors` header in `vercel.json`: *widen one and you have widened the
+  other.* If the quiz ever moves origin, both change together, in a commit.
+- **Supabase is not a static host.** It holds the data. The quiz pages and the two
+  serverless functions still need to live somewhere — if you want those off the
+  agency's hosting too, that is a separate and much larger job, because
+  `api/collect.js` and `api/insights.js` are written for a Node serverless host and
+  would need rewriting as Supabase Edge Functions.
+- **A free-tier project pauses after about a week of inactivity.** Live traffic
+  keeps it awake; a staging copy will quietly go to sleep and start failing.
+- **Nothing here collects personal data, and that is load-bearing.** No IP, no user
+  agent, no referrer, no cookie, no name or email. The `session_id` is random, minted
+  per tab, and dies with the tab. Under Singapore's PDPA that keeps the table out of
+  "personal data" altogether: no consent banner, no access-or-correction obligation,
+  nothing in it to breach. **Add an IP column and all three of those stop being
+  true.** The reasoning is written out at the top of `db/001_quiz_events.sql`.
+
 ---
 
 ## 7. The iframe embed
