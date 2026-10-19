@@ -106,7 +106,7 @@ export const SHEET_BUNDLES = [
     functions: ["power_rack","free_weight","cable"],
     footprint: { length: 2, depth: 3 },
     personas: ["Serious Strength Trainer"],
-    budgetCeiling: 3500,
+    budgetCeiling: 4600,
     productUrls: [
       "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
       "https://homegym.sg/strength/weight-benches/flat-adjustable-bench.html/multi-adjustable-bench.html",
