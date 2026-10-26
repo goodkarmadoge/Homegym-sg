@@ -763,6 +763,38 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825324044_18631654876005504_5046073516910148708_n.jpg",
+    title: "Vigor titan x20 all in 1 trainer",
+    date: "22 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825324102_18631653883005504_1013145156143114332_n.jpg",
+    title: "Vigor infinity half rack with smith machine",
+    date: "16 Oct 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/791561042_18623257588005504_1614753796060253158_n.jpg",
+    title: "Train smarter. Move better.",
+    date: "3 Sep 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/759531291_18611551063005504_6634504801752897174_n.jpg",
+    title: "Infinity Half Rack Dual Cable Combo",
+    date: "19 Aug 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/818479244_18629543650005504_8388184001478289486_n.jpg",
     title: "Vigor Titan x20 all in one trainer",
     date: "11 Oct 2026",
