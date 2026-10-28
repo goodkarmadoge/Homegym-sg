@@ -30,15 +30,18 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
  * directory to resolve that against. The name is dotted so the build's own globs
  * skip it, and the finally clause removes it even when an assertion throws.
  */
-async function roomsOf(source) {
+async function loadCatalogue(source) {
   const scratch = join(ROOT, `src/quiz/.rooms-test-${process.pid}-${Math.random().toString(36).slice(2)}.js`);
   writeFileSync(scratch, source);
   try {
-    return (await import(pathToFileURL(scratch).href)).ROOMS;
+    return await import(pathToFileURL(scratch).href);
   } finally {
     rmSync(scratch, { force: true });
   }
 }
+
+/** Just the ROOMS array out of a rewritten catalogue. */
+const roomsOf = async (source) => (await loadCatalogue(source)).ROOMS;
 
 const DATE = /^\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) 20\d\d$/;
 
@@ -115,6 +118,71 @@ test('nothing is written when there is nothing to adopt', () => {
 
 test('the insertion refuses a file it cannot find the array in', () => {
   assert.throws(() => insertion()('export const ROOMS = []', [TILE]), /could not find the ROOMS array/);
+});
+
+/* ── The hero swap must not reach a rooms tile ─────────────────────────────── */
+
+/** The hero-swap block out of sync-images.mjs, as a function of (src, edits). */
+function heroWriter() {
+  const script = read('scripts/sync-images.mjs');
+  const from = script.indexOf('/**\n * The span of one BUNDLE_COPY entry');
+  const to = script.indexOf('for (const t of deadTiles) {');
+  assert.ok(from > 0 && to > from, 'could not find the hero-swap block in sync-images.mjs');
+  return new Function('src', 'edits', `${script.slice(from, to)}\nreturn src;`);
+}
+
+// THE 26 Oct 2026 FAILURE. The swap was a file-wide string replace, and a hero
+// photograph is routinely also a rooms tile's image, because both come from the
+// same feed. So swapping bundle 6's hero rewrote the tile "Infinity half rack
+// with barbell set" as well, leaving its hand-written title and August date over
+// a different photograph. It showed up as a duplicate tile only because the same
+// post was adopted in the same run; on any other night it would have gone out
+// quietly.
+test('swapping a hero leaves a rooms tile that shares the photograph alone', async () => {
+  const source = read('src/quiz/bundles.js');
+  const { BUNDLE_COPY: copyBefore } = await import('../src/quiz/bundles.js');
+
+  // Pick a real bundle whose hero is also a tile image. There are several; if
+  // there are none the premise has gone away and this test has nothing to guard.
+  const shared = Object.entries(copyBefore)
+    .map(([id, c]) => ({ id: Number(id), hero: c.hero, tile: ROOMS.find((r) => r.image === c.hero) }))
+    .find((x) => x.tile);
+  assert.ok(shared, 'expected at least one bundle hero to also be a rooms tile image');
+
+  const to = 'https://d101vd00cis701.cloudfront.net/ox_instagram/zz-regression-test_n.jpg';
+  const out = heroWriter()(source, [
+    { id: shared.id, field: 'hero', from: shared.hero, to },
+    { id: shared.id, field: 'heroVerified', from: null, to: false }
+  ]);
+  const mod = await loadCatalogue(out);
+
+  assert.equal(mod.BUNDLE_COPY[shared.id].hero, to, 'the hero must be swapped');
+  assert.equal(mod.BUNDLE_COPY[shared.id].heroVerified, false, 'and marked unverified');
+
+  const tileAfter = mod.ROOMS.find((r) => r.title === shared.tile.title);
+  assert.equal(tileAfter.image, shared.hero,
+    `the tile "${shared.tile.title}" kept its title and date, so it must keep its photograph`);
+
+  assert.equal(new Set(mod.ROOMS.map((r) => r.image)).size, mod.ROOMS.length,
+    'and no tile may end up sharing an image with another');
+});
+
+test('a hero already marked unverified is not marked twice', async () => {
+  const source = read('src/quiz/bundles.js');
+  const { BUNDLE_COPY: copyBefore } = await import('../src/quiz/bundles.js');
+  const already = Object.keys(copyBefore).find((id) => 'heroVerified' in copyBefore[id]);
+  assert.ok(already, 'expected at least one entry to carry heroVerified already');
+
+  const to = 'https://d101vd00cis701.cloudfront.net/ox_instagram/zz-second-swap_n.jpg';
+  const out = heroWriter()(source, [
+    { id: Number(already), field: 'hero', from: copyBefore[already].hero, to },
+    { id: Number(already), field: 'heroVerified', from: null, to: false }
+  ]);
+  assert.equal((out.match(/heroVerified:/g) || []).length,
+    (source.match(/heroVerified:/g) || []).length,
+    'swapping an already-flagged hero must reuse the flag, not add a second');
+  const mod = await loadCatalogue(out);
+  assert.equal(mod.BUNDLE_COPY[already].heroVerified, false);
 });
 
 /* ── The claim the strip makes ─────────────────────────────────────────────── */

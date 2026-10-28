@@ -350,8 +350,9 @@ export const BUNDLE_COPY = {
     tagline: "Half rack plus 2 × 75kg cable stacks, room to grow.",
     pitch: "Barbell work in a proper half rack with dual cable stacks bolted on, and an add-on path (Smith kit, dip station, landmine) for whenever you want more.",
     trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Low row", "Chin-ups"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/761573833_18611551303005504_1908722346053536433_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/868379422_18641807299005504_5932153498248052142_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   7: {
@@ -762,6 +763,14 @@ export const FUNCTION_SHORT = {
  * scripts/check-images.mjs to find them.
  */
 export const ROOMS = [
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/868379422_18641807299005504_5932153498248052142_n.jpg",
+    title: "Infinity half rack with cable",
+    date: "26 Oct 2026",
+    href: "https://homegym.sg/strength.html/infinity-series/infinity-half-rack-dual-cable-combo.html",
+    linkKind: "product",
+    verified: false
+  },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/825324044_18631654876005504_5046073516910148708_n.jpg",
     title: "Vigor titan x20 all in 1 trainer",

@@ -329,20 +329,59 @@ if (CHECK_ONLY) {
 
 let src = readFileSync(TARGET, 'utf8');
 
-for (const e of edits) {
-  if (e.field === 'hero') {
-    if (!src.includes(e.from)) throw new Error(`hero URL for bundle ${e.id} not found in bundles.js`);
-    src = src.split(e.from).join(e.to);
-  }
+/**
+ * The span of one BUNDLE_COPY entry, so an edit cannot reach outside it.
+ *
+ * WHY THIS EXISTS, 26 Oct 2026. The hero swap below used to be a file-wide
+ * `src.split(from).join(to)`, and that night it silently rewrote a rooms tile.
+ * Bundle 6's hero photograph was ALSO the image of the curated tile "Infinity
+ * half rack with barbell set" — unremarkable, because a hero and a tile are
+ * drawn from the same feed, and eight such pairs exist today. So replacing the
+ * hero replaced the tile's image too, leaving a hand-written title and an
+ * August date sitting over a different photograph.
+ *
+ * It surfaced as a duplicate tile, because the same post was adopted into the
+ * strip in the same run, and `npm run check` refused the commit. That is the
+ * lucky version: the quiet version is a curated tile showing the wrong room,
+ * which nothing would have reported.
+ *
+ * A URL is not a unique key in this file. An edit aimed at one entry has to be
+ * confined to that entry's own text, which is the same rule sync-prices.mjs
+ * follows for the same reason.
+ */
+function copySpan(text, id) {
+  const base = text.indexOf('export const BUNDLE_COPY');
+  if (base < 0) throw new Error('could not find BUNDLE_COPY in bundles.js');
+  const m = new RegExp(`^ {2}${id}: \\{\\n[\\s\\S]*?\\n {2}\\},?$`, 'm').exec(text.slice(base));
+  if (!m) throw new Error(`could not find bundle ${id} in BUNDLE_COPY`);
+  return { start: base + m.index, end: base + m.index + m[0].length };
 }
 
-// heroVerified sits next to heroSource, added only where a hero was swapped.
-for (const e of edits.filter((x) => x.field === 'heroVerified')) {
-  const copy = BUNDLE_COPY[e.id];
-  const swapped = edits.find((x) => x.id === e.id && x.field === 'hero');
-  const marker = `    hero: "${swapped.to}",\n    heroSource: "instagram"`;
-  if (!src.includes(marker)) throw new Error(`could not mark bundle ${e.id} unverified`);
-  src = src.replace(marker, `${marker},\n    heroVerified: false`);
+// Back to front, so a replacement never shifts a span not yet applied.
+const heroEdits = edits.filter((x) => x.field === 'hero');
+const marks = new Set(edits.filter((x) => x.field === 'heroVerified').map((x) => x.id));
+for (const e of heroEdits.map((e) => ({ e, span: copySpan(src, e.id) })).sort((a, b) => b.span.start - a.span.start)) {
+  const { start, end } = e.span;
+  let entry = src.slice(start, end);
+
+  const fromLine = `hero: "${e.e.from}"`;
+  if (!entry.includes(fromLine)) throw new Error(`hero URL for bundle ${e.e.id} not found in its own entry`);
+  entry = entry.replace(fromLine, `hero: "${e.e.to}"`);
+
+  // heroVerified sits next to heroSource. An entry that already carries the
+  // flag is set back to false rather than gaining a second one: the photograph
+  // has changed, so whatever a human confirmed about the old one is spent.
+  if (marks.has(e.e.id)) {
+    if (/^ {4}heroVerified: /m.test(entry)) {
+      entry = entry.replace(/^ {4}heroVerified: (?:true|false),?$/m, '    heroVerified: false');
+    } else {
+      const marker = `    hero: "${e.e.to}",\n    heroSource: "instagram"`;
+      if (!entry.includes(marker)) throw new Error(`could not mark bundle ${e.e.id} unverified`);
+      entry = entry.replace(marker, `${marker},\n    heroVerified: false`);
+    }
+  }
+
+  src = src.slice(0, start) + entry + src.slice(end);
 }
 
 for (const t of deadTiles) {

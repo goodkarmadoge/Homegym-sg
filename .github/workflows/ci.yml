@@ -27,7 +27,7 @@ on:
   # nobody notices until a customer reads last week's prices, and it re-runs the
   # suite and the sweep against the live data daily as a side effect.
   workflow_run:
-    workflows: ['Sync bundle data and photography']
+    workflows: ['Sync bundle data, prices and photography']
     types: [completed]
 
 permissions:
@@ -69,17 +69,14 @@ jobs:
     # silently stop deploying, which is the failure this whole block exists to
     # undo. A sync that failed has nothing worth publishing.
     #
-    # The ref check is deliberately NOT applied to `workflow_run`. That event
-    # only fires for a workflow file on the default branch, and the sync only
-    # ever runs on main, so the guard would be redundant; the risk is that
-    # `github.ref` means something slightly different in that context than it
-    # does for a push, and a condition that quietly never matches is precisely
-    # the bug being fixed here.
+    # workflow_run uses the default branch's ref even when the upstream run
+    # failed or was dispatched on another branch. Keep its success/main check
+    # separate from the ordinary push/dispatch path so it cannot fall through.
     if: >-
       github.event_name != 'pull_request'
       && (
-        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-        || github.ref == 'refs/heads/main'
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+        || (github.event_name != 'workflow_run' && github.ref == 'refs/heads/main')
       )
     runs-on: ubuntu-latest
     permissions:
