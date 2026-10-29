@@ -117,7 +117,7 @@ export const PRODUCTS = {
     // UNFOLDED. The folded 42.5cm depth is storage, not the footprint in use
     footprint: { w: 0.72, d: 1.36 },
     name: 'AEKE S1 PRO Smart Home Gym',
-    price: 5899,
+    price: 5999,
     was: null,
     url: 'https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html',
     image: 'https://d101vd00cis701.cloudfront.net/catalog/product/cache/c0dcb29ef46d222f886111be6e10f76c/a/e/aeke_s1_pro_22.jpg'

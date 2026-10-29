@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUNDLES, PRODUCTS, FUNCTION_OPTIONS, UNASKED_FUNCTIONS } from '../src/quiz/bundles.js';
-import { match, fits, functionScore, budgetScore, personaScore, scoreBundle, FALLBACK, ANY_FUNCTION } from '../src/quiz/matcher.js';
+import { match, fits, functionScore, budgetScore, personaScore, scoreBundle, explainGaps, FALLBACK, ANY_FUNCTION } from '../src/quiz/matcher.js';
 
 const run = (answers) => match(answers, BUNDLES);
 const nameOf = (answers) => run(answers).primary?.name ?? null;
@@ -286,14 +286,37 @@ test('a bundle covering nothing that was asked for reports a gap', () => {
 });
 
 test('a budget too small for the only smart machine reports a budget gap', () => {
-  // The Silent Operator is the only `smart` bundle and costs $5,899. It fits a
-  // 2 x 2 m room, so space is not the obstacle here and the message must not
-  // claim it is.
+  // Prices are synced nightly. Check the quoted bundle against the current
+  // catalogue, not a historical price that would reject a legitimate update.
+  const smart = BUNDLES.filter((b) => b.functions.includes('smart'));
+  assert.ok(smart.length > 0, 'the catalogue must contain a smart bundle');
+  const cheapest = smart.reduce((a, b) => b.price < a.price || (b.price === a.price && b.id < a.id) ? b : a);
+  assert.ok(cheapest.price > 2500, 'this case requires an unaffordable smart bundle');
+  assert.ok(smart.some((b) => fits(b, 2, 2)), 'space must not be the obstacle');
   const r = run({ functions: ['smart'], length: 2, depth: 2, persona: 'Convenience Seeker', budget: 2500 });
   assert.equal(r.gaps.length, 1);
   assert.equal(r.gaps[0].fn, 'smart');
   assert.equal(r.gaps[0].blocked, 'budget');
-  assert.equal(r.gaps[0].cheapest.price, 5899);
+  assert.equal(r.gaps[0].cheapest.id, cheapest.id);
+  assert.equal(r.gaps[0].cheapest.price, cheapest.price);
+});
+
+test('a budget gap quotes the current cheapest carrier after price changes', () => {
+  // The 28 Oct sync moved the AEKE from 5899 to 5999. Synthetic bundles keep
+  // this regression independent of tomorrow's catalogue, and a second smart
+  // bundle proves that a price change can also change which one is cheapest.
+  const primary = { id: 1, price: 500, functions: ['free_weight'], footprint: { length: 1, depth: 1 } };
+  const competitor = { id: 3, price: 6200, functions: ['smart'], footprint: { length: 1, depth: 2 } };
+  const answers = { functions: ['smart'], length: 2, depth: 2, budget: 2500 };
+  for (const [price, expectedId, expectedPrice] of [[5899, 2, 5899], [5999, 2, 5999], [6499, 3, 6200]]) {
+    const changed = { id: 2, price, functions: ['smart'], footprint: { length: 1, depth: 2 } };
+    const gaps = explainGaps(answers, [primary, changed, competitor], primary);
+    assert.equal(gaps.length, 1);
+    assert.equal(gaps[0].fn, 'smart');
+    assert.equal(gaps[0].blocked, 'budget');
+    assert.equal(gaps[0].cheapest.id, expectedId);
+    assert.equal(gaps[0].cheapest.price, expectedPrice);
+  }
 });
 
 test('a bundle that does everything asked reports no gaps', () => {
