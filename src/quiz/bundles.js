@@ -369,8 +369,9 @@ export const BUNDLE_COPY = {
     tagline: "350+ movements from a machine the size of a bookshelf.",
     pitch: "Digital resistance to 220lb in 1lb steps, AI form correction across 42 skeletal points, 165+ guided programmes, and no plates to wake the neighbours. Replaces 23 machines in 2 square metres.",
     trains: ["Chest press", "Rows", "Squats", "Core work", "Pilates", "Rowing", "185 training angles"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/792133070_18623258032005504_2223476064121699011_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/864328458_18641801200005504_5115042504221459170_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   9: {
@@ -763,6 +764,14 @@ export const FUNCTION_SHORT = {
  * scripts/check-images.mjs to find them.
  */
 export const ROOMS = [
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/864328458_18641801200005504_5115042504221459170_n.jpg",
+    title: "AEKE s1 pro",
+    date: "31 Oct 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/868379422_18641807299005504_5932153498248052142_n.jpg",
     title: "Infinity half rack with cable",
