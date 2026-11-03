@@ -765,6 +765,14 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/862738402_18641802058005504_2478479558189877566_n.jpg",
+    title: "Vigor titan x20",
+    date: "3 Nov 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/cable-machine/vigor-titan-x20-all-in-1-trainer.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/864328458_18641801200005504_5115042504221459170_n.jpg",
     title: "AEKE s1 pro",
     date: "31 Oct 2026",
