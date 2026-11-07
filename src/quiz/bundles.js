@@ -304,8 +304,9 @@ export const BUNDLE_COPY = {
     tagline: "One machine, three disciplines, a spare bedroom.",
     pitch: "Smith, rack and cable in a single frame, plus the bench and plates to make it a real gym on day one. If you've got a spare room and you're starting from nothing, start here.",
     trains: ["Squat", "Bench press", "Deadlift", "Lat pulldown", "Cable rows", "Overhead press"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/805119822_18625846609005504_1896468927118295722_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/799724607_18629541532005504_8567913137448412912_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   2: {
@@ -764,6 +765,14 @@ export const FUNCTION_SHORT = {
  * scripts/check-images.mjs to find them.
  */
 export const ROOMS = [
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/863719788_18641802457005504_1672965313178895329_n.jpg",
+    title: "AEKE s1 pro",
+    date: "7 Nov 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/862738402_18641802058005504_2478479558189877566_n.jpg",
     title: "Vigor titan x20",
