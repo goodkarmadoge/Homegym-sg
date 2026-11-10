@@ -766,6 +766,14 @@ export const FUNCTION_SHORT = {
  */
 export const ROOMS = [
   {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/864279153_18641802571005504_1171721367922393165_n.jpg",
+    title: "AEKE s1 pro",
+    date: "9 Nov 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
+  {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/863719788_18641802457005504_1672965313178895329_n.jpg",
     title: "AEKE s1 pro",
     date: "7 Nov 2026",
