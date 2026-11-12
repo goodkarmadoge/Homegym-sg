@@ -333,8 +333,9 @@ export const BUNDLE_COPY = {
     tagline: "Dual 90kg stacks, no loose plates, half the footprint.",
     pitch: "The integrated stack means you load the Smith bar straight off the weight stack: no plates to rack, no plates to store, roughly half the floor space of a traditional all-in-one.",
     trains: ["Smith squat", "Smith bench", "Lat pulldown", "Tricep pushdown", "Chin-ups", "Cable rows"],
-    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/803323682_18625847215005504_8108354033943915639_n.jpg",
-    heroSource: "instagram"
+    hero: "https://d101vd00cis701.cloudfront.net/ox_instagram/809201815_18626848147005504_304992392339003241_n.jpg",
+    heroSource: "instagram",
+    heroVerified: false
   },
 
   5: {
@@ -765,6 +766,14 @@ export const FUNCTION_SHORT = {
  * scripts/check-images.mjs to find them.
  */
 export const ROOMS = [
+  {
+    image: "https://d101vd00cis701.cloudfront.net/ox_instagram/866946255_18641803567005504_4169217326186953804_n.jpg",
+    title: "AEKE s1 pro",
+    date: "11 Nov 2026",
+    href: "https://homegym.sg/strength/multi-functional.html/space-saving/aeke-s1-pro-smart-home-gym.html",
+    linkKind: "product",
+    verified: false
+  },
   {
     image: "https://d101vd00cis701.cloudfront.net/ox_instagram/864279153_18641802571005504_1171721367922393165_n.jpg",
     title: "AEKE s1 pro",
